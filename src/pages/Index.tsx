@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { FeaturesSection } from "@/components/features/FeaturesSection";
 import { PricingSection } from "@/components/pricing/PricingSection";
@@ -10,6 +11,8 @@ import Footer from "@/components/Footer";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-black text-foreground">
       <Navigation />
@@ -65,10 +68,19 @@ const Index = () => {
             transition={{ delay: 0.5 }}
             className="flex flex-col sm:flex-row gap-4 items-start"
           >
-            <Button size="lg" className="button-gradient">
+            <Button 
+              size="lg" 
+              className="button-gradient"
+              onClick={() => navigate('/login')}
+            >
               Apply for Loan
             </Button>
-            <Button size="lg" variant="link" className="text-white">
+            <Button 
+              size="lg" 
+              variant="link" 
+              className="text-white"
+              onClick={() => navigate('/login')}
+            >
               Become a Lender <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </motion.div>
@@ -131,11 +143,20 @@ const Index = () => {
             Connect with borrowers and lenders worldwide to create positive financial impact.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="button-gradient">
+            <Button 
+              size="lg" 
+              className="button-gradient"
+              onClick={() => navigate('/login')}
+            >
               Get Started
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/10">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white/20 hover:bg-white/10"
+              onClick={() => navigate('/login')}
+            >
               View Marketplace
             </Button>
           </div>

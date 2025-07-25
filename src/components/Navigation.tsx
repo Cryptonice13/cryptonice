@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Command, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { useNavigate } from "react-router-dom";
 
 const Navigation = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -57,7 +59,7 @@ const Navigation = () => {
         <nav className="flex items-center justify-between h-full">
           <div className="flex items-center gap-2">
             <Command className="w-5 h-5 text-primary" />
-            <span className="font-bold text-base">CryptoTrade</span>
+            <span className="font-bold text-base">Cryptonice</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -78,11 +80,11 @@ const Navigation = () => {
               </a>
             ))}
             <Button 
-              onClick={() => scrollToSection('cta')}
+              onClick={() => navigate('/login')}
               size="sm"
               className="button-gradient"
             >
-              Start Trading
+              Get Started
             </Button>
           </div>
 
@@ -115,11 +117,11 @@ const Navigation = () => {
                   <Button 
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      scrollToSection('cta');
+                      navigate('/login');
                     }}
                     className="button-gradient mt-4"
                   >
-                    Start Trading
+                    Get Started
                   </Button>
                 </div>
               </SheetContent>
