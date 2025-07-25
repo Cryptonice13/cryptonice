@@ -34,18 +34,18 @@ const Index = () => {
         >
           <span className="text-sm font-medium">
             <Command className="w-4 h-4 inline-block mr-2" />
-            Next-gen crypto trading platform
+            Decentralized microfinance platform
           </span>
         </motion.div>
         
         <div className="max-w-4xl relative z-10">
           <h1 className="text-5xl md:text-7xl font-normal mb-4 tracking-tight text-left">
             <span className="text-gray-200">
-              <TextGenerateEffect words="Trade crypto with" />
+              <TextGenerateEffect words="Empowering Dreams," />
             </span>
             <br />
             <span className="text-white font-medium">
-              <TextGenerateEffect words="confidence & security" />
+              <TextGenerateEffect words="One Micro-Loan at a Time" />
             </span>
           </h1>
           
@@ -55,8 +55,8 @@ const Index = () => {
             transition={{ delay: 0.4 }}
             className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl text-left"
           >
-            Experience seamless cryptocurrency trading with advanced features, real-time analytics, and institutional-grade security.{" "}
-            <span className="text-white">Start trading in minutes.</span>
+            Connect borrowers and lenders worldwide through decentralized, transparent, and borderless microfinance powered by Web3.{" "}
+            <span className="text-white">Join the financial revolution.</span>
           </motion.p>
           
           <motion.div
@@ -66,10 +66,10 @@ const Index = () => {
             className="flex flex-col sm:flex-row gap-4 items-start"
           >
             <Button size="lg" className="button-gradient">
-              Start Trading Now
+              Apply for Loan
             </Button>
             <Button size="lg" variant="link" className="text-white">
-              View Markets <ArrowRight className="ml-2 w-4 h-4" />
+              Become a Lender <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </motion.div>
         </div>
@@ -83,7 +83,7 @@ const Index = () => {
           <div className="glass rounded-xl overflow-hidden">
             <img
               src="/lovable-uploads/c32c6788-5e4a-4fee-afee-604b03113c7f.png"
-              alt="CryptoTrade Dashboard"
+              alt="Microfinance Platform Dashboard"
               className="w-full h-auto"
             />
           </div>
@@ -125,15 +125,20 @@ const Index = () => {
           className="bg-[#0A0A0A]/80 backdrop-blur-lg border border-white/10 rounded-2xl p-8 md:p-12 text-center relative z-10"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to start trading?
+            Join the Decentralized Finance Revolution
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of traders who have already discovered the power of our platform.
+            Connect with borrowers and lenders worldwide to create positive financial impact.
           </p>
-          <Button size="lg" className="button-gradient">
-            Create Account
-            <ArrowRight className="ml-2 w-4 h-4" />
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="button-gradient">
+              Get Started
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+            <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/10">
+              View Marketplace
+            </Button>
+          </div>
         </motion.div>
       </section>
 

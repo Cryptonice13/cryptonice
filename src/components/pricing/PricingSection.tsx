@@ -26,7 +26,8 @@ const PricingTier = ({
       <h3 className="text-xl font-medium mb-2">{name}</h3>
       <div className="mb-4">
         <span className="text-4xl font-bold">{price}</span>
-        {price !== "Custom" && <span className="text-gray-400">/month</span>}
+        {price !== "Custom" && !price.includes("%") && <span className="text-gray-400">/month</span>}
+        {price.includes("%") && <span className="text-gray-400"> APR</span>}
       </div>
       <p className="text-gray-400 mb-6">{description}</p>
       <ul className="space-y-3 mb-8 flex-grow">
@@ -38,7 +39,7 @@ const PricingTier = ({
         ))}
       </ul>
       <Button className="button-gradient w-full">
-        Start Trading
+        Get Started
       </Button>
     </div>
   </CardSpotlight>
@@ -55,7 +56,7 @@ export const PricingSection = () => {
           className="text-5xl md:text-6xl font-normal mb-6"
         >
           Choose Your{" "}
-          <span className="text-gradient font-medium">Trading Plan</span>
+          <span className="text-gradient font-medium">Lending Experience</span>
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -63,45 +64,45 @@ export const PricingSection = () => {
           transition={{ delay: 0.1, duration: 0.5 }}
           className="text-lg text-gray-400"
         >
-          Select the perfect trading plan with advanced features and competitive fees
+          Find the perfect plan whether you're borrowing or lending with transparent rates
         </motion.p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         <PricingTier
-          name="Basic Trader"
-          price="$0"
-          description="Perfect for beginners starting their crypto journey"
+          name="Basic Borrower"
+          price="3-8%"
+          description="Perfect for first-time borrowers building credit"
           features={[
-            "Basic spot trading",
-            "Market & limit orders",
-            "Basic market analysis",
-            "Email support"
+            "Loans up to $1,000",
+            "Flexible repayment terms",
+            "Build on-chain reputation",
+            "Community support"
           ]}
         />
         <PricingTier
-          name="Pro Trader"
-          price="$29"
-          description="Advanced features for serious traders"
+          name="Verified Lender"
+          price="5-12%"
+          description="Start earning passive income through micro-lending"
           features={[
-            "Advanced trading tools",
-            "Margin trading up to 10x",
-            "Advanced technical analysis",
-            "Priority support",
-            "API access"
+            "Diversified loan portfolio",
+            "Automated investment tools",
+            "Detailed borrower profiles",
+            "Risk assessment tools",
+            "Social impact tracking"
           ]}
           isPopular
         />
         <PricingTier
           name="Institutional"
           price="Custom"
-          description="Enterprise-grade solutions for institutions"
+          description="Large-scale lending solutions for organizations"
           features={[
-            "Custom trading solutions",
-            "Unlimited trading volume",
-            "OTC desk access",
-            "Dedicated account manager",
-            "Custom API integration",
+            "Bulk lending programs",
+            "Custom risk parameters",
+            "Dedicated fund management",
+            "Advanced analytics",
+            "White-label solutions",
             "24/7 priority support"
           ]}
         />

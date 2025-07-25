@@ -6,40 +6,40 @@ import { Card } from "./ui/card";
 
 const testimonials = [
   {
-    name: "Michael Chen",
-    role: "Professional Trader",
+    name: "Maria Santos",
+    role: "Small Business Owner",
     image: "https://avatars.githubusercontent.com/u/1234567?v=4",
-    content: "The real-time market data and advanced trading features have significantly improved my trading performance. The platform's security measures give me peace of mind."
+    content: "This platform helped me secure funding for my textile business when banks wouldn't lend to me. The transparent process and fair rates made all the difference."
   },
   {
-    name: "Sarah Johnson",
-    role: "Crypto Fund Manager",
+    name: "David Kim",
+    role: "Impact Investor",
     image: "https://avatars.githubusercontent.com/u/2345678?v=4",
-    content: "CryptoTrade's institutional-grade tools have transformed our trading strategy. The API integration and automated features have saved us countless hours."
+    content: "I've funded over 50 micro-loans through this platform. The ability to directly see the impact of my investments while earning returns is incredibly rewarding."
   },
   {
-    name: "David Wilson",
-    role: "Early Crypto Investor",
+    name: "Priya Patel",
+    role: "Agricultural Entrepreneur",
     image: "https://avatars.githubusercontent.com/u/3456789?v=4",
-    content: "The customer support is exceptional, and the platform's intuitive design made getting started with crypto trading seamless. A game-changer for both beginners and pros."
+    content: "The micro-loan I received allowed me to expand my organic farm. The smart contract system gave both me and my lenders confidence in the process."
   },
   {
-    name: "Emily Zhang",
-    role: "DeFi Developer",
+    name: "Robert Anderson",
+    role: "Retirement Investor",
     image: "https://avatars.githubusercontent.com/u/4567890?v=4",
-    content: "We've seen remarkable improvements in our trading efficiency since switching to CryptoTrade. The smart order routing and liquidity aggregation are particularly impressive."
+    content: "The platform's risk assessment tools help me make informed lending decisions. I'm earning steady returns while supporting entrepreneurs worldwide."
   },
   {
-    name: "James Rodriguez",
-    role: "Crypto Security Expert",
+    name: "Chen Wei",
+    role: "Tech Entrepreneur",
     image: "https://avatars.githubusercontent.com/u/5678901?v=4",
-    content: "The security features are robust and the regular updates keep us ahead of emerging threats. It's exactly what the crypto industry needed."
+    content: "The decentralized nature and smart contract automation eliminate traditional banking barriers. It's exactly what financial inclusion needed."
   },
   {
-    name: "Lisa Thompson",
-    role: "Portfolio Manager",
+    name: "Amanda Foster",
+    role: "Social Impact Fund",
     image: "https://avatars.githubusercontent.com/u/6789012?v=4",
-    content: "The platform's ability to handle complex trading strategies while maintaining simplicity in its interface is remarkable. It's been invaluable for our portfolio management."
+    content: "Our fund has deployed millions through this platform. The transparency and real-time tracking allow us to measure impact more effectively than ever."
   }
 ];
 
@@ -54,9 +54,9 @@ const TestimonialsSection = () => {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center mb-16"
         >
-          <h2 className="text-5xl font-normal mb-4">Trusted by Traders</h2>
+          <h2 className="text-5xl font-normal mb-4">Trusted by Borrowers & Lenders</h2>
           <p className="text-muted-foreground text-lg">
-            Join thousands of satisfied traders on CryptoTrade
+            Join thousands creating positive impact through microfinance
           </p>
         </motion.div>
 
