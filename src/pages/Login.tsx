@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,7 +16,11 @@ const Login = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -23,6 +29,13 @@ const Login = () => {
     confirmPassword: ""
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -30,15 +43,81 @@ const Login = () => {
     });
   };
 
-  const handleGoogleLogin = () => {
-    toast({
-      title: "Google Login",
-      description: "Google authentication integration coming soon!"
-    });
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/home`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Authentication Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Reset Email Sent",
+          description: "Check your email for password reset instructions."
+        });
+        setShowForgotPassword(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send reset email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (showForgotPassword) {
+      handleForgotPassword();
+      return;
+    }
     
     if (isSignUp) {
       if (formData.password !== formData.confirmPassword) {
@@ -58,16 +137,71 @@ const Login = () => {
         });
         return;
       }
-      
-      toast({
-        title: "Account Created",
-        description: "Welcome to Cryptonice! Your account has been created successfully."
-      });
+
+      try {
+        setLoading(true);
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/home`,
+            data: {
+              name: formData.name
+            }
+          }
+        });
+
+        if (error) {
+          toast({
+            title: "Sign Up Error",
+            description: error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Account Created",
+            description: "Please check your email to verify your account."
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create account. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
     } else {
-      toast({
-        title: "Welcome Back",
-        description: "Successfully signed in to your account."
-      });
+      try {
+        setLoading(true);
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+
+        if (error) {
+          toast({
+            title: "Sign In Error",
+            description: error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Welcome Back",
+            description: "Successfully signed in to your account."
+          });
+          navigate('/home');
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to sign in. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -236,43 +370,67 @@ const Login = () => {
               )}
 
               {/* Remember me / Terms checkbox */}
-              <div className="flex items-center space-x-2">
-                {isSignUp ? (
-                  <>
-                    <Checkbox
-                      id="terms"
-                      checked={agreeToTerms}
-                      onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
-                      className="border-white/20 data-[state=checked]:bg-primary"
-                    />
-                    <label htmlFor="terms" className="text-sm text-gray-400">
-                      I agree to the{" "}
-                      <a href="#" className="text-primary hover:underline">
-                        Terms & Privacy Policy
-                      </a>
-                    </label>
-                  </>
-                ) : (
-                  <>
-                    <Checkbox
-                      id="remember"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                      className="border-white/20 data-[state=checked]:bg-primary"
-                    />
-                    <label htmlFor="remember" className="text-sm text-gray-400">
-                      Remember me
-                    </label>
-                  </>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {isSignUp ? (
+                    <>
+                      <Checkbox
+                        id="terms"
+                        checked={agreeToTerms}
+                        onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
+                        className="border-white/20 data-[state=checked]:bg-primary"
+                      />
+                      <label htmlFor="terms" className="text-sm text-gray-400">
+                        I agree to the{" "}
+                        <a href="#" className="text-primary hover:underline">
+                          Terms & Privacy Policy
+                        </a>
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <Checkbox
+                        id="remember"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                        className="border-white/20 data-[state=checked]:bg-primary"
+                      />
+                      <label htmlFor="remember" className="text-sm text-gray-400">
+                        Remember me
+                      </label>
+                    </>
+                  )}
+                </div>
+                
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(!showForgotPassword)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
                 )}
               </div>
 
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
+                disabled={loading}
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50"
               >
-                {isSignUp ? "Create Account" : "Sign In"}
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : showForgotPassword ? (
+                  "Send Reset Email"
+                ) : isSignUp ? (
+                  "Create Account"
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </motion.form>
 
