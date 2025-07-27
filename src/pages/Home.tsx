@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ interface Profile {
 }
 
 const Home = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -223,7 +225,10 @@ const Home = () => {
                     <History className="w-4 h-4 mr-2" />
                     View Loan History
                   </Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button 
+                    onClick={() => navigate('/apply-loan')}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Apply for Loan
                   </Button>

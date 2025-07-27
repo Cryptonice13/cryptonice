@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      loan_requests: {
+        Row: {
+          business_name: string | null
+          business_registration_hash: string | null
+          country: string
+          created_at: string
+          duration_months: number
+          id: string
+          id_proof_hash: string | null
+          income_estimate: number | null
+          loan_amount: number
+          owner_name: string
+          purpose: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string | null
+          business_registration_hash?: string | null
+          country: string
+          created_at?: string
+          duration_months: number
+          id?: string
+          id_proof_hash?: string | null
+          income_estimate?: number | null
+          loan_amount: number
+          owner_name: string
+          purpose: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string | null
+          business_registration_hash?: string | null
+          country?: string
+          created_at?: string
+          duration_months?: number
+          id?: string
+          id_proof_hash?: string | null
+          income_estimate?: number | null
+          loan_amount?: number
+          owner_name?: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

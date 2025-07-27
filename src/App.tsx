@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import BorrowerLoanApplication from "./pages/BorrowerLoanApplication";
 
 const queryClient = new QueryClient();
 
@@ -19,15 +20,20 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/home" element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              } />
-            </Routes>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/home" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          <Route path="/apply-loan" element={
+            <ProtectedRoute>
+              <BorrowerLoanApplication />
+            </ProtectedRoute>
+          } />
+        </Routes>
           </BrowserRouter>
         </div>
       </TooltipProvider>
