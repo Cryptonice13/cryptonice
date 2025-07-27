@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { WalletConnect } from "@/components/web3/WalletConnect";
+import { UserRegistration } from "@/components/web3/UserRegistration";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -233,15 +236,25 @@ const Login = () => {
                 Welcome to Cryptonice
               </CardTitle>
               <CardDescription className="text-gray-400 text-base mt-2">
-                {isSignUp 
-                  ? "Create an account to get started with decentralized micro-lending"
-                  : "Login or create an account to get started with decentralized micro-lending"
-                }
+                Access your account with traditional login or Web3 wallet
               </CardDescription>
             </motion.div>
           </CardHeader>
 
           <CardContent className="space-y-6">
+            <Tabs defaultValue="email" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10">
+                <TabsTrigger value="email" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email
+                </TabsTrigger>
+                <TabsTrigger value="web3" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Web3
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email" className="space-y-6 mt-6">
             {/* Google Login Button */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -466,6 +479,20 @@ const Login = () => {
                 ← Back to home
               </Link>
             </motion.div>
+              </TabsContent>
+
+              <TabsContent value="web3" className="space-y-6 mt-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex flex-col items-center space-y-6"
+                >
+                  <WalletConnect />
+                  <UserRegistration />
+                </motion.div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
