@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import BorrowerLoanApplication from "./pages/BorrowerLoanApplication";
+import MyLoans from "./pages/MyLoans";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,11 @@ const App = () => (
           <Route path="/apply-loan" element={
             <ProtectedRoute>
               <BorrowerLoanApplication />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-loans" element={
+            <ProtectedRoute>
+              <MyLoans />
             </ProtectedRoute>
           } />
         </Routes>

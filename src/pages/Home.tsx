@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,10 +62,10 @@ const Home = () => {
   };
 
   const menuItems = [
-    { name: 'Dashboard', icon: HomeIcon },
-    { name: 'My Loans', icon: CreditCard },
-    { name: 'Loan History', icon: History },
-    { name: 'Knowledge Center', icon: BookOpen },
+    { name: 'Dashboard', icon: HomeIcon, href: '/home' },
+    { name: 'My Loans', icon: CreditCard, href: '/my-loans' },
+    { name: 'Loan History', icon: History, href: '/loan-history' },
+    { name: 'Knowledge Center', icon: BookOpen, href: '/knowledge' },
   ];
 
   const loanData = {
@@ -159,13 +159,15 @@ const Home = () => {
 
           <nav className="p-4 space-y-2">
             {menuItems.map((item) => (
-              <button
+              <Link
                 key={item.name}
+                to={item.href}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
+                onClick={() => setSidebarOpen(false)}
               >
                 <item.icon className="w-5 h-5 text-muted-foreground" />
                 <span>{item.name}</span>
-              </button>
+              </Link>
             ))}
           </nav>
 
