@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAccount } from 'wagmi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Menu,
@@ -21,7 +24,10 @@ import {
   AlertTriangle,
   Info,
   ChevronRight,
-  Calendar
+  Calendar,
+  Settings,
+  Wallet,
+  Copy
 } from 'lucide-react';
 
 interface Profile {
@@ -33,6 +39,8 @@ interface Profile {
 const Home = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { address, isConnected } = useAccount();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -137,8 +145,33 @@ const Home = () => {
           <Menu className="w-6 h-6" />
         </button>
         <div className="text-xl font-bold text-primary">Cryptonice</div>
-        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-          <User className="w-5 h-5 text-primary" />
+        <div className="flex items-center gap-2">
+          {/* Wallet indicator */}
+          {isConnected && address ? (
+            <div 
+              className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-lg cursor-pointer"
+              onClick={() => {
+                navigator.clipboard.writeText(address);
+                toast({ title: "Copied", description: "Address copied to clipboard" });
+              }}
+            >
+              <Wallet className="w-4 h-4 text-green-400" />
+              <span className="text-xs text-green-400 font-mono">
+                {`${address.slice(0, 4)}...${address.slice(-4)}`}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2 py-1 bg-gray-500/20 rounded-lg">
+              <Wallet className="w-4 h-4 text-gray-400" />
+              <span className="text-xs text-gray-400">No wallet</span>
+            </div>
+          )}
+          <div 
+            className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center cursor-pointer"
+            onClick={() => navigate('/profile')}
+          >
+            <User className="w-4 h-4 text-primary" />
+          </div>
         </div>
       </div>
 
@@ -169,6 +202,26 @@ const Home = () => {
                 <span>{item.name}</span>
               </Link>
             ))}
+            
+            {/* Profile and Settings */}
+            <div className="border-t border-border pt-2 mt-4 space-y-2">
+              <Link
+                to="/profile"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <User className="w-5 h-5 text-muted-foreground" />
+                <span>Profile</span>
+              </Link>
+              <Link
+                to="/settings"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Settings className="w-5 h-5 text-muted-foreground" />
+                <span>Settings</span>
+              </Link>
+            </div>
           </nav>
 
           <div className="absolute bottom-4 left-4 right-4">
@@ -188,8 +241,14 @@ const Home = () => {
                 <div className="text-sm font-medium truncate">
                   {profile?.name || user?.email?.split('@')[0] || 'User'}
                 </div>
-                <div className="text-xs text-muted-foreground truncate">
+                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
                   {profile?.email || user?.email}
+                  {/* Wallet status indicator */}
+                  {isConnected && (
+                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
+                      Web3
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
