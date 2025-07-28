@@ -58,13 +58,13 @@ const Home = () => {
     icon: CreditCard,
     href: '/my-loans'
   }, {
-    name: 'Loan History',
-    icon: History,
-    href: '/loan-history'
-  }, {
-    name: 'Knowledge Center',
+    name: 'Marketplace',
     icon: BookOpen,
-    href: '/knowledge'
+    href: '/marketplace'
+  }, {
+    name: 'Impact',
+    icon: TrendingUp,
+    href: '/impact'
   }];
   const loanData = {
     totalBorrowed: 42850.75,
@@ -189,36 +189,29 @@ const Home = () => {
                 <span>{item.name}</span>
               </Link>)}
             
-            {/* Profile and Settings */}
-            <div className="border-t border-border pt-2 mt-4 space-y-2">
-              <Link to="/profile" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
-                <User className="w-5 h-5 text-muted-foreground" />
-                <span>Profile</span>
-              </Link>
-              <Link to="/settings" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
-                <Settings className="w-5 h-5 text-muted-foreground" />
-                <span>Settings</span>
-              </Link>
-            </div>
           </nav>
 
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
-              {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
-                </div>}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">
-                  {profile?.name || user?.email?.split('@')[0] || 'User'}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+              <Link to="/profile" className="flex items-center gap-3 hover:bg-accent/50 rounded-lg p-2 transition-colors" onClick={() => setSidebarOpen(false)}>
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {profile?.name || user?.email?.split('@')[0] || 'User'}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    {profile?.email || user?.email}
+                    {isConnected && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
+                        Web3
+                      </Badge>}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                  {profile?.email || user?.email}
-                  {/* Wallet status indicator */}
-                  {isConnected && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
-                      Web3
-                    </Badge>}
-                </div>
-              </div>
+              </Link>
+              <Link to="/settings" className="p-2 rounded-lg hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
+                <Settings className="w-5 h-5 text-muted-foreground" />
+              </Link>
             </div>
           </div>
         </div>

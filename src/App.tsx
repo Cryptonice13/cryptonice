@@ -14,6 +14,7 @@ import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import BorrowerLoanApplication from "./pages/BorrowerLoanApplication";
 import MyLoans from "./pages/MyLoans";
+import LoanHistory from "./pages/LoanHistory";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,11 @@ const App = () => (
           <Route path="/my-loans" element={
             <ProtectedRoute>
               <MyLoans />
+            </ProtectedRoute>
+          } />
+          <Route path="/loan-history" element={
+            <ProtectedRoute>
+              <LoanHistory />
             </ProtectedRoute>
           } />
         </Routes>
