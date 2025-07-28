@@ -8,168 +8,166 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Menu,
-  X,
-  Home as HomeIcon, 
-  CreditCard, 
-  History,
-  BookOpen,
-  Shield,
-  User,
-  LogOut,
-  Plus,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  Info,
-  ChevronRight,
-  Calendar,
-  Settings,
-  Wallet,
-  Copy
-} from 'lucide-react';
-
+import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy } from 'lucide-react';
 interface Profile {
   name: string;
   email: string;
   avatar_url?: string;
 }
-
 const Home = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { address, isConnected } = useAccount();
-  const { toast } = useToast();
+  const {
+    user,
+    signOut
+  } = useAuth();
+  const {
+    address,
+    isConnected
+  } = useAccount();
+  const {
+    toast
+  } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
-
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('*').eq('user_id', user?.id).single();
       if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
-
       setProfile(data);
     } catch (error) {
       console.error('Error:', error);
     }
   };
-
-  const menuItems = [
-    { name: 'Dashboard', icon: HomeIcon, href: '/home' },
-    { name: 'My Loans', icon: CreditCard, href: '/my-loans' },
-    { name: 'Loan History', icon: History, href: '/loan-history' },
-    { name: 'Knowledge Center', icon: BookOpen, href: '/knowledge' },
-  ];
-
+  const menuItems = [{
+    name: 'Dashboard',
+    icon: HomeIcon,
+    href: '/home'
+  }, {
+    name: 'My Loans',
+    icon: CreditCard,
+    href: '/my-loans'
+  }, {
+    name: 'Loan History',
+    icon: History,
+    href: '/loan-history'
+  }, {
+    name: 'Knowledge Center',
+    icon: BookOpen,
+    href: '/knowledge'
+  }];
   const loanData = {
     totalBorrowed: 42850.75,
     currency: 'USD',
     btcEquivalent: 0.8542
   };
-
-  const overviewCards = [
-    { 
-      title: 'Active Loans', 
-      value: '3', 
-      subtitle: 'View details', 
-      color: 'bg-blue-500/20 border-blue-500/30 text-blue-400' 
-    },
-    { 
-      title: 'Next Repayment Due', 
-      value: '$2,150', 
-      subtitle: 'Due: Jan 15, 2024', 
-      color: 'bg-orange-500/20 border-orange-500/30 text-orange-400' 
-    },
-    { 
-      title: 'Collateral Provided', 
-      value: '$65,280', 
-      subtitle: 'BTC + ETH locked', 
-      color: 'bg-green-500/20 border-green-500/30 text-green-400' 
-    },
-    { 
-      title: 'Credit Limit / LTV', 
-      value: '68%', 
-      subtitle: '$28,150 available', 
-      color: 'bg-purple-500/20 border-purple-500/30 text-purple-400' 
-    },
-  ];
-
-  const loanActivity = [
-    { id: 'LN001', date: '2024-01-10', amount: '$15,000', status: 'Active', repayment: '2024-02-10', asset: 'BTC' },
-    { id: 'LN002', date: '2024-01-05', amount: '$8,500', status: 'Active', repayment: '2024-01-25', asset: 'ETH' },
-    { id: 'LN003', date: '2023-12-20', amount: '$12,000', status: 'Paid', repayment: '2024-01-20', asset: 'BTC' },
-    { id: 'LN004', date: '2023-12-15', amount: '$5,200', status: 'Overdue', repayment: '2024-01-15', asset: 'USDT' },
-  ];
-
+  const overviewCards = [{
+    title: 'Active Loans',
+    value: '3',
+    subtitle: 'View details',
+    color: 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+  }, {
+    title: 'Next Repayment Due',
+    value: '$2,150',
+    subtitle: 'Due: Jan 15, 2024',
+    color: 'bg-orange-500/20 border-orange-500/30 text-orange-400'
+  }, {
+    title: 'Collateral Provided',
+    value: '$65,280',
+    subtitle: 'BTC + ETH locked',
+    color: 'bg-green-500/20 border-green-500/30 text-green-400'
+  }, {
+    title: 'Credit Limit / LTV',
+    value: '68%',
+    subtitle: '$28,150 available',
+    color: 'bg-purple-500/20 border-purple-500/30 text-purple-400'
+  }];
+  const loanActivity = [{
+    id: 'LN001',
+    date: '2024-01-10',
+    amount: '$15,000',
+    status: 'Active',
+    repayment: '2024-02-10',
+    asset: 'BTC'
+  }, {
+    id: 'LN002',
+    date: '2024-01-05',
+    amount: '$8,500',
+    status: 'Active',
+    repayment: '2024-01-25',
+    asset: 'ETH'
+  }, {
+    id: 'LN003',
+    date: '2023-12-20',
+    amount: '$12,000',
+    status: 'Paid',
+    repayment: '2024-01-20',
+    asset: 'BTC'
+  }, {
+    id: 'LN004',
+    date: '2023-12-15',
+    amount: '$5,200',
+    status: 'Overdue',
+    repayment: '2024-01-15',
+    asset: 'USDT'
+  }];
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'text-green-400 bg-green-500/20';
-      case 'Paid': return 'text-blue-400 bg-blue-500/20';
-      case 'Overdue': return 'text-red-400 bg-red-500/20';
-      default: return 'text-gray-400 bg-gray-500/20';
+      case 'Active':
+        return 'text-green-400 bg-green-500/20';
+      case 'Paid':
+        return 'text-blue-400 bg-blue-500/20';
+      case 'Overdue':
+        return 'text-red-400 bg-red-500/20';
+      default:
+        return 'text-gray-400 bg-gray-500/20';
     }
   };
-
   const getCryptoIcon = (asset: string) => {
-    const iconMap: { [key: string]: string } = {
+    const iconMap: {
+      [key: string]: string;
+    } = {
       'BTC': '₿',
       'ETH': 'Ξ',
       'USDT': '$'
     };
     return iconMap[asset] || '◈';
   };
-
-  return (
-    <div className="min-h-screen bg-background text-foreground">
+  return <div className="min-h-screen bg-background text-foreground">
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-border">
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-lg hover:bg-accent"
-        >
+        <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-accent">
           <Menu className="w-6 h-6" />
         </button>
         <div className="text-xl font-bold text-primary">Cryptonice</div>
         <div className="flex items-center gap-2">
           {/* Wallet indicator */}
-          {isConnected && address ? (
-            <div 
-              className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-lg cursor-pointer"
-              onClick={() => {
-                navigator.clipboard.writeText(address);
-                toast({ title: "Copied", description: "Address copied to clipboard" });
-              }}
-            >
+          {isConnected && address ? <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-lg cursor-pointer" onClick={() => {
+          navigator.clipboard.writeText(address);
+          toast({
+            title: "Copied",
+            description: "Address copied to clipboard"
+          });
+        }}>
               <Wallet className="w-4 h-4 text-green-400" />
               <span className="text-xs text-green-400 font-mono">
                 {`${address.slice(0, 4)}...${address.slice(-4)}`}
               </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 px-2 py-1 bg-gray-500/20 rounded-lg">
+            </div> : <div className="flex items-center gap-1 px-2 py-1 bg-gray-500/20 rounded-lg">
               <Wallet className="w-4 h-4 text-gray-400" />
               <span className="text-xs text-gray-400">No wallet</span>
-            </div>
-          )}
-          <div 
-            className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center cursor-pointer"
-            onClick={() => navigate('/profile')}
-          >
+            </div>}
+          <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center cursor-pointer" onClick={() => navigate('/profile')}>
             <User className="w-4 h-4 text-primary" />
           </div>
         </div>
@@ -177,47 +175,27 @@ const Home = () => {
 
       <div className="flex">
         {/* Sidebar */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div className="text-xl font-bold text-primary">Cryptonice</div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1 rounded-lg hover:bg-accent"
-            >
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-lg hover:bg-accent">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           <nav className="p-4 space-y-2">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
-                onClick={() => setSidebarOpen(false)}
-              >
+            {menuItems.map(item => <Link key={item.name} to={item.href} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
                 <item.icon className="w-5 h-5 text-muted-foreground" />
                 <span>{item.name}</span>
-              </Link>
-            ))}
+              </Link>)}
             
             {/* Profile and Settings */}
             <div className="border-t border-border pt-2 mt-4 space-y-2">
-              <Link
-                to="/profile"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <Link to="/profile" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
                 <User className="w-5 h-5 text-muted-foreground" />
                 <span>Profile</span>
               </Link>
-              <Link
-                to="/settings"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <Link to="/settings" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
                 <Settings className="w-5 h-5 text-muted-foreground" />
                 <span>Settings</span>
               </Link>
@@ -226,17 +204,9 @@ const Home = () => {
 
           <div className="absolute bottom-4 left-4 right-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
-              {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-primary" />
-                </div>
-              )}
+                </div>}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
                   {profile?.name || user?.email?.split('@')[0] || 'User'}
@@ -244,11 +214,9 @@ const Home = () => {
                 <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
                   {profile?.email || user?.email}
                   {/* Wallet status indicator */}
-                  {isConnected && (
-                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
+                  {isConnected && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
                       Web3
-                    </Badge>
-                  )}
+                    </Badge>}
                 </div>
               </div>
             </div>
@@ -256,21 +224,18 @@ const Home = () => {
         </div>
 
         {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        {sidebarOpen && <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           <div className="p-4 lg:p-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-7xl mx-auto space-y-8"
-            >
+            <motion.div initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} className="max-w-7xl mx-auto space-y-8">
               {/* Main Header */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
@@ -282,14 +247,8 @@ const Home = () => {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="outline" size="sm">
-                    <History className="w-4 h-4 mr-2" />
-                    View Loan History
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/apply-loan')}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
+                  
+                  <Button onClick={() => navigate('/apply-loan')} className="bg-primary text-primary-foreground hover:bg-primary/90">
                     <Plus className="w-4 h-4 mr-2" />
                     Apply for Loan
                   </Button>
@@ -319,13 +278,15 @@ const Home = () => {
 
               {/* Overview Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {overviewCards.map((card, index) => (
-                  <motion.div
-                    key={card.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
+                {overviewCards.map((card, index) => <motion.div key={card.title} initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} transition={{
+                delay: index * 0.1
+              }}>
                     <Card className={`${card.color} border cursor-pointer hover:scale-105 transition-transform`}>
                       <CardContent className="p-6">
                         <div className="text-sm font-medium mb-2">{card.title}</div>
@@ -336,8 +297,7 @@ const Home = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  </motion.div>
-                ))}
+                  </motion.div>)}
               </div>
 
               {/* Loan Activity */}
@@ -362,8 +322,7 @@ const Home = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {loanActivity.map((loan) => (
-                          <tr key={loan.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
+                        {loanActivity.map(loan => <tr key={loan.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
                             <td className="py-4 font-mono text-sm">{loan.id}</td>
                             <td className="py-4 text-sm">{loan.date}</td>
                             <td className="py-4 font-semibold">{loan.amount}</td>
@@ -379,8 +338,7 @@ const Home = () => {
                               </span>
                             </td>
                             <td className="py-4 text-sm">{loan.repayment}</td>
-                          </tr>
-                        ))}
+                          </tr>)}
                       </tbody>
                     </table>
                   </div>
@@ -443,8 +401,6 @@ const Home = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Home;
