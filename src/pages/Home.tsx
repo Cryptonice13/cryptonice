@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy } from 'lucide-react';
-import { WalletConnect } from '@/components/web3/WalletConnect';
+import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy, ExternalLink } from 'lucide-react';
 interface Profile {
   name: string;
   email: string;
@@ -25,16 +25,29 @@ const Home = () => {
     address,
     isConnected
   } = useAccount();
+  const { connect, connectors, isPending, error: connectError } = useConnect();
+  const { disconnect } = useDisconnect();
   const {
     toast
   } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [walletPopoverOpen, setWalletPopoverOpen] = useState(false);
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (connectError) {
+      toast({
+        title: "Connection Error",
+        description: connectError.message,
+        variant: "destructive"
+      });
+    }
+  }, [connectError, toast]);
   const fetchProfile = async () => {
     try {
       const {
@@ -177,11 +190,109 @@ const Home = () => {
       <div className="flex">
         {/* Sidebar */}
         <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex items-center justify-between p-6 border-b border-border">
-            <div className="text-xl font-bold text-primary">Cryptonice</div>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-lg hover:bg-accent">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="flex flex-col p-6 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-xl font-bold text-primary">Cryptonice</div>
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-lg hover:bg-accent">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Wallet Connect Button */}
+            <Popover open={walletPopoverOpen} onOpenChange={setWalletPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant={isConnected && address ? "default" : "outline"} 
+                  className={`w-full justify-start ${isConnected && address ? 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30 text-green-400' : ''}`}
+                >
+                  <Wallet className="w-4 h-4 mr-2" />
+                  {isConnected && address 
+                    ? `${address.slice(0, 6)}...${address.slice(-4)}` 
+                    : 'Connect Wallet'
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" side="right" align="start">
+                <div className="p-4">
+                  {isConnected && address ? (
+                    // Connected state
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-5 h-5 text-green-400" />
+                        <span className="font-medium text-green-400">Wallet Connected</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Address:</span>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="secondary" 
+                            className="bg-green-500/10 text-green-400 border-green-500/20 cursor-pointer"
+                            onClick={() => {
+                              navigator.clipboard.writeText(address);
+                              toast({
+                                title: "Copied",
+                                description: "Address copied to clipboard"
+                              });
+                            }}
+                          >
+                            {`${address.slice(0, 6)}...${address.slice(-4)}`}
+                          </Badge>
+                          <a
+                            href={`https://etherscan.io/address/${address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-400 hover:text-green-300"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          disconnect();
+                          setWalletPopoverOpen(false);
+                        }}
+                        variant="outline"
+                        className="w-full border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                      >
+                        Disconnect Wallet
+                      </Button>
+                    </div>
+                  ) : (
+                    // Disconnected state
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-5 h-5" />
+                        <span className="font-medium">Connect Your Wallet</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Choose your preferred wallet to connect
+                      </p>
+                      <div className="space-y-2">
+                        {connectors.map((connector) => (
+                          <Button
+                            key={connector.uid}
+                            onClick={() => {
+                              connect({ connector });
+                              setWalletPopoverOpen(false);
+                            }}
+                            disabled={isPending}
+                            variant="outline"
+                            className="w-full justify-start h-12 hover:bg-accent"
+                          >
+                            <Wallet className="w-5 h-5 mr-3" />
+                            {connector.name}
+                            {isPending && (
+                              <div className="ml-auto w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <nav className="p-4 space-y-2">
@@ -229,10 +340,6 @@ const Home = () => {
             opacity: 1,
             y: 0
           }} className="max-w-7xl mx-auto space-y-8">
-              {/* Wallet Connection Section */}
-              <div className="hidden lg:block">
-                <WalletConnect />
-              </div>
 
               {/* Main Header */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
