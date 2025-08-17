@@ -19,7 +19,7 @@ const Footer = () => {
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-medium">Trading</h4>
+              <h4 className="font-medium">Staking</h4>
               <ul className="space-y-2">
                 <li>
                   <a href="#features" className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -28,7 +28,7 @@ const Footer = () => {
                 </li>
                 <li>
                   <a href="#pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                    Trading Fees
+                    Lending & Browning
                   </a>
                 </li>
               </ul>
@@ -39,7 +39,7 @@ const Footer = () => {
               <ul className="space-y-2">
                 <li>
                   <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                    Trading Guide
+                     Lending & BrowningGuide
                   </a>
                 </li>
                 <li>
