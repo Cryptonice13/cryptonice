@@ -7,7 +7,7 @@ export const FeaturesSection = () => {
       {/* Header Section */}
       <div className="max-w-2xl mb-20">
         <h2 className="text-5xl md:text-6xl font-normal mb-6 tracking-tight text-left">
-          Advanced Trading
+          Advanced Lending & Borrowing
           <br />
           <span className="text-gradient font-medium">Features & Tools</span>
         </h2>
