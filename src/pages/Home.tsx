@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy } from 'lucide-react';
+import { WalletConnect } from '@/components/web3/WalletConnect';
 interface Profile {
   name: string;
   email: string;
@@ -191,28 +192,27 @@ const Home = () => {
             
           </nav>
 
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-              <Link to="/profile" className="flex items-center gap-3 hover:bg-accent/50 rounded-lg p-2 transition-colors" onClick={() => setSidebarOpen(false)}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary" />
-                  </div>}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {profile?.name || user?.email?.split('@')[0] || 'User'}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                    {profile?.email || user?.email}
-                    {isConnected && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
-                        Web3
-                      </Badge>}
-                  </div>
+          <div className="absolute bottom-4 left-4 right-4 space-y-2">
+            <Link to="/settings" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
+              <Settings className="w-5 h-5 text-muted-foreground" />
+              <span>Settings</span>
+            </Link>
+            <Link to="/profile" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">
+                  {profile?.name || user?.email?.split('@')[0] || 'User'}
                 </div>
-              </Link>
-              <Link to="/settings" className="p-2 rounded-lg hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
-                <Settings className="w-5 h-5 text-muted-foreground" />
-              </Link>
-            </div>
+                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                  {profile?.email || user?.email}
+                  {isConnected && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs px-1 py-0">
+                      Web3
+                    </Badge>}
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -229,6 +229,11 @@ const Home = () => {
             opacity: 1,
             y: 0
           }} className="max-w-7xl mx-auto space-y-8">
+              {/* Wallet Connection Section */}
+              <div className="hidden lg:block">
+                <WalletConnect />
+              </div>
+
               {/* Main Header */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
@@ -292,6 +297,55 @@ const Home = () => {
                     </Card>
                   </motion.div>)}
               </div>
+
+              {/* Assets to Borrow Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Assets to Borrow
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { name: 'Bitcoin', symbol: 'BTC', icon: '₿', apy: '8.5%', maxLtv: '70%', color: 'text-orange-400' },
+                      { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', apy: '7.2%', maxLtv: '75%', color: 'text-blue-400' },
+                      { name: 'USDT', symbol: 'USDT', icon: '$', apy: '6.8%', maxLtv: '80%', color: 'text-green-400' },
+                      { name: 'Solana', symbol: 'SOL', icon: '◈', apy: '9.1%', maxLtv: '65%', color: 'text-purple-400' },
+                      { name: 'Cardano', symbol: 'ADA', icon: '₳', apy: '8.8%', maxLtv: '60%', color: 'text-cyan-400' },
+                      { name: 'Polygon', symbol: 'MATIC', icon: '⬟', apy: '7.9%', maxLtv: '65%', color: 'text-violet-400' }
+                    ].map((asset) => (
+                      <Card key={asset.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <span className={`text-2xl ${asset.color}`}>{asset.icon}</span>
+                              <div>
+                                <div className="font-medium">{asset.name}</div>
+                                <div className="text-sm text-muted-foreground">{asset.symbol}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">APY</span>
+                              <span className="font-medium text-green-400">{asset.apy}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Max LTV</span>
+                              <span className="font-medium">{asset.maxLtv}</span>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full mt-3">
+                            Borrow {asset.symbol}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Loan Activity */}
               <Card>
