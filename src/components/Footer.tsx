@@ -39,7 +39,7 @@ const Footer = () => {
               <ul className="space-y-2">
                 <li>
                   <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                     Lending & BrowningGuide
+                     Lending & Browning Guide
                   </a>
                 </li>
                 <li>
