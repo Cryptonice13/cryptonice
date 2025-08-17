@@ -454,6 +454,56 @@ const Home = () => {
                 </CardContent>
               </Card>
 
+              {/* Collateral Asset Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Collateral Asset
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { name: 'Bitcoin', symbol: 'BTC', icon: '₿', deposited: '2.45', value: '$65,280', ltv: '68%', color: 'text-orange-400' },
+                      { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', deposited: '12.8', value: '$28,450', ltv: '72%', color: 'text-blue-400' },
+                      { name: 'USDT', symbol: 'USDT', icon: '$', deposited: '15,000', value: '$15,000', ltv: '80%', color: 'text-green-400' }
+                    ].map((asset) => (
+                      <Card key={asset.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors border-accent">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <span className={`text-2xl ${asset.color}`}>{asset.icon}</span>
+                              <div>
+                                <div className="font-medium">{asset.name}</div>
+                                <div className="text-sm text-muted-foreground">{asset.symbol}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Deposited</span>
+                              <span className="font-medium">{asset.deposited} {asset.symbol}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Value</span>
+                              <span className="font-medium text-green-400">{asset.value}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Current LTV</span>
+                              <span className="font-medium">{asset.ltv}</span>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full mt-3">
+                            Manage {asset.symbol}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Loan Activity */}
               <Card>
                 <CardHeader>
