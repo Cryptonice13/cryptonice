@@ -12,7 +12,7 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
-import BorrowerLoanApplication from "./pages/BorrowerLoanApplication";
+import LoanApplication from "./pages/LoanApplication";
 import MyLoans from "./pages/MyLoans";
 import LoanHistory from "./pages/LoanHistory";
 
@@ -47,7 +47,7 @@ const App = () => (
           } />
           <Route path="/apply-loan" element={
             <ProtectedRoute>
-              <BorrowerLoanApplication />
+              <LoanApplication />
             </ProtectedRoute>
           } />
           <Route path="/my-loans" element={
