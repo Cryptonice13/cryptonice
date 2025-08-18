@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, CheckCircle, DollarSign, Shield, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import Navigation from "@/components/Navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoanFormData {
   loanAmount: string;
@@ -75,8 +75,32 @@ const LoanApplication = () => {
   const submitApplication = async () => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to submit a loan application.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('loan_requests')
+        .insert({
+          user_id: user.id,
+          loan_amount: parseFloat(formData.loanAmount),
+          duration_months: parseInt(formData.duration),
+          interest_type: formData.interestType,
+          collateral_type: formData.collateralType,
+          asset_name: formData.assetName,
+          collateral_value: parseFloat(formData.collateralValue)
+        });
+
+      if (error) {
+        throw error;
+      }
       
       toast({
         title: "Application Submitted",
@@ -279,7 +303,6 @@ const LoanApplication = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
