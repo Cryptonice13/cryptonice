@@ -312,7 +312,7 @@ const LoanApplication = () => {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/home")}
               className="mb-4 flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />

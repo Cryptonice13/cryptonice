@@ -111,7 +111,7 @@ export default function MyLoans() {
       <div className="max-w-6xl mx-auto">
         <Button
           variant="ghost"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/home")}
           className="mb-6 flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
