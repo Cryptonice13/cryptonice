@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Eye, X, CreditCard, Calendar, DollarSign, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-
 interface LoanRequest {
   id: string;
   loan_amount: number;
@@ -26,7 +25,6 @@ interface LoanRequest {
   business_registration_hash?: string;
   updated_at: string;
 }
-
 const statusColors = {
   'Pending Review': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   'Approved': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -34,29 +32,30 @@ const statusColors = {
   'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
   'Cancelled': 'bg-gray-500/20 text-gray-400 border-gray-500/30'
 };
-
 export default function MyLoans() {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const [loans, setLoans] = useState<LoanRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [selectedLoan, setSelectedLoan] = useState<LoanRequest | null>(null);
-
   useEffect(() => {
     if (user) {
       fetchLoans();
     }
   }, [user]);
-
   const fetchLoans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('loan_requests')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('loan_requests').select('*').eq('user_id', user?.id).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setLoans(data || []);
     } catch (error) {
@@ -70,22 +69,18 @@ export default function MyLoans() {
       setLoading(false);
     }
   };
-
   const cancelLoan = async (loanId: string) => {
     try {
-      const { error } = await supabase
-        .from('loan_requests')
-        .update({ status: 'Cancelled' })
-        .eq('id', loanId)
-        .eq('user_id', user?.id);
-
+      const {
+        error
+      } = await supabase.from('loan_requests').update({
+        status: 'Cancelled'
+      }).eq('id', loanId).eq('user_id', user?.id);
       if (error) throw error;
-
       toast({
         title: "Success",
         description: "Loan application cancelled successfully"
       });
-
       fetchLoans();
     } catch (error) {
       console.error('Error cancelling loan:', error);
@@ -96,28 +91,21 @@ export default function MyLoans() {
       });
     }
   };
-
   const filteredLoans = loans.filter(loan => {
     if (filter === 'All') return true;
     return loan.status === filter;
   });
-
   const activeLoan = loans.find(loan => loan.status === 'Funded');
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white p-6">
+    return <div className="min-h-screen bg-black text-white p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-black text-white p-6">
+  return <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <h1 className="text-3xl font-bold mb-4 sm:mb-0">My Loan Applications</h1>
@@ -139,8 +127,7 @@ export default function MyLoans() {
           </div>
         </div>
 
-        {activeLoan && (
-          <Card className="bg-[#111] border-green-500/30 mb-8 hover:shadow-lg hover:shadow-green-400/20 transition-all duration-300">
+        {activeLoan && <Card className="bg-[#111] border-green-500/30 mb-8 hover:shadow-lg hover:shadow-green-400/20 transition-all duration-300">
             <CardHeader>
               <CardTitle className="text-green-400 flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
@@ -186,12 +173,10 @@ export default function MyLoans() {
                 </Dialog>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         <div className="space-y-4">
-          {filteredLoans.length === 0 ? (
-            <Card className="bg-[#111] border-gray-700">
+          {filteredLoans.length === 0 ? <Card className="bg-[#111] border-gray-700">
               <CardContent className="text-center py-12">
                 <FileText className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                 <p className="text-gray-400 text-lg">No loan applications found</p>
@@ -199,10 +184,7 @@ export default function MyLoans() {
                   {filter !== 'All' ? `No ${filter.toLowerCase()} applications` : 'Apply for your first loan to get started'}
                 </p>
               </CardContent>
-            </Card>
-          ) : (
-            filteredLoans.map((loan) => (
-              <Card key={loan.id} className="bg-[#111] border-gray-700 hover:shadow-lg hover:shadow-green-400/10 transition-all duration-300">
+            </Card> : filteredLoans.map(loan => <Card key={loan.id} className="bg-[#111] border-gray-700 hover:shadow-lg hover:shadow-green-400/10 transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -241,40 +223,25 @@ export default function MyLoans() {
                       <div className="flex gap-2">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="border-gray-600 hover:shadow-lg hover:shadow-blue-400/30"
-                              onClick={() => setSelectedLoan(loan)}
-                            >
+                            <Button variant="outline" size="sm" className="border-gray-600 hover:shadow-lg hover:shadow-blue-400/30" onClick={() => setSelectedLoan(loan)}>
                               <Eye className="w-4 h-4 mr-1" />
                               View
                             </Button>
                           </DialogTrigger>
                         </Dialog>
                         
-                        {loan.status === 'Pending Review' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="border-red-600 text-red-400 hover:bg-red-600/10 hover:shadow-lg hover:shadow-red-400/30"
-                            onClick={() => cancelLoan(loan.id)}
-                          >
+                        {loan.status === 'Pending Review' && <Button variant="outline" size="sm" className="border-red-600 text-red-400 hover:bg-red-600/10 hover:shadow-lg hover:shadow-red-400/30" onClick={() => cancelLoan(loan.id)}>
                             <X className="w-4 h-4 mr-1" />
                             Cancel
-                          </Button>
-                        )}
+                          </Button>}
                       </div>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))
-          )}
+              </Card>)}
         </div>
 
-        {selectedLoan && (
-          <Dialog open={!!selectedLoan} onOpenChange={() => setSelectedLoan(null)}>
+        {selectedLoan && <Dialog open={!!selectedLoan} onOpenChange={() => setSelectedLoan(null)}>
             <DialogContent className="bg-[#111] border-gray-700 max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-xl">Loan Application Details</DialogTitle>
@@ -309,48 +276,25 @@ export default function MyLoans() {
                         <p className="text-gray-400 text-sm">Owner Name</p>
                         <p>{selectedLoan.owner_name}</p>
                       </div>
-                      {selectedLoan.business_name && (
-                        <div>
+                      {selectedLoan.business_name && <div>
                           <p className="text-gray-400 text-sm">Business Name</p>
                           <p>{selectedLoan.business_name}</p>
-                        </div>
-                      )}
+                        </div>}
                       <div>
                         <p className="text-gray-400 text-sm">Country</p>
                         <p>{selectedLoan.country}</p>
                       </div>
-                      {selectedLoan.income_estimate && (
-                        <div>
+                      {selectedLoan.income_estimate && <div>
                           <p className="text-gray-400 text-sm">Income Estimate</p>
                           <p>${selectedLoan.income_estimate.toLocaleString()}</p>
-                        </div>
-                      )}
+                        </div>}
                     </div>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="font-semibold text-green-400 mb-3">Purpose</h3>
-                  <p className="text-gray-300 bg-gray-800/50 p-3 rounded-lg">{selectedLoan.purpose}</p>
-                </div>
                 
-                <div>
-                  <h3 className="font-semibold text-green-400 mb-3">Documents</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                      <span>ID Proof</span>
-                      <span className={selectedLoan.id_proof_hash ? "text-green-400" : "text-gray-500"}>
-                        {selectedLoan.id_proof_hash ? "Uploaded" : "Not provided"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                      <span>Business Registration</span>
-                      <span className={selectedLoan.business_registration_hash ? "text-green-400" : "text-gray-500"}>
-                        {selectedLoan.business_registration_hash ? "Uploaded" : "Not provided"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                
+                
                 
                 <div className="text-xs text-gray-500 pt-4 border-t border-gray-700">
                   <p>Application ID: {selectedLoan.id}</p>
@@ -359,9 +303,7 @@ export default function MyLoans() {
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
-        )}
+          </Dialog>}
       </div>
-    </div>
-  );
+    </div>;
 }
