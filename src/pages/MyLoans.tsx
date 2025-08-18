@@ -8,8 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, X, CreditCard, Calendar, DollarSign, FileText } from 'lucide-react';
+import { Eye, X, CreditCard, Calendar, DollarSign, FileText, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 interface LoanRequest {
   id: string;
   loan_amount: number;
@@ -39,6 +40,7 @@ export default function MyLoans() {
   const {
     toast
   } = useToast();
+  const navigate = useNavigate();
   const [loans, setLoans] = useState<LoanRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
@@ -107,6 +109,14 @@ export default function MyLoans() {
   }
   return <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-6xl mx-auto">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/")}
+          className="mb-6 flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Button>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <h1 className="text-3xl font-bold mb-4 sm:mb-0">My Loan Applications</h1>
           

@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, CheckCircle, DollarSign, Shield, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface LoanFormData {
   loanAmount: string;
@@ -22,6 +23,7 @@ const LoanApplication = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState<LoanFormData>({
     loanAmount: '',
@@ -308,6 +310,14 @@ const LoanApplication = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="mb-4 flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
             <h1 className="text-3xl font-bold mb-2">Loan Application</h1>
             <p className="text-muted-foreground">Complete the form below to submit your loan application</p>
           </div>
