@@ -202,8 +202,11 @@ const Home = () => {
             <Popover open={walletPopoverOpen} onOpenChange={setWalletPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button 
-                  variant={isConnected && address ? "default" : "outline"} 
-                  className={`w-full justify-start ${isConnected && address ? 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30 text-green-400' : ''}`}
+                  className={`w-full justify-start font-bold ${
+                    isConnected && address 
+                      ? 'bg-green-500 hover:bg-green-400 text-black' 
+                      : 'bg-green-500 hover:bg-green-400 text-black'
+                  }`}
                 >
                   <Wallet className="w-4 h-4 mr-2" />
                   {isConnected && address 
@@ -293,16 +296,41 @@ const Home = () => {
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Authentication Buttons - Show only when not authenticated */}
+            {!user && (
+              <div className="space-y-3 mt-4">
+                <Button 
+                  onClick={() => navigate('/login')}
+                  className="w-full justify-start bg-[#222] border border-gray-600 text-white hover:border-green-400"
+                  variant="outline"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+                <Button 
+                  onClick={() => navigate('/login')}
+                  className="w-full justify-start bg-[#222] border border-gray-600 text-white hover:border-green-400"
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </div>
 
-          <nav className="p-4 space-y-2">
+          {user && (
+            <nav className="p-4 space-y-2">
             {menuItems.map(item => <Link key={item.name} to={item.href} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
                 <item.icon className="w-5 h-5 text-muted-foreground" />
                 <span>{item.name}</span>
               </Link>)}
             
           </nav>
+          )}
 
+          {user && (
           <div className="absolute bottom-4 left-4 right-4 space-y-2">
             <Link to="/settings" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
               <Settings className="w-5 h-5 text-muted-foreground" />
@@ -325,6 +353,7 @@ const Home = () => {
               </div>
             </Link>
           </div>
+          )}
         </div>
 
         {/* Overlay for mobile */}
@@ -333,13 +362,14 @@ const Home = () => {
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           <div className="p-4 lg:p-8">
-            <motion.div initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} className="max-w-7xl mx-auto space-y-8">
+            {user ? (
+              <motion.div initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} className="max-w-7xl mx-auto space-y-8">
 
               {/* Main Header */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -602,6 +632,33 @@ const Home = () => {
                 </div>
               </div>
             </motion.div>
+            ) : (
+              // Unauthenticated user view
+              <div className="max-w-4xl mx-auto text-center py-20">
+                <h1 className="text-4xl font-bold mb-4">Welcome to Cryptonice</h1>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Connect your wallet or sign in to start your crypto lending journey
+                </p>
+                <div className="space-y-4 max-w-sm mx-auto">
+                  <Button 
+                    onClick={() => navigate('/login')}
+                    className="w-full bg-[#222] border border-gray-600 text-white hover:border-green-400"
+                    variant="outline"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Login with Email
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/login')}
+                    className="w-full bg-[#222] border border-gray-600 text-white hover:border-green-400"
+                    variant="outline"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Sign Up
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

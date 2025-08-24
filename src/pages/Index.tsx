@@ -71,7 +71,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="button-gradient"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
             >
               Apply for Loan
             </Button>
@@ -79,7 +79,7 @@ const Index = () => {
               size="lg" 
               variant="link" 
               className="text-white"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
             >
               Become a Lender <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
@@ -146,7 +146,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="button-gradient"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
             >
               Get Started
               <ArrowRight className="ml-2 w-4 h-4" />
@@ -155,7 +155,7 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               className="border-white/20 hover:bg-white/10"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
             >
               View Marketplace
             </Button>
