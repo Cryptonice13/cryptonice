@@ -362,8 +362,7 @@ const Home = () => {
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           <div className="p-4 lg:p-8">
-            {user ? (
-              <motion.div initial={{
+            <motion.div initial={{
                 opacity: 0,
                 y: 20
               }} animate={{
@@ -632,33 +631,6 @@ const Home = () => {
                 </div>
               </div>
             </motion.div>
-            ) : (
-              // Unauthenticated user view
-              <div className="max-w-4xl mx-auto text-center py-20">
-                <h1 className="text-4xl font-bold mb-4">Welcome to Cryptonice</h1>
-                <p className="text-lg text-muted-foreground mb-8">
-                  Connect your wallet or sign in to start your crypto lending journey
-                </p>
-                <div className="space-y-4 max-w-sm mx-auto">
-                  <Button 
-                    onClick={() => navigate('/login')}
-                    className="w-full bg-[#222] border border-gray-600 text-white hover:border-green-400"
-                    variant="outline"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Login with Email
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/login')}
-                    className="w-full bg-[#222] border border-gray-600 text-white hover:border-green-400"
-                    variant="outline"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Sign Up
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
