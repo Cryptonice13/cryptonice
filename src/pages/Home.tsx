@@ -86,17 +86,7 @@ const Home = () => {
     btcEquivalent: 0.8542
   };
   const overviewCards = [{
-    title: 'Active Loans',
-    value: '3',
-    subtitle: 'View details',
-    color: 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-  }, {
-    title: 'Next Repayment Due',
-    value: '$2,150',
-    subtitle: 'Due: Jan 15, 2024',
-    color: 'bg-orange-500/20 border-orange-500/30 text-orange-400'
-  }, {
-    title: 'Collateral Provided',
+    title: 'Collateral Value',
     value: '$65,280',
     subtitle: 'BTC + ETH locked',
     color: 'bg-green-500/20 border-green-500/30 text-green-400'
@@ -320,15 +310,13 @@ const Home = () => {
             )}
           </div>
 
-          {user && (
-            <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2">
             {menuItems.map(item => <Link key={item.name} to={item.href} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-accent transition-colors" onClick={() => setSidebarOpen(false)}>
                 <item.icon className="w-5 h-5 text-muted-foreground" />
                 <span>{item.name}</span>
               </Link>)}
             
           </nav>
-          )}
 
           {user && (
           <div className="absolute bottom-4 left-4 right-4 space-y-2">
@@ -411,7 +399,7 @@ const Home = () => {
               </Card>
 
               {/* Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {overviewCards.map((card, index) => <motion.div key={card.title} initial={{
                 opacity: 0,
                 y: 20
