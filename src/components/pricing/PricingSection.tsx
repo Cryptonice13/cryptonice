@@ -44,7 +44,7 @@ const PricingTier = ({
         </ul>
         <Button 
           className="button-gradient w-full"
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/home')}
         >
           Get Started
         </Button>

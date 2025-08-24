@@ -80,7 +80,7 @@ const Navigation = () => {
               </a>
             ))}
             <Button 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
               size="sm"
               className="button-gradient"
             >
@@ -117,7 +117,7 @@ const Navigation = () => {
                   <Button 
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      navigate('/login');
+                      navigate('/home');
                     }}
                     className="button-gradient mt-4"
                   >
