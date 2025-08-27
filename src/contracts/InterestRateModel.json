@@ -1,0 +1,27 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {"name": "cash", "type": "uint256"},
+        {"name": "borrows", "type": "uint256"},
+        {"name": "reserves", "type": "uint256"}
+      ],
+      "name": "getBorrowRate",
+      "outputs": [{"name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {"name": "cash", "type": "uint256"},
+        {"name": "borrows", "type": "uint256"},
+        {"name": "reserves", "type": "uint256"},
+        {"name": "reserveFactorMantissa", "type": "uint256"}
+      ],
+      "name": "getSupplyRate",
+      "outputs": [{"name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+}

@@ -51,6 +51,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "ethers": "^6.15.0",
     "framer-motion": "^11.11.17",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.451.0",
@@ -68,7 +69,8 @@
     "vaul": "^0.9.3",
     "viem": "^2.33.1",
     "wagmi": "^2.16.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
