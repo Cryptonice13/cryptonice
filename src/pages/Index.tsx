@@ -73,7 +73,7 @@ const Index = () => {
               className="button-gradient"
               onClick={() => navigate('/home')}
             >
-              Apply for Loan
+              Let Borrow
             </Button>
             <Button 
               size="lg" 

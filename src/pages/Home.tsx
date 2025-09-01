@@ -372,7 +372,7 @@ const Home = () => {
                   
                   <Button onClick={() => navigate('/apply-loan')} className="bg-primary text-primary-foreground hover:bg-primary/90">
                     <Plus className="w-4 h-4 mr-2" />
-                    Apply for Loan
+                    Let Borrow
                   </Button>
                 </div>
               </div>
