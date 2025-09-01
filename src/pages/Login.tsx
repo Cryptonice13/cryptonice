@@ -473,7 +473,7 @@ const Login = () => {
               className="text-center"
             >
               <Link
-                to="/"
+                to="/home"
                 className="text-gray-400 hover:text-white text-sm transition-colors"
               >
                 ← Back to home
