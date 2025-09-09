@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useLendingStore } from '@/state/lendingStore';
+import { useLendingPool } from '@/hooks/useLendingPool';
 import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy, ExternalLink } from 'lucide-react';
 interface Profile {
   name: string;
@@ -33,11 +35,32 @@ const Home = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [walletPopoverOpen, setWalletPopoverOpen] = useState(false);
+  
+  // Real-time lending data
+  const { 
+    totalCollateral, 
+    totalDebt, 
+    healthFactor, 
+    availableBorrows, 
+    liquidationThreshold,
+    ltv,
+    userPositions,
+    isLoading: lendingLoading 
+  } = useLendingStore();
+  
+  const { getUserAccountData } = useLendingPool();
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
+
+  // Fetch real-time lending data when wallet is connected
+  useEffect(() => {
+    if (isConnected && address) {
+      getUserAccountData();
+    }
+  }, [isConnected, address, getUserAccountData]);
 
   useEffect(() => {
     if (connectError) {
@@ -80,51 +103,35 @@ const Home = () => {
     icon: TrendingUp,
     href: '/impact'
   }];
+  // Real-time calculated values
   const loanData = {
-    totalBorrowed: 42850.75,
+    totalBorrowed: parseFloat(totalDebt),
     currency: 'USD',
-    btcEquivalent: 0.8542
+    btcEquivalent: parseFloat(totalDebt) / 65000 // Approximate BTC price
   };
+  
   const overviewCards = [{
     title: 'Collateral Value',
-    value: '$65,280',
-    subtitle: 'BTC + ETH locked',
+    value: isConnected ? `$${parseFloat(totalCollateral).toLocaleString()}` : '$0',
+    subtitle: userPositions.length > 0 ? `${userPositions.length} assets locked` : 'No collateral',
     color: 'bg-green-500/20 border-green-500/30 text-green-400'
   }, {
-    title: 'Credit Limit / LTV',
-    value: '68%',
-    subtitle: '$28,150 available',
-    color: 'bg-purple-500/20 border-purple-500/30 text-purple-400'
+    title: 'Health Factor',
+    value: isConnected ? parseFloat(healthFactor).toFixed(2) : '0.00',
+    subtitle: `LTV: ${isConnected ? parseFloat(ltv).toFixed(1) : '0.0'}%`,
+    color: parseFloat(healthFactor) > 1.5 ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
   }];
-  const loanActivity = [{
-    id: 'LN001',
-    date: '2024-01-10',
-    amount: '$15,000',
-    status: 'Active',
-    repayment: '2024-02-10',
-    asset: 'BTC'
-  }, {
-    id: 'LN002',
-    date: '2024-01-05',
-    amount: '$8,500',
-    status: 'Active',
-    repayment: '2024-01-25',
-    asset: 'ETH'
-  }, {
-    id: 'LN003',
-    date: '2023-12-20',
-    amount: '$12,000',
-    status: 'Paid',
-    repayment: '2024-01-20',
-    asset: 'BTC'
-  }, {
-    id: 'LN004',
-    date: '2023-12-15',
-    amount: '$5,200',
-    status: 'Overdue',
-    repayment: '2024-01-15',
-    asset: 'USDT'
-  }];
+  // Real-time loan activity from user positions
+  const loanActivity = userPositions
+    .filter(position => parseFloat(position.borrowed) > 0)
+    .map((position, index) => ({
+      id: `LN${String(index + 1).padStart(3, '0')}`,
+      date: new Date().toISOString().split('T')[0], // Current date as placeholder
+      amount: `$${parseFloat(position.borrowed).toLocaleString()}`,
+      status: 'Active',
+      repayment: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+      asset: position.token.symbol
+    }));
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active':
@@ -384,15 +391,20 @@ const Home = () => {
                     <div>
                       <div className="text-sm text-muted-foreground mb-2">Total Borrowed</div>
                       <div className="text-4xl lg:text-5xl font-bold text-primary mb-2">
-                        ${loanData.totalBorrowed.toLocaleString()}
+                        {isConnected ? `$${loanData.totalBorrowed.toLocaleString()}` : '$0.00'}
                       </div>
                       <div className="text-muted-foreground">
-                        ≈ {loanData.btcEquivalent} BTC
+                        ≈ {isConnected ? loanData.btcEquivalent.toFixed(4) : '0.0000'} BTC
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-muted-foreground mb-2">Last updated</div>
-                      <div className="text-sm">5 mins ago</div>
+                      <div className="text-sm text-muted-foreground mb-2">Available to borrow</div>
+                      <div className="text-sm font-semibold">
+                        {isConnected ? `$${parseFloat(availableBorrows).toLocaleString()}` : '$0.00'}
+                      </div>
+                      {lendingLoading && (
+                        <div className="text-xs text-muted-foreground mt-1">Updating...</div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -432,41 +444,71 @@ const Home = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { name: 'Bitcoin', symbol: 'BTC', icon: '₿', apy: '8.5%', maxLtv: '70%', color: 'text-orange-400' },
-                      { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', apy: '7.2%', maxLtv: '75%', color: 'text-blue-400' },
-                      { name: 'USDT', symbol: 'USDT', icon: '$', apy: '6.8%', maxLtv: '80%', color: 'text-green-400' },
-                      { name: 'Solana', symbol: 'SOL', icon: '◈', apy: '9.1%', maxLtv: '65%', color: 'text-purple-400' },
-                      { name: 'Cardano', symbol: 'ADA', icon: '₳', apy: '8.8%', maxLtv: '60%', color: 'text-cyan-400' },
-                      { name: 'Polygon', symbol: 'MATIC', icon: '⬟', apy: '7.9%', maxLtv: '65%', color: 'text-violet-400' }
-                    ].map((asset) => (
-                      <Card key={asset.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className={`text-2xl ${asset.color}`}>{asset.icon}</span>
-                              <div>
-                                <div className="font-medium">{asset.name}</div>
-                                <div className="text-sm text-muted-foreground">{asset.symbol}</div>
+                    {userPositions.length > 0 ? (
+                      // Show user's actual positions
+                      userPositions.map((position) => (
+                        <Card key={position.token.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl text-primary">{getCryptoIcon(position.token.symbol)}</span>
+                                <div>
+                                  <div className="font-medium">{position.token.name}</div>
+                                  <div className="text-sm text-muted-foreground">{position.token.symbol}</div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">APY</span>
-                              <span className="font-medium text-green-400">{asset.apy}</span>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Deposited</span>
+                                <span className="font-medium">{parseFloat(position.supplied).toFixed(6)} {position.token.symbol}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Borrowed</span>
+                                <span className="font-medium text-orange-400">{parseFloat(position.borrowed).toFixed(6)} {position.token.symbol}</span>
+                              </div>
                             </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Max LTV</span>
-                              <span className="font-medium">{asset.maxLtv}</span>
+                            <Button variant="outline" size="sm" className="w-full mt-3">
+                              Manage {position.token.symbol}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      // Show available assets when no positions
+                      [
+                        { name: 'Bitcoin', symbol: 'BTC', icon: '₿', apy: '8.5%', maxLtv: '70%', color: 'text-orange-400' },
+                        { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', apy: '7.2%', maxLtv: '75%', color: 'text-blue-400' },
+                        { name: 'USDT', symbol: 'USDT', icon: '$', apy: '6.8%', maxLtv: '80%', color: 'text-green-400' }
+                      ].map((asset) => (
+                        <Card key={asset.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-2xl ${asset.color}`}>{asset.icon}</span>
+                                <div>
+                                  <div className="font-medium">{asset.name}</div>
+                                  <div className="text-sm text-muted-foreground">{asset.symbol}</div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full mt-3">
-                            Borrow {asset.symbol}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">APY</span>
+                                <span className="font-medium text-green-400">{asset.apy}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Max LTV</span>
+                                <span className="font-medium">{asset.maxLtv}</span>
+                              </div>
+                            </div>
+                            <Button variant="outline" size="sm" className="w-full mt-3">
+                              Borrow {asset.symbol}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -481,42 +523,49 @@ const Home = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { name: 'Bitcoin', symbol: 'BTC', icon: '₿', deposited: '2.45', value: '$65,280', ltv: '68%', color: 'text-orange-400' },
-                      { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', deposited: '12.8', value: '$28,450', ltv: '72%', color: 'text-blue-400' },
-                      { name: 'USDT', symbol: 'USDT', icon: '$', deposited: '15,000', value: '$15,000', ltv: '80%', color: 'text-green-400' }
-                    ].map((asset) => (
-                      <Card key={asset.symbol} className="hover:bg-accent/50 cursor-pointer transition-colors border-accent">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className={`text-2xl ${asset.color}`}>{asset.icon}</span>
-                              <div>
-                                <div className="font-medium">{asset.name}</div>
-                                <div className="text-sm text-muted-foreground">{asset.symbol}</div>
+                    {userPositions.length > 0 ? (
+                      // Show user's actual collateral positions
+                      userPositions
+                        .filter(position => parseFloat(position.supplied) > 0)
+                        .map((position) => (
+                          <Card key={`collateral-${position.token.symbol}`} className="hover:bg-accent/50 cursor-pointer transition-colors border-accent">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-2xl text-primary">{getCryptoIcon(position.token.symbol)}</span>
+                                  <div>
+                                    <div className="font-medium">{position.token.name}</div>
+                                    <div className="text-sm text-muted-foreground">{position.token.symbol}</div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Deposited</span>
-                              <span className="font-medium">{asset.deposited} {asset.symbol}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Value</span>
-                              <span className="font-medium text-green-400">{asset.value}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Current LTV</span>
-                              <span className="font-medium">{asset.ltv}</span>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full mt-3">
-                            Manage {asset.symbol}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Deposited</span>
+                                  <span className="font-medium">{parseFloat(position.supplied).toFixed(6)} {position.token.symbol}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">aToken Balance</span>
+                                  <span className="font-medium text-green-400">{parseFloat(position.aTokenBalance).toFixed(6)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Current LTV</span>
+                                  <span className="font-medium">{parseFloat(ltv).toFixed(1)}%</span>
+                                </div>
+                              </div>
+                              <Button variant="outline" size="sm" className="w-full mt-3">
+                                Manage {position.token.symbol}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground col-span-full">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No Collateral Deposited</p>
+                        <p className="text-sm">Connect your wallet and deposit assets to start using them as collateral.</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -531,37 +580,45 @@ const Home = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Loan ID</th>
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Date Borrowed</th>
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Amount</th>
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Asset</th>
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
-                          <th className="text-left py-3 text-sm font-medium text-muted-foreground">Repayment Due</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loanActivity.map(loan => <tr key={loan.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
-                            <td className="py-4 font-mono text-sm">{loan.id}</td>
-                            <td className="py-4 text-sm">{loan.date}</td>
-                            <td className="py-4 font-semibold">{loan.amount}</td>
-                            <td className="py-4">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{getCryptoIcon(loan.asset)}</span>
-                                <span className="text-sm">{loan.asset}</span>
-                              </div>
-                            </td>
-                            <td className="py-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(loan.status)}`}>
-                                {loan.status}
-                              </span>
-                            </td>
-                            <td className="py-4 text-sm">{loan.repayment}</td>
-                          </tr>)}
-                      </tbody>
-                    </table>
+                    {loanActivity.length > 0 ? (
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Loan ID</th>
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Date Borrowed</th>
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Amount</th>
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Asset</th>
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
+                            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Repayment Due</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loanActivity.map(loan => <tr key={loan.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
+                              <td className="py-4 font-mono text-sm">{loan.id}</td>
+                              <td className="py-4 text-sm">{loan.date}</td>
+                              <td className="py-4 font-semibold">{loan.amount}</td>
+                              <td className="py-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">{getCryptoIcon(loan.asset)}</span>
+                                  <span className="text-sm">{loan.asset}</span>
+                                </div>
+                              </td>
+                              <td className="py-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(loan.status)}`}>
+                                  {loan.status}
+                                </span>
+                              </td>
+                              <td className="py-4 text-sm">{loan.repayment}</td>
+                            </tr>)}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No Active Loans</p>
+                        <p className="text-sm">Connect your wallet and start borrowing to see your loan activity here.</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
