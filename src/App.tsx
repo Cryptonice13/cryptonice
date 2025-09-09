@@ -10,6 +10,7 @@ import { config } from '@/lib/wagmi';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Marketplace from "./pages/Marketplace";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import LoanApplication from "./pages/LoanApplication";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/profile" element={
             <ProtectedRoute>
               <UserProfile />
