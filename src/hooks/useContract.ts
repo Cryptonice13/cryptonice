@@ -1,4 +1,4 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { getContractConfig, CONTRACT_ADDRESSES } from '@/config/contracts';
 import { useState } from 'react';
 
@@ -9,16 +9,6 @@ export const useContract = () => {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: lastTxHash as `0x${string}`,
   });
-
-  const readContract = (contractName: keyof typeof CONTRACT_ADDRESSES, functionName: string, args?: any[]) => {
-    const config = getContractConfig(contractName);
-    return useReadContract({
-      address: config.address as `0x${string}`,
-      abi: config.abi,
-      functionName,
-      args,
-    });
-  };
 
   const writeToContract = async (
     contractName: keyof typeof CONTRACT_ADDRESSES,
@@ -44,7 +34,6 @@ export const useContract = () => {
   };
 
   return {
-    readContract,
     writeToContract,
     isWritePending: isPending,
     isConfirming,

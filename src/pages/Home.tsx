@@ -58,7 +58,13 @@ const Home = () => {
   // Fetch real-time lending data when wallet is connected
   useEffect(() => {
     if (isConnected && address) {
-      getUserAccountData();
+      getUserAccountData().then((data) => {
+        if (data) {
+          // Update the lending store with the account data
+          // For now we'll just log it since we're using mock data
+          console.log('Account data:', data);
+        }
+      }).catch(console.error);
     }
   }, [isConnected, address, getUserAccountData]);
 

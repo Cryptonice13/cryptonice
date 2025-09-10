@@ -5,13 +5,21 @@ import { parseEther, formatEther } from 'viem';
 import { useToast } from './use-toast';
 
 export const useLendingPool = () => {
-  const { writeToContract, readContract, isWritePending, isConfirming, isConfirmed } = useContract();
+  const { writeToContract, isWritePending, isConfirming, isConfirmed } = useContract();
   const { address, isConnected } = useWallet();
   const { toast } = useToast();
 
-  const getUserAccountData = () => {
-    return readContract('LENDING_POOL', 'getUserAccountData', [address]);
-  };
+  const getUserAccountData = useCallback(async () => {
+    // Mock data for now since we don't have actual contracts deployed
+    return {
+      totalCollateral: '0',
+      totalDebt: '0', 
+      healthFactor: '1.0',
+      availableBorrows: '0',
+      liquidationThreshold: '80',
+      ltv: '0'
+    };
+  }, []);
 
   const deposit = useCallback(async (assetAddress: string, amount: string) => {
     if (!isConnected || !address) {
