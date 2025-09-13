@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLendingStore } from '@/state/lendingStore';
 import { useLendingPool } from '@/hooks/useLendingPool';
+import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy, ExternalLink } from 'lucide-react';
 interface Profile {
   name: string;
@@ -48,7 +49,8 @@ const Home = () => {
     isLoading: lendingLoading 
   } = useLendingStore();
   
-  const { getUserAccountData } = useLendingPool();
+  const { getUserAccountData, deposit } = useLendingPool();
+  const { balances, isLoading: balancesLoading } = useTokenBalances();
   useEffect(() => {
     if (user) {
       fetchProfile();
@@ -415,6 +417,61 @@ const Home = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Available Collateral Section */}
+              {isConnected && balances.length > 0 && (
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-primary" />
+                      Available Collateral
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {balancesLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      balances.map((tokenBalance) => (
+                        <div key={tokenBalance.symbol} className="flex items-center justify-between p-3 rounded-lg bg-accent/20 border border-accent/30">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-primary">
+                                {tokenBalance.symbol === 'ETH' ? 'Ξ' : tokenBalance.symbol.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium">{tokenBalance.symbol}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {tokenBalance.balance}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={async () => {
+                              try {
+                                if (tokenBalance.address) {
+                                  await deposit(tokenBalance.address, tokenBalance.balance);
+                                } else {
+                                  // For ETH, use zero address
+                                  await deposit('0x0000000000000000000000000000000000000000', tokenBalance.balance);
+                                }
+                              } catch (error) {
+                                console.error('Deposit failed:', error);
+                              }
+                            }}
+                            size="sm"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            Use as Collateral
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Overview Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
