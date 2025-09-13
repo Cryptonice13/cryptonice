@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Filter, TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, TrendingUp, Users, DollarSign, Target, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +12,7 @@ import { BorrowModal } from '@/components/BorrowModal';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 
 const Marketplace = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState('all');
   const [sortBy, setSortBy] = useState('apy');
@@ -122,6 +124,17 @@ const Marketplace = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center space-y-4 mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Button
+              onClick={() => navigate('/home')}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
+          </div>
           <h1 className="text-4xl font-bold gradient-text">
             Marketplace
           </h1>
