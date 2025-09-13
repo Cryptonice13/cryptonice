@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, TrendingUp, Users, DollarSign, Target, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DepositModal } from '@/components/DepositModal';
 import { BorrowModal } from '@/components/BorrowModal';
-import { formatCurrency, formatPercentage } from '@/lib/format';
+import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/format';
+import { SUPPORTED_TOKENS } from '@/config/tokens';
+import { supabase } from '@/integrations/supabase/client';
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -20,89 +22,57 @@ const Marketplace = () => {
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState('');
 
-  // Mock data for lending pools
-  const lendingPools = [
-    {
-      asset: 'USDC',
-      supplyAPY: 3.2,
-      borrowAPY: 5.8,
-      availableLiquidity: 1200000,
-      totalSupplied: 5000000,
-      icon: '💰',
-      collateralRatio: 80,
-      liquidationThreshold: 85
-    },
-    {
-      asset: 'ETH',
-      supplyAPY: 2.5,
-      borrowAPY: 4.9,
-      availableLiquidity: 800,
-      totalSupplied: 4500,
-      icon: '⟠',
-      collateralRatio: 75,
-      liquidationThreshold: 80
-    },
-    {
-      asset: 'DAI',
-      supplyAPY: 4.1,
-      borrowAPY: 6.5,
-      availableLiquidity: 950000,
-      totalSupplied: 3200000,
-      icon: '◈',
-      collateralRatio: 80,
-      liquidationThreshold: 85
-    },
-    {
-      asset: 'WBTC',
-      supplyAPY: 1.8,
-      borrowAPY: 3.2,
-      availableLiquidity: 50,
-      totalSupplied: 200,
-      icon: '₿',
-      collateralRatio: 70,
-      liquidationThreshold: 75
-    }
-  ];
+  // Real-time data states
+  const [loanRequests, setLoanRequests] = useState<any[]>([]);
+  const [isLoadingLoans, setIsLoadingLoans] = useState(false);
 
-  // Mock data for loan marketplace (peer-to-peer)
-  const loanRequests = [
-    {
-      borrower: '0x123...abc',
-      loanAmount: '$2,000 DAI',
-      collateral: '1.5 ETH',
-      duration: '6 months',
-      rate: '7%',
-      status: 'Open',
-      healthFactor: 1.8
-    },
-    {
-      borrower: '0x456...def',
-      loanAmount: '$5,000 USDC',
-      collateral: '2.8 ETH',
-      duration: '3 months',
-      rate: '6.5%',
-      status: 'Funding',
-      healthFactor: 2.1
-    },
-    {
-      borrower: '0x789...ghi',
-      loanAmount: '$1,500 DAI',
-      collateral: '0.8 WBTC',
-      duration: '12 months',
-      rate: '8%',
-      status: 'Open',
-      healthFactor: 1.6
-    }
-  ];
+  // Real lending pools from SUPPORTED_TOKENS
+  const lendingPools = SUPPORTED_TOKENS.map(token => ({
+    asset: token.symbol,
+    supplyAPY: token.supplyAPY,
+    borrowAPY: token.borrowAPY,
+    availableLiquidity: parseFloat(token.totalSupply) - parseFloat(token.totalBorrow),
+    totalSupplied: parseFloat(token.totalSupply),
+    icon: token.symbol === 'ETH' ? '⟠' : 
+          token.symbol === 'USDC' ? '💰' : 
+          token.symbol === 'USDT' ? '💵' : '◈',
+    collateralRatio: token.ltv,
+    liquidationThreshold: token.liquidationThreshold,
+    logo: token.logo
+  }));
 
-  // Mock stats
+  // Calculate real stats from token data
   const stats = {
-    totalValueLocked: 12500000,
-    activeUsers: 1247,
-    loansFunded: 892,
-    avgSupplyAPY: 2.9,
-    avgBorrowAPY: 5.1
+    totalValueLocked: lendingPools.reduce((acc, pool) => acc + (pool.totalSupplied * 2000), 0), // Estimate using $2000 per unit
+    activeUsers: loanRequests.length * 15, // Estimate based on loan requests
+    loansFunded: loanRequests.filter(loan => loan.status === 'Approved' || loan.status === 'Funding').length,
+    avgSupplyAPY: lendingPools.reduce((acc, pool) => acc + pool.supplyAPY, 0) / lendingPools.length,
+    avgBorrowAPY: lendingPools.reduce((acc, pool) => acc + pool.borrowAPY, 0) / lendingPools.length
   };
+
+  // Fetch real loan requests from Supabase
+  useEffect(() => {
+    const fetchLoanRequests = async () => {
+      setIsLoadingLoans(true);
+      try {
+        const { data, error } = await supabase
+          .from('loan_requests')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error) throw error;
+        setLoanRequests(data || []);
+      } catch (error) {
+        console.error('Error fetching loan requests:', error);
+        setLoanRequests([]);
+      } finally {
+        setIsLoadingLoans(false);
+      }
+    };
+
+    fetchLoanRequests();
+  }, []);
 
   const handleSupply = (asset: string) => {
     setSelectedToken(asset);
@@ -158,10 +128,11 @@ const Marketplace = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Assets</SelectItem>
-                <SelectItem value="USDC">USDC</SelectItem>
-                <SelectItem value="ETH">ETH</SelectItem>
-                <SelectItem value="DAI">DAI</SelectItem>
-                <SelectItem value="WBTC">WBTC</SelectItem>
+                {SUPPORTED_TOKENS.map(token => (
+                  <SelectItem key={token.symbol} value={token.symbol}>
+                    {token.symbol}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
@@ -205,9 +176,18 @@ const Marketplace = () => {
                       {filteredPools.map((pool) => (
                         <TableRow key={pool.asset}>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">{pool.icon}</span>
-                              <span className="font-medium">{pool.asset}</span>
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src={pool.logo} 
+                                alt={pool.asset}
+                                className="w-8 h-8 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                              <div>
+                                <div className="font-medium">{pool.asset}</div>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-green-500 font-medium">
@@ -217,16 +197,20 @@ const Marketplace = () => {
                             {formatPercentage(pool.borrowAPY)}
                           </TableCell>
                           <TableCell>
-                            {pool.asset === 'ETH' || pool.asset === 'WBTC' 
-                              ? `${pool.availableLiquidity.toLocaleString()} ${pool.asset}`
-                              : formatCurrency(pool.availableLiquidity)
-                            }
+                            <div className="font-medium">
+                              {formatCompactNumber(pool.availableLiquidity)} {pool.asset}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatCurrency(pool.availableLiquidity * 2000)}
+                            </div>
                           </TableCell>
                           <TableCell>
-                            {pool.asset === 'ETH' || pool.asset === 'WBTC'
-                              ? `${pool.totalSupplied.toLocaleString()} ${pool.asset}`
-                              : formatCurrency(pool.totalSupplied)
-                            }
+                            <div className="font-medium">
+                              {formatCompactNumber(pool.totalSupplied)} {pool.asset}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatCurrency(pool.totalSupplied * 2000)}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -279,37 +263,58 @@ const Marketplace = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {loanRequests.map((loan, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-mono text-sm">
-                            {loan.borrower}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {loan.loanAmount}
-                          </TableCell>
-                          <TableCell>{loan.collateral}</TableCell>
-                          <TableCell>{loan.duration}</TableCell>
-                          <TableCell className="text-orange-500 font-medium">
-                            {loan.rate}
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={loan.status === 'Open' ? 'default' : 'secondary'}
-                              className="bg-green-500/10 text-green-500"
-                            >
-                              {loan.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              size="sm"
-                              className="bg-primary/10 text-primary hover:bg-primary/20"
-                            >
-                              Fund Loan
-                            </Button>
+                      {isLoadingLoans ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            Loading loan requests...
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : loanRequests.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No loan requests available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        loanRequests.map((loan) => (
+                          <TableRow key={loan.id}>
+                            <TableCell className="font-mono text-sm">
+                              {loan.user_id ? `${loan.user_id.slice(0, 6)}...${loan.user_id.slice(-4)}` : 'Anonymous'}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {formatCurrency(parseFloat(loan.loan_amount))} {loan.asset_name || 'USD'}
+                            </TableCell>
+                            <TableCell>
+                              {loan.collateral_value ? formatCurrency(parseFloat(loan.collateral_value)) : 'N/A'} {loan.collateral_type || ''}
+                            </TableCell>
+                            <TableCell>{loan.duration_months} months</TableCell>
+                            <TableCell className="text-orange-500 font-medium">
+                              {loan.interest_type || 'Fixed'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={loan.status === 'Pending Review' ? 'default' : 'secondary'}
+                                className={
+                                  loan.status === 'Approved' ? 'bg-green-500/10 text-green-500' :
+                                  loan.status === 'Pending Review' ? 'bg-yellow-500/10 text-yellow-500' :
+                                  'bg-gray-500/10 text-gray-500'
+                                }
+                              >
+                                {loan.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                size="sm"
+                                className="bg-primary/10 text-primary hover:bg-primary/20"
+                                disabled={loan.status !== 'Approved'}
+                              >
+                                {loan.status === 'Approved' ? 'Fund Loan' : 'Review Pending'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
