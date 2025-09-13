@@ -124,17 +124,6 @@ const Marketplace = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center space-y-4 mb-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <Button
-              onClick={() => navigate('/home')}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              Home
-            </Button>
-          </div>
           <h1 className="text-4xl font-bold gradient-text">
             Marketplace
           </h1>
@@ -143,7 +132,16 @@ const Marketplace = () => {
           </p>
           
           {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto mt-6">
+          <div className="flex flex-col sm:flex-row gap-4 max-w-3xl mx-auto mt-6">
+            <Button
+              onClick={() => navigate('/home')}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
