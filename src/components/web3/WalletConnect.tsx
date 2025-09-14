@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import React from 'react';
+import { useWalletStore } from '@/state/walletStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,20 +8,20 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
 export const WalletConnect = () => {
-  const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending, error } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { address, isConnected, isConnecting, connect, disconnect } = useWalletStore();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (error) {
+  const handleConnect = async () => {
+    try {
+      await connect();
+    } catch (error) {
       toast({
         title: "Connection Error",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive"
       });
     }
-  }, [error, toast]);
+  };
 
   if (isConnected && address) {
     return (
@@ -58,7 +58,7 @@ export const WalletConnect = () => {
               </div>
             </div>
             <Button
-              onClick={() => disconnect()}
+              onClick={disconnect}
               variant="outline"
               className="w-full border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
             >
@@ -87,21 +87,18 @@ export const WalletConnect = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {connectors.map((connector) => (
-            <Button
-              key={connector.uid}
-              onClick={() => connect({ connector })}
-              disabled={isPending}
-              variant="outline"
-              className="w-full justify-start h-12 border-white/20 bg-white/5 hover:bg-green-500/10 hover:border-green-500/50 text-white transition-all duration-300"
-            >
-              <Wallet className="w-5 h-5 mr-3" />
-              {connector.name}
-              {isPending && connector.name === connectors[0]?.name && (
-                <div className="ml-auto w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              )}
-            </Button>
-          ))}
+          <Button
+            onClick={handleConnect}
+            disabled={isConnecting}
+            variant="outline"
+            className="w-full justify-start h-12 border-white/20 bg-white/5 hover:bg-green-500/10 hover:border-green-500/50 text-white transition-all duration-300"
+          >
+            <Wallet className="w-5 h-5 mr-3" />
+            MetaMask
+            {isConnecting && (
+              <div className="ml-auto w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            )}
+          </Button>
         </CardContent>
       </Card>
     </motion.div>

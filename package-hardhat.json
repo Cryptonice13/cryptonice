@@ -1,0 +1,14 @@
+{
+  "name": "defi-lending-contracts",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.0.0"
+  },
+  "scripts": {
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run --network localhost scripts/deploy.js",
+    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy.js"
+  }
+}

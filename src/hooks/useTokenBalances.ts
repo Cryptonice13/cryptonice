@@ -1,102 +1,76 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
-import { formatUnits, parseAbi } from 'viem';
-import { getProvider } from '@/lib/ethersProvider';
+import { useState, useEffect } from 'react';
+import { useWalletStore } from '@/state/walletStore';
+import { formatUnits, Contract } from 'ethers';
 import { SUPPORTED_TOKENS } from '@/config/tokens';
-
-interface TokenBalance {
-  symbol: string;
-  balance: string;
-  address?: string;
-  decimals: number;
-}
-
-const ERC20_ABI = parseAbi([
-  'function balanceOf(address account) view returns (uint256)',
-]);
+import { CONTRACT_ADDRESSES, ABIS } from '@/config/contracts';
 
 export const useTokenBalances = () => {
-  const { address, isConnected } = useAccount();
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
+  const { address, isConnected, provider } = useWalletStore();
+  const [balances, setBalances] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchBalances = useCallback(async () => {
-    if (!address || !isConnected) {
-      setBalances([]);
+  useEffect(() => {
+    if (!isConnected || !address || !provider) {
+      setBalances({});
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const provider = getProvider();
-      const tokenBalances: TokenBalance[] = [];
-
-      // Fetch ETH balance
+    const fetchBalances = async () => {
+      setIsLoading(true);
       try {
+        const newBalances: Record<string, string> = {};
+
+        // Get ETH balance
         const ethBalance = await provider.getBalance(address);
-        const ethBalanceFormatted = formatUnits(ethBalance, 18);
+        newBalances['ETH'] = formatUnits(ethBalance, 18);
+
+        // Get ERC20 balances
+        const erc20Tokens = SUPPORTED_TOKENS.filter(token => token.symbol !== 'ETH');
         
-        if (parseFloat(ethBalanceFormatted) > 0) {
-          tokenBalances.push({
-            symbol: 'ETH',
-            balance: parseFloat(ethBalanceFormatted).toFixed(4),
-            decimals: 18,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching ETH balance:', error);
-      }
+        for (const token of erc20Tokens) {
+          try {
+            let tokenAddress = '';
+            if (token.symbol === 'USDC') {
+              tokenAddress = CONTRACT_ADDRESSES.USDC;
+            } else if (token.symbol === 'USDT') {
+              tokenAddress = CONTRACT_ADDRESSES.USDT;
+            }
 
-      // Fetch ERC20 token balances (USDC, USDT - using USDT as DAI is not in config)
-      const erc20Tokens = SUPPORTED_TOKENS.filter(token => 
-        ['USDC', 'USDT'].includes(token.symbol) && token.address !== '0x0000000000000000000000000000000000000000'
-      );
-
-      for (const token of erc20Tokens) {
-        try {
-          // Create contract instance using ethers
-          const contract = new (await import('ethers')).Contract(
-            token.address,
-            ERC20_ABI,
-            provider
-          );
-
-          const balance = await contract.balanceOf(address);
-          const balanceFormatted = formatUnits(balance, token.decimals);
-          
-          if (parseFloat(balanceFormatted) > 0) {
-            tokenBalances.push({
-              symbol: token.symbol,
-              balance: parseFloat(balanceFormatted).toFixed(token.decimals === 6 ? 2 : 4),
-              address: token.address,
-              decimals: token.decimals,
-            });
+            if (tokenAddress) {
+              const tokenContract = new Contract(tokenAddress, ABIS.ERC20, provider);
+              const balance = await tokenContract.balanceOf(address);
+              const decimals = await tokenContract.decimals();
+              newBalances[token.symbol] = formatUnits(balance, decimals);
+            }
+          } catch (error) {
+            console.error(`Failed to fetch ${token.symbol} balance:`, error);
+            newBalances[token.symbol] = '0';
           }
-        } catch (error) {
-          console.error(`Error fetching ${token.symbol} balance:`, error);
         }
+
+        setBalances(newBalances);
+      } catch (error) {
+        console.error('Failed to fetch token balances:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setBalances(tokenBalances);
-    } catch (error) {
-      console.error('Error fetching token balances:', error);
-      setError('Failed to fetch token balances');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [address, isConnected]);
-
-  useEffect(() => {
     fetchBalances();
-  }, [fetchBalances]);
+  }, [address, isConnected, provider]);
+
+  // Filter tokens with balance > 0
+  const nonZeroBalances = Object.entries(balances)
+    .filter(([_, balance]) => parseFloat(balance) > 0)
+    .map(([symbol, balance]) => ({
+      symbol,
+      balance,
+      token: SUPPORTED_TOKENS.find(t => t.symbol === symbol)
+    }))
+    .filter(item => item.token);
 
   return {
-    balances,
+    balances: nonZeroBalances,
     isLoading,
-    error,
-    refetch: fetchBalances,
   };
 };

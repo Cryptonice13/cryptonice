@@ -451,12 +451,10 @@ const Home = () => {
                           <Button
                             onClick={async () => {
                               try {
-                                if (tokenBalance.address) {
-                                  await deposit(tokenBalance.address, tokenBalance.balance);
-                                } else {
-                                  // For ETH, use zero address
-                                  await deposit('0x0000000000000000000000000000000000000000', tokenBalance.balance);
-                                }
+                                const tokenAddress = tokenBalance.symbol === 'ETH' 
+                                  ? '0x0000000000000000000000000000000000000000'
+                                  : tokenBalance.token?.address || '';
+                                await deposit(tokenAddress, tokenBalance.balance);
                               } catch (error) {
                                 console.error('Deposit failed:', error);
                               }

@@ -1,44 +1,15 @@
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { getContractConfig, CONTRACT_ADDRESSES } from '@/config/contracts';
-import { useState } from 'react';
+import { useMemo } from "react";
+import { useWalletStore } from "@/state/walletStore";
+import { Contract } from "ethers";
+import type { Interface } from "ethers";
 
-export const useContract = () => {
-  const { writeContract, data: hash, error, isPending } = useWriteContract();
-  const [lastTxHash, setLastTxHash] = useState<string>();
+export function useContract(address: string | undefined, abi: any) {
+  const { provider, signer } = useWalletStore();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash: lastTxHash as `0x${string}`,
-  });
-
-  const writeToContract = async (
-    contractName: keyof typeof CONTRACT_ADDRESSES,
-    functionName: string,
-    args?: any[],
-    value?: bigint
-  ) => {
-    const config = getContractConfig(contractName);
-    
-    const result = await writeContract({
-      address: config.address as `0x${string}`,
-      abi: config.abi,
-      functionName,
-      args,
-      value,
-    } as any);
-
-    if (hash) {
-      setLastTxHash(hash);
-    }
-
-    return hash;
-  };
-
-  return {
-    writeToContract,
-    isWritePending: isPending,
-    isConfirming,
-    isConfirmed,
-    writeError: error,
-    lastTxHash,
-  };
-};
+  return useMemo(() => {
+    if (!address || !abi || !provider) return null;
+    // Prefer signer for write operations
+    const runner = signer ?? provider;
+    return new Contract(address, abi, runner);
+  }, [address, abi, provider, signer]);
+}

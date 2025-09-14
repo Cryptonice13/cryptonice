@@ -1,28 +1,67 @@
 import { useContract } from './useContract';
-import { useWallet } from './useWallet';
+import { useWalletStore } from '@/state/walletStore';
 import { useCallback } from 'react';
-import { parseEther, formatEther } from 'viem';
+import { parseUnits, formatUnits, Contract } from 'ethers';
 import { useToast } from './use-toast';
+import { CONTRACTS, CONTRACT_ADDRESSES, ABIS } from '@/config/contracts';
 
 export const useLendingPool = () => {
-  const { writeToContract, isWritePending, isConfirming, isConfirmed } = useContract();
-  const { address, isConnected } = useWallet();
+  const pool = useContract(CONTRACTS.lendingPool.address, CONTRACTS.lendingPool.abi);
+  const { signer, address, isConnected } = useWalletStore();
   const { toast } = useToast();
 
-  const getUserAccountData = useCallback(async () => {
-    // Mock data for now since we don't have actual contracts deployed
-    return {
-      totalCollateral: '0',
-      totalDebt: '0', 
-      healthFactor: '1.0',
-      availableBorrows: '0',
-      liquidationThreshold: '80',
-      ltv: '0'
-    };
-  }, []);
+  async function approveERC20(tokenAddress: string, spender: string, amount: string, decimals = 18) {
+    if (!signer) throw new Error("Signer not available");
+    const token = new Contract(tokenAddress, ABIS.ERC20, signer);
+    const amt = parseUnits(amount, decimals);
+    const tx = await token.approve(spender, amt);
+    await tx.wait();
+  }
 
-  const deposit = useCallback(async (assetAddress: string, amount: string) => {
-    if (!isConnected || !address) {
+  const getUserAccountData = useCallback(async () => {
+    if (!pool || !address) {
+      return {
+        totalCollateral: '0',
+        totalDebt: '0', 
+        healthFactor: '0',
+        availableBorrows: '0',
+        liquidationThreshold: '80',
+        ltv: '0'
+      };
+    }
+
+    try {
+      const allAssets = [
+        "0x0000000000000000000000000000000000000000", // ETH
+        CONTRACT_ADDRESSES.USDC,
+        CONTRACT_ADDRESSES.USDT
+      ];
+      
+      const [totalCollateralE18, totalDebtE18, healthFactorE18] = await pool.getUserAccountData(address, allAssets);
+      
+      return {
+        totalCollateral: formatUnits(totalCollateralE18, 18),
+        totalDebt: formatUnits(totalDebtE18, 18),
+        healthFactor: formatUnits(healthFactorE18, 18),
+        availableBorrows: '0', // Calculate based on collateral and LTV
+        liquidationThreshold: '80',
+        ltv: totalCollateralE18 > 0n ? formatUnits((totalDebtE18 * 10000n) / totalCollateralE18, 2) : '0'
+      };
+    } catch (error) {
+      console.error('Failed to get user account data:', error);
+      return {
+        totalCollateral: '0',
+        totalDebt: '0', 
+        healthFactor: '0',
+        availableBorrows: '0',
+        liquidationThreshold: '80',
+        ltv: '0'
+      };
+    }
+  }, [pool, address]);
+
+  const deposit = useCallback(async (tokenAddress: string, amount: string, decimals = 18) => {
+    if (!isConnected || !address || !pool || !signer) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to deposit",
@@ -32,20 +71,27 @@ export const useLendingPool = () => {
     }
 
     try {
-      const amountWei = parseEther(amount);
-      const hash = await writeToContract('LENDING_POOL', 'deposit', [
-        assetAddress,
-        amountWei,
-        address,
-        0, // referralCode
-      ]);
+      const asset = tokenAddress === "ETH" ? "0x0000000000000000000000000000000000000000" : tokenAddress;
+      const amt = parseUnits(amount, decimals);
+
+      // For ERC20 tokens, ensure approval first
+      if (tokenAddress !== "ETH") {
+        await approveERC20(tokenAddress, CONTRACTS.lendingPool.address, amount, decimals);
+      }
+
+      // Call deposit with value for ETH
+      const tx = tokenAddress === "ETH" 
+        ? await pool.deposit(asset, amt, { value: amt })
+        : await pool.deposit(asset, amt);
+
+      const receipt = await tx.wait();
 
       toast({
-        title: "Deposit initiated",
-        description: "Your deposit transaction has been submitted",
+        title: "Deposit successful",
+        description: `Successfully deposited ${amount} ${tokenAddress === "ETH" ? "ETH" : "tokens"}`,
       });
 
-      return hash;
+      return receipt;
     } catch (error) {
       console.error('Deposit failed:', error);
       toast({
@@ -55,10 +101,10 @@ export const useLendingPool = () => {
       });
       throw error;
     }
-  }, [writeToContract, address, isConnected, toast]);
+  }, [pool, address, isConnected, signer, toast]);
 
-  const borrow = useCallback(async (assetAddress: string, amount: string, interestRateMode: number = 2) => {
-    if (!isConnected || !address) {
+  const borrow = useCallback(async (asset: string, amount: string, decimals = 18) => {
+    if (!isConnected || !address || !pool) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to borrow",
@@ -68,21 +114,22 @@ export const useLendingPool = () => {
     }
 
     try {
-      const amountWei = parseEther(amount);
-      const hash = await writeToContract('LENDING_POOL', 'borrow', [
-        assetAddress,
-        amountWei,
-        interestRateMode,
-        0, // referralCode
-        address,
-      ]);
+      const amt = parseUnits(amount, decimals);
+      const allAssets = [
+        "0x0000000000000000000000000000000000000000", // ETH
+        CONTRACT_ADDRESSES.USDC,
+        CONTRACT_ADDRESSES.USDT
+      ];
+
+      const tx = await pool.borrow(asset, amt, allAssets);
+      const receipt = await tx.wait();
 
       toast({
-        title: "Borrow initiated",
-        description: "Your borrow transaction has been submitted",
+        title: "Borrow successful",
+        description: `Successfully borrowed ${amount} tokens`,
       });
 
-      return hash;
+      return receipt;
     } catch (error) {
       console.error('Borrow failed:', error);
       toast({
@@ -92,10 +139,10 @@ export const useLendingPool = () => {
       });
       throw error;
     }
-  }, [writeToContract, address, isConnected, toast]);
+  }, [pool, address, isConnected, toast]);
 
-  const repay = useCallback(async (assetAddress: string, amount: string, rateMode: number = 2) => {
-    if (!isConnected || !address) {
+  const repay = useCallback(async (asset: string, amount: string, decimals = 18, onBehalfOf?: string) => {
+    if (!isConnected || !address || !pool || !signer) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to repay",
@@ -105,20 +152,25 @@ export const useLendingPool = () => {
     }
 
     try {
-      const amountWei = parseEther(amount);
-      const hash = await writeToContract('LENDING_POOL', 'repay', [
-        assetAddress,
-        amountWei,
-        rateMode,
-        address,
-      ]);
+      if (asset !== "0x0000000000000000000000000000000000000000") {
+        await approveERC20(asset, CONTRACTS.lendingPool.address, amount, decimals);
+      }
+      
+      const amt = parseUnits(amount, decimals);
+      const target = onBehalfOf ?? address;
+      
+      const tx = asset === "0x0000000000000000000000000000000000000000"
+        ? await pool.repay(asset, amt, target, { value: amt })
+        : await pool.repay(asset, amt, target);
+        
+      const receipt = await tx.wait();
 
       toast({
-        title: "Repayment initiated",
-        description: "Your repayment transaction has been submitted",
+        title: "Repayment successful",
+        description: `Successfully repaid ${amount} tokens`,
       });
 
-      return hash;
+      return receipt;
     } catch (error) {
       console.error('Repay failed:', error);
       toast({
@@ -128,10 +180,10 @@ export const useLendingPool = () => {
       });
       throw error;
     }
-  }, [writeToContract, address, isConnected, toast]);
+  }, [pool, address, isConnected, signer, toast]);
 
-  const withdraw = useCallback(async (assetAddress: string, amount: string) => {
-    if (!isConnected || !address) {
+  const withdraw = useCallback(async (asset: string, shares: string, decimals = 18) => {
+    if (!isConnected || !address || !pool) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to withdraw",
@@ -141,19 +193,16 @@ export const useLendingPool = () => {
     }
 
     try {
-      const amountWei = parseEther(amount);
-      const hash = await writeToContract('LENDING_POOL', 'withdraw', [
-        assetAddress,
-        amountWei,
-        address,
-      ]);
+      const s = parseUnits(shares, decimals);
+      const tx = await pool.withdraw(asset, s);
+      const receipt = await tx.wait();
 
       toast({
-        title: "Withdrawal initiated",
-        description: "Your withdrawal transaction has been submitted",
+        title: "Withdrawal successful",
+        description: `Successfully withdrew ${shares} tokens`,
       });
 
-      return hash;
+      return receipt;
     } catch (error) {
       console.error('Withdraw failed:', error);
       toast({
@@ -163,16 +212,17 @@ export const useLendingPool = () => {
       });
       throw error;
     }
-  }, [writeToContract, address, isConnected, toast]);
+  }, [pool, address, isConnected, toast]);
 
-  return {
-    deposit,
-    borrow,
-    repay,
-    withdraw,
+  return { 
+    pool, 
+    deposit, 
+    borrow, 
+    repay, 
+    withdraw, 
     getUserAccountData,
-    isTransactionPending: isWritePending,
-    isTransactionConfirming: isConfirming,
-    isTransactionConfirmed: isConfirmed,
+    isTransactionPending: false, // Add for modal compatibility
+    isTransactionConfirming: false,
+    isTransactionConfirmed: false,
   };
 };
