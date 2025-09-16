@@ -12,7 +12,8 @@ import { useLendingPool } from "@/hooks/useLendingPool";
 import { useTokenBalances } from "@/hooks/useTokenBalances";
 import { SUPPORTED_TOKENS } from "@/config/tokens";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
-import { formatCurrency, formatPercentage } from "@/lib/format";
+import { useAccount } from 'wagmi';
+import { formatCurrency } from "@/lib/format";
 
 const LoanApplication = () => {
   const [selectedAsset, setSelectedAsset] = useState('');
@@ -21,7 +22,8 @@ const LoanApplication = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const { address, isConnected } = useWalletStore();
+  const { address, connect } = useWalletStore();
+  const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
   const { borrow, getUserAccountData } = useLendingPool();
   const { balances } = useTokenBalances();
   
@@ -56,6 +58,13 @@ const LoanApplication = () => {
     fetchAccountData();
   }, [address, getUserAccountData]);
 
+  // Ensure walletStore is initialized when wagmi is connected
+  useEffect(() => {
+    if (wagmiIsConnected && wagmiAddress && !address) {
+      connect().catch(() => {/* ignore */});
+    }
+  }, [wagmiIsConnected, wagmiAddress, address, connect]);
+
   const calculateNewHealthFactor = () => {
     if (!borrowAmount || !selectedAsset) return parseFloat(accountData.healthFactor);
     
@@ -80,7 +89,7 @@ const LoanApplication = () => {
   };
 
   const handleBorrow = async () => {
-    if (!address) {
+    if (!wagmiIsConnected || !wagmiAddress) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to borrow",
@@ -154,7 +163,7 @@ const LoanApplication = () => {
     return <AlertTriangle className="w-4 h-4 text-red-500" />;
   };
 
-  if (!address) {
+  if (!wagmiIsConnected || !wagmiAddress) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">

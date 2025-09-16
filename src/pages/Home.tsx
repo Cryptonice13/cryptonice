@@ -46,7 +46,8 @@ const Home = () => {
     liquidationThreshold,
     ltv,
     userPositions,
-    isLoading: lendingLoading 
+    isLoading: lendingLoading,
+    setAccountData 
   } = useLendingStore();
   
   const { getUserAccountData, deposit } = useLendingPool();
@@ -60,15 +61,21 @@ const Home = () => {
   // Fetch real-time lending data when wallet is connected
   useEffect(() => {
     if (isConnected && address) {
-      getUserAccountData().then((data) => {
-        if (data) {
-          // Update the lending store with the account data
-          // For now we'll just log it since we're using mock data
-          console.log('Account data:', data);
-        }
-      }).catch(console.error);
+      getUserAccountData()
+        .then((data) => {
+          if (data) {
+            const collateral = parseFloat(data.totalCollateral || '0');
+            const debt = parseFloat(data.totalDebt || '0');
+            const maxBorrow = Math.max(0, collateral * 0.75 - debt); // 75% LTV
+            setAccountData({
+              ...data,
+              availableBorrows: maxBorrow.toString(),
+            });
+          }
+        })
+        .catch(console.error);
     }
-  }, [isConnected, address, getUserAccountData]);
+  }, [isConnected, address, getUserAccountData, setAccountData]);
 
   useEffect(() => {
     if (connectError) {
