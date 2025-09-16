@@ -106,7 +106,7 @@ const Home = () => {
     icon: HomeIcon,
     href: '/home'
   }, {
-    name: 'My Loans',
+    name: 'My Borrow',
     icon: CreditCard,
     href: '/my-loans'
   }, {
