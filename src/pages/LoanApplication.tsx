@@ -1,313 +1,188 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, CheckCircle, DollarSign, Shield, FileText } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
-interface LoanFormData {
-  loanAmount: string;
-  duration: string;
-  interestType: string;
-  collateralType: string;
-  assetName: string;
-  collateralValue: string;
-}
+import { useWalletStore } from "@/state/walletStore";
+import { useLendingPool } from "@/hooks/useLendingPool";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
+import { SUPPORTED_TOKENS } from "@/config/tokens";
+import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { formatCurrency, formatPercentage } from "@/lib/format";
 
 const LoanApplication = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState('');
+  const [borrowAmount, setBorrowAmount] = useState('');
+  const [isTransactionPending, setIsTransactionPending] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState<LoanFormData>({
-    loanAmount: '',
-    duration: '',
-    interestType: '',
-    collateralType: '',
-    assetName: '',
-    collateralValue: ''
+  const { address, isConnected } = useWalletStore();
+  const { borrow, getUserAccountData } = useLendingPool();
+  const { balances } = useTokenBalances();
+  
+  const [accountData, setAccountData] = useState({
+    totalCollateral: '0',
+    totalDebt: '0',
+    healthFactor: '0',
+    availableBorrows: '0',
+    liquidationThreshold: '80',
+    ltv: '0'
   });
 
-  const totalSteps = 3;
+  // Available assets to borrow
+  const borrowableAssets = [
+    { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000', apy: '3.2', icon: '⟠' },
+    { symbol: 'USDC', address: CONTRACT_ADDRESSES.USDC, apy: '5.8', icon: '💲' },
+    { symbol: 'USDT', address: CONTRACT_ADDRESSES.USDT, apy: '4.9', icon: '₮' }
+  ];
 
-  const handleInputChange = (field: keyof LoanFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      if (isConnected && address) {
+        try {
+          const data = await getUserAccountData();
+          setAccountData(data);
+        } catch (error) {
+          console.error('Failed to fetch account data:', error);
+        }
+      }
+    };
+
+    fetchAccountData();
+  }, [isConnected, address, getUserAccountData]);
+
+  const calculateNewHealthFactor = () => {
+    if (!borrowAmount || !selectedAsset) return parseFloat(accountData.healthFactor);
+    
+    const currentDebt = parseFloat(accountData.totalDebt);
+    const newDebt = currentDebt + parseFloat(borrowAmount);
+    const collateral = parseFloat(accountData.totalCollateral);
+    
+    if (collateral === 0) return 0;
+    
+    // Simplified calculation - in reality this would need asset prices
+    const liquidationThreshold = parseFloat(accountData.liquidationThreshold) / 100;
+    return (collateral * liquidationThreshold) / newDebt;
   };
 
-  const validateStep = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        return !!(formData.loanAmount && formData.duration && formData.interestType);
-      case 2:
-        return !!(formData.collateralType && formData.assetName && formData.collateralValue);
-      case 3:
-        return true; // Review step is always valid if we reached here
-      default:
-        return false;
-    }
+  const getMaxBorrowAmount = () => {
+    const collateral = parseFloat(accountData.totalCollateral);
+    const currentDebt = parseFloat(accountData.totalDebt);
+    const ltv = 0.75; // 75% LTV ratio
+    
+    const maxBorrow = (collateral * ltv) - currentDebt;
+    return Math.max(0, maxBorrow);
   };
 
-  const nextStep = () => {
-    if (!validateStep(currentStep)) {
+  const handleBorrow = async () => {
+    if (!isConnected || !address) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields before proceeding.",
+        title: "Wallet not connected",
+        description: "Please connect your wallet to borrow",
         variant: "destructive",
       });
       return;
     }
-    
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (!selectedAsset || !borrowAmount) {
+      toast({
+        title: "Missing information",
+        description: "Please select an asset and enter an amount",
+        variant: "destructive",
+      });
+      return;
     }
-  };
 
-  const submitApplication = async () => {
-    setIsSubmitting(true);
+    const newHealthFactor = calculateNewHealthFactor();
+    if (newHealthFactor < 1.1) {
+      toast({
+        title: "Insufficient collateral",
+        description: "This would put your health factor below safe levels",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTransactionPending(true);
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to submit a loan application.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Find the asset address
+      const asset = borrowableAssets.find(a => a.symbol === selectedAsset);
+      if (!asset) throw new Error('Asset not found');
 
-      const { error } = await supabase
-        .from('loan_requests')
-        .insert({
-          user_id: user.id,
-          loan_amount: parseFloat(formData.loanAmount),
-          duration_months: parseInt(formData.duration),
-          interest_type: formData.interestType,
-          collateral_type: formData.collateralType,
-          asset_name: formData.assetName,
-          collateral_value: parseFloat(formData.collateralValue)
-        });
+      await borrow(asset.address, borrowAmount, 18);
 
-      if (error) {
-        throw error;
-      }
-      
       toast({
-        title: "Application Submitted",
-        description: "Your loan application has been submitted successfully!",
+        title: "Borrow successful",
+        description: `Successfully borrowed ${borrowAmount} ${selectedAsset}`,
       });
+
+      // Reset form
+      setSelectedAsset('');
+      setBorrowAmount('');
       
-      // Reset form or redirect
-      setFormData({
-        loanAmount: '',
-        duration: '',
-        interestType: '',
-        collateralType: '',
-        assetName: '',
-        collateralValue: ''
-      });
-      setCurrentStep(1);
+      // Refresh account data
+      const data = await getUserAccountData();
+      setAccountData(data);
+
     } catch (error) {
+      console.error('Borrow failed:', error);
       toast({
-        title: "Submission Error",
-        description: "Failed to submit application. Please try again.",
+        title: "Borrow failed",
+        description: "Failed to complete borrow transaction",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsTransactionPending(false);
     }
   };
 
-  const renderStep1 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5" />
-          Loan Details
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <Label htmlFor="loanAmount">Loan Amount (USD)</Label>
-          <Input
-            id="loanAmount"
-            type="number"
-            placeholder="Enter loan amount"
-            value={formData.loanAmount}
-            onChange={(e) => handleInputChange('loanAmount', e.target.value)}
-            className="mt-2"
-          />
-        </div>
+  const getHealthFactorColor = (hf: number) => {
+    if (hf >= 2) return 'text-green-500';
+    if (hf >= 1.5) return 'text-yellow-500';
+    if (hf >= 1.1) return 'text-orange-500';
+    return 'text-red-500';
+  };
 
-        <div>
-          <Label htmlFor="duration">Duration (months)</Label>
-          <Input
-            id="duration"
-            type="number"
-            placeholder="Enter duration in months"
-            value={formData.duration}
-            onChange={(e) => handleInputChange('duration', e.target.value)}
-            className="mt-2"
-          />
-        </div>
+  const getHealthFactorIcon = (hf: number) => {
+    if (hf >= 2) return <CheckCircle className="w-4 h-4 text-green-500" />;
+    if (hf >= 1.1) return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+    return <AlertTriangle className="w-4 h-4 text-red-500" />;
+  };
 
-        <div>
-          <Label htmlFor="interestType">Interest Type</Label>
-          <Select value={formData.interestType} onValueChange={(value) => handleInputChange('interestType', value)}>
-            <SelectTrigger className="mt-2">
-              <SelectValue placeholder="Select interest type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fixed">Fixed Rate</SelectItem>
-              <SelectItem value="variable">Variable Rate</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderStep2 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="w-5 h-5" />
-          Collateral Information
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <Label htmlFor="collateralType">Collateral Type</Label>
-          <Select value={formData.collateralType} onValueChange={(value) => handleInputChange('collateralType', value)}>
-            <SelectTrigger className="mt-2">
-              <SelectValue placeholder="Select collateral type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="crypto">Cryptocurrency</SelectItem>
-              <SelectItem value="nft">NFT</SelectItem>
-              <SelectItem value="digital-asset">Other Digital Asset</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="assetName">Asset Name</Label>
-          <Input
-            id="assetName"
-            placeholder="e.g., ETH, USDC, BAYC NFT"
-            value={formData.assetName}
-            onChange={(e) => handleInputChange('assetName', e.target.value)}
-            className="mt-2"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="collateralValue">Collateral Value (USD)</Label>
-          <Input
-            id="collateralValue"
-            type="number"
-            placeholder="Enter collateral value"
-            value={formData.collateralValue}
-            onChange={(e) => handleInputChange('collateralValue', e.target.value)}
-            className="mt-2"
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderStep3 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Review & Confirm
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-accent">
-            <CardHeader>
-              <CardTitle className="text-lg">Loan Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount:</span>
-                <span className="font-medium">${parseFloat(formData.loanAmount || '0').toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Duration:</span>
-                <span className="font-medium">{formData.duration} months</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Interest Type:</span>
-                <span className="font-medium capitalize">{formData.interestType.replace('-', ' ')}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-accent">
-            <CardHeader>
-              <CardTitle className="text-lg">Collateral Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Type:</span>
-                <span className="font-medium capitalize">{formData.collateralType.replace('-', ' ')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Asset:</span>
-                <span className="font-medium">{formData.assetName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Value:</span>
-                <span className="font-medium">${parseFloat(formData.collateralValue || '0').toLocaleString()}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="bg-accent/30 p-4 rounded-lg border border-accent">
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="w-4 h-4 text-green-400" />
-            <span className="font-medium">Loan-to-Value Ratio: {formData.loanAmount && formData.collateralValue ? 
-              ((parseFloat(formData.loanAmount) / parseFloat(formData.collateralValue)) * 100).toFixed(1) : 0}%</span>
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/home")}
+              className="mb-4 flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <h2 className="text-xl font-semibold mb-4">Connect Your Wallet</h2>
+                <p className="text-muted-foreground">Please connect your wallet to start borrowing</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return renderStep1();
-      case 2:
-        return renderStep2();
-      case 3:
-        return renderStep3();
-      default:
-        return renderStep1();
-    }
-  };
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <Button
@@ -318,64 +193,187 @@ const LoanApplication = () => {
               <ArrowLeft className="w-4 h-4" />
               Back to Home
             </Button>
-            <h1 className="text-3xl font-bold mb-2">Loan Application</h1>
-            <p className="text-muted-foreground">Complete the form below to submit your loan application</p>
+            <h1 className="text-3xl font-bold mb-2">Borrow Assets</h1>
+            <p className="text-muted-foreground">Borrow crypto assets against your collateral</p>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
-              <span className="text-sm text-muted-foreground">
-                {currentStep === 1 && "Loan Details"}
-                {currentStep === 2 && "Collateral Info"}
-                {currentStep === 3 && "Review & Confirm"}
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Account Overview */}
+            <div className="lg:col-span-1">
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Your Position</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Collateral</span>
+                    <span className="font-medium">{formatCurrency(accountData.totalCollateral)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Borrowed</span>
+                    <span className="font-medium">{formatCurrency(accountData.totalDebt)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Available to Borrow</span>
+                    <span className="font-medium text-green-500">{formatCurrency(getMaxBorrowAmount().toString())}</span>
+                  </div>
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Health Factor</span>
+                      <div className="flex items-center gap-2">
+                        {getHealthFactorIcon(parseFloat(accountData.healthFactor))}
+                        <span className={`font-medium ${getHealthFactorColor(parseFloat(accountData.healthFactor))}`}>
+                          {parseFloat(accountData.healthFactor).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Above 1.0 is safe. Below 1.0 risks liquidation.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Collateral Positions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Collateral Assets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {balances.length > 0 ? (
+                    <div className="space-y-3">
+                      {balances.map((balance) => (
+                        <div key={balance.symbol} className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">
+                              {balance.symbol === 'ETH' ? '⟠' : 
+                               balance.symbol === 'USDC' ? '💲' : 
+                               balance.symbol === 'USDT' ? '₮' : '💰'}
+                            </span>
+                            <span className="font-medium">{balance.symbol}</span>
+                          </div>
+                          <span className="text-sm">{parseFloat(balance.balance).toFixed(4)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      No collateral deposited. Go to Home to deposit assets.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-            <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
-          </div>
 
-          {/* Form Content */}
-          <div className="mb-8">
-            {renderStepContent()}
-          </div>
+            {/* Borrow Interface */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Borrow Assets</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Asset Selection */}
+                  <div>
+                    <Label htmlFor="asset">Select Asset to Borrow</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                      {borrowableAssets.map((asset) => (
+                        <Card 
+                          key={asset.symbol}
+                          className={`cursor-pointer transition-all hover:border-primary ${
+                            selectedAsset === asset.symbol ? 'border-primary bg-primary/5' : ''
+                          }`}
+                          onClick={() => setSelectedAsset(asset.symbol)}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl mb-2">{asset.icon}</div>
+                            <div className="font-medium">{asset.symbol}</div>
+                            <div className="text-sm text-muted-foreground">APY {asset.apy}%</div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Previous
-            </Button>
+                  {/* Amount Input */}
+                  <div>
+                    <Label htmlFor="amount">Amount to Borrow</Label>
+                    <div className="relative mt-2">
+                      <Input
+                        id="amount"
+                        type="number"
+                        placeholder="0.00"
+                        value={borrowAmount}
+                        onChange={(e) => setBorrowAmount(e.target.value)}
+                        className="pr-20"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                        onClick={() => setBorrowAmount(getMaxBorrowAmount().toString())}
+                      >
+                        MAX
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Maximum available: {formatCurrency(getMaxBorrowAmount().toString())}
+                    </p>
+                  </div>
 
-            {currentStep < totalSteps ? (
-              <Button onClick={nextStep} className="flex items-center gap-2">
-                Next
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={submitApplication}
-                disabled={isSubmitting}
-                className="flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    Submit Application
-                    <CheckCircle className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            )}
+                  {/* Health Factor Impact */}
+                  {borrowAmount && selectedAsset && (
+                    <Card className="bg-muted/30">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Health Factor Impact</span>
+                          <div className="flex items-center gap-2">
+                            <span className={getHealthFactorColor(parseFloat(accountData.healthFactor))}>
+                              {parseFloat(accountData.healthFactor).toFixed(2)}
+                            </span>
+                            <TrendingDown className="w-4 h-4 text-muted-foreground" />
+                            <span className={getHealthFactorColor(calculateNewHealthFactor())}>
+                              {calculateNewHealthFactor().toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Borrow Button */}
+                  <Button 
+                    onClick={handleBorrow}
+                    disabled={!selectedAsset || !borrowAmount || isTransactionPending || parseFloat(borrowAmount) <= 0}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {isTransactionPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Processing Transaction...
+                      </>
+                    ) : (
+                      `Borrow ${borrowAmount || '0'} ${selectedAsset || 'Asset'}`
+                    )}
+                  </Button>
+
+                  {/* Warning */}
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-orange-500 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-orange-500 mb-1">Important Notes:</p>
+                        <ul className="text-muted-foreground space-y-1">
+                          <li>• Keep your health factor above 1.1 to avoid liquidation</li>
+                          <li>• Interest accrues continuously on borrowed amounts</li>
+                          <li>• You can repay anytime to improve your health factor</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
