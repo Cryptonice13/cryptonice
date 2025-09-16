@@ -43,7 +43,7 @@ const LoanApplication = () => {
 
   useEffect(() => {
     const fetchAccountData = async () => {
-      if (isConnected && address) {
+      if (address) {
         try {
           const data = await getUserAccountData();
           setAccountData(data);
@@ -54,7 +54,7 @@ const LoanApplication = () => {
     };
 
     fetchAccountData();
-  }, [isConnected, address, getUserAccountData]);
+  }, [address, getUserAccountData]);
 
   const calculateNewHealthFactor = () => {
     if (!borrowAmount || !selectedAsset) return parseFloat(accountData.healthFactor);
@@ -80,7 +80,7 @@ const LoanApplication = () => {
   };
 
   const handleBorrow = async () => {
-    if (!isConnected || !address) {
+    if (!address) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to borrow",
@@ -154,7 +154,7 @@ const LoanApplication = () => {
     return <AlertTriangle className="w-4 h-4 text-red-500" />;
   };
 
-  if (!isConnected) {
+  if (!address) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
