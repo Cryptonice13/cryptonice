@@ -113,10 +113,6 @@ const Home = () => {
     name: 'Marketplace',
     icon: BookOpen,
     href: '/marketplace'
-  }, {
-    name: 'Impact',
-    icon: TrendingUp,
-    href: '/impact'
   }];
   // Real-time calculated values
   const loanData = {
