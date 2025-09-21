@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLendingStore } from '@/state/lendingStore';
 import { useLendingPool } from '@/hooks/useLendingPool';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency, formatPercentage, formatBalance } from '@/lib/format';
 import { HealthFactorBar } from '@/components/HealthFactorBar';
 import { RepayModal } from '@/components/RepayModal';
@@ -17,6 +18,7 @@ import { Token } from '@/config/tokens';
 export default function MyLoans() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { isConnected } = useWallet();
   const { userPositions, totalCollateral, totalDebt, healthFactor, isLoading } = useLendingStore();
   const { getUserAccountData } = useLendingPool();
