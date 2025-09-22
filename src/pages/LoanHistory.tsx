@@ -43,61 +43,70 @@ const LoanHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Mock data for demonstration
+  // Mock data for demonstration - Crypto lending transactions
   const mockHistoryData: LoanHistoryItem[] = [
     {
       id: '1',
       date: '2024-01-15',
-      action: 'Loan Applied',
-      loan_id: 'LN001',
-      amount: '$15,000',
-      status: 'Applied',
-      tx_hash: '0x1234...5678'
+      action: 'Deposit',
+      loan_id: 'ETH-001',
+      amount: '2.5 ETH',
+      status: 'Completed',
+      tx_hash: '0x1a2b3c4d5e6f789012345678901234567890abcd'
     },
     {
       id: '2', 
       date: '2024-01-16',
-      action: 'Loan Approved',
-      loan_id: 'LN001',
-      amount: '$15,000',
-      status: 'Approved',
-      tx_hash: '0x2345...6789'
+      action: 'Borrow',
+      loan_id: 'USDC-002',
+      amount: '3,200 USDC',
+      status: 'Completed',
+      tx_hash: '0x2b3c4d5e6f7890123456789012345678901abcde'
     },
     {
       id: '3',
       date: '2024-01-17',
-      action: 'Loan Funded',
-      loan_id: 'LN001',
-      amount: '$15,000',
-      status: 'Funded',
-      tx_hash: '0x3456...7890'
+      action: 'Repay',
+      loan_id: 'USDC-002',
+      amount: '800 USDC',
+      status: 'Completed',
+      tx_hash: '0x3c4d5e6f78901234567890123456789012abcdef'
     },
     {
       id: '4',
       date: '2024-01-20',
-      action: 'Repayment Made',
-      loan_id: 'LN001',
-      amount: '$1,250',
-      status: 'Repaid',
-      tx_hash: '0x4567...8901'
+      action: 'Withdraw',
+      loan_id: 'ETH-001',
+      amount: '0.5 ETH',
+      status: 'Completed',
+      tx_hash: '0x4d5e6f7890123456789012345678901234abcdef0'
     },
     {
       id: '5',
-      date: '2024-01-10',
-      action: 'Loan Applied',
-      loan_id: 'LN002',
-      amount: '$8,500',
-      status: 'Applied',
-      tx_hash: '0x5678...9012'
+      date: '2024-01-22',
+      action: 'Deposit',
+      loan_id: 'WBTC-003',
+      amount: '0.1 WBTC',
+      status: 'Completed',
+      tx_hash: '0x5e6f78901234567890123456789012345abcdef01'
     },
     {
       id: '6',
-      date: '2024-01-11',
-      action: 'Loan Rejected',
-      loan_id: 'LN002',
-      amount: '$8,500',
-      status: 'Rejected',
-      tx_hash: undefined
+      date: '2024-01-23',
+      action: 'Borrow',
+      loan_id: 'DAI-004',
+      amount: '1,500 DAI',
+      status: 'Failed',
+      tx_hash: '0x6f7890123456789012345678901234abcdef0123'
+    },
+    {
+      id: '7',
+      date: '2024-01-25',
+      action: 'Liquidation',
+      loan_id: 'ETH-001',
+      amount: '0.3 ETH',
+      status: 'Executed',
+      tx_hash: '0x7890123456789012345678901234abcdef012345'
     }
   ];
 
@@ -159,18 +168,16 @@ const LoanHistory = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'applied':
-        return 'text-gray-400 bg-gray-500/20';
-      case 'approved':
-        return 'text-blue-400 bg-blue-500/20';
-      case 'funded':
+      case 'completed':
         return 'text-green-400 bg-green-500/20';
-      case 'repaid':
-        return 'text-green-400 bg-green-500/20';
-      case 'rejected':
-        return 'text-red-400 bg-red-500/20';
+      case 'pending':
+        return 'text-yellow-400 bg-yellow-500/20';
       case 'failed':
         return 'text-red-400 bg-red-500/20';
+      case 'executed':
+        return 'text-orange-400 bg-orange-500/20';
+      case 'cancelled':
+        return 'text-gray-400 bg-gray-500/20';
       default:
         return 'text-gray-400 bg-gray-500/20';
     }
@@ -178,16 +185,16 @@ const LoanHistory = () => {
 
   const getActionIcon = (action: string) => {
     switch (action.toLowerCase()) {
-      case 'loan applied':
-        return <TrendingUp className="w-4 h-4" />;
-      case 'loan approved':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'loan funded':
-        return <TrendingUp className="w-4 h-4" />;
-      case 'repayment made':
-        return <TrendingDown className="w-4 h-4" />;
-      case 'loan rejected':
-        return <XCircle className="w-4 h-4" />;
+      case 'deposit':
+        return <TrendingUp className="w-4 h-4 text-green-400" />;
+      case 'withdraw':
+        return <TrendingDown className="w-4 h-4 text-blue-400" />;
+      case 'borrow':
+        return <TrendingDown className="w-4 h-4 text-orange-400" />;
+      case 'repay':
+        return <TrendingUp className="w-4 h-4 text-purple-400" />;
+      case 'liquidation':
+        return <AlertCircle className="w-4 h-4 text-red-400" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -252,10 +259,10 @@ const LoanHistory = () => {
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-3">
               <History className="w-8 h-8 text-primary" />
-              Loan History
+              Transaction History
             </h1>
             <p className="text-muted-foreground">
-              Track all your loan transactions and activities
+              Track all your DeFi lending and borrowing activities
             </p>
           </div>
           <Button onClick={handleExportHistory} variant="outline">
@@ -266,37 +273,39 @@ const LoanHistory = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2">Total Loans Applied</div>
-              <div className="text-2xl font-bold text-blue-400">
-                {historyData.filter(item => item.action === 'Loan Applied').length}
-              </div>
-            </CardContent>
-          </Card>
-          
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
             <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2">Loans Funded</div>
+              <div className="text-sm text-muted-foreground mb-2">Total Deposits</div>
               <div className="text-2xl font-bold text-green-400">
-                {historyData.filter(item => item.status === 'Funded').length}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2">Repayments Made</div>
-              <div className="text-2xl font-bold text-purple-400">
-                {historyData.filter(item => item.action === 'Repayment Made').length}
+                {historyData.filter(item => item.action === 'Deposit').length}
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
             <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2">Total Volume</div>
-              <div className="text-2xl font-bold text-orange-400">$23,500</div>
+              <div className="text-sm text-muted-foreground mb-2">Total Borrows</div>
+              <div className="text-2xl font-bold text-orange-400">
+                {historyData.filter(item => item.action === 'Borrow').length}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+            <CardContent className="p-6">
+              <div className="text-sm text-muted-foreground mb-2">Total Repays</div>
+              <div className="text-2xl font-bold text-purple-400">
+                {historyData.filter(item => item.action === 'Repay').length}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+            <CardContent className="p-6">
+              <div className="text-sm text-muted-foreground mb-2">Completed Txs</div>
+              <div className="text-2xl font-bold text-blue-400">
+                {historyData.filter(item => item.status === 'Completed').length}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -309,7 +318,7 @@ const LoanHistory = () => {
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search by loan ID, action, or amount..."
+                    placeholder="Search by token, action, or amount..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -323,11 +332,11 @@ const LoanHistory = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="applied">Applied</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="funded">Funded</SelectItem>
-                  <SelectItem value="repaid">Repaid</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="executed">Executed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -352,7 +361,7 @@ const LoanHistory = () => {
                     <tr className="border-b border-border">
                       <th className="text-left py-3 text-sm font-medium text-muted-foreground">Date</th>
                       <th className="text-left py-3 text-sm font-medium text-muted-foreground">Action</th>
-                      <th className="text-left py-3 text-sm font-medium text-muted-foreground">Loan ID</th>
+                      <th className="text-left py-3 text-sm font-medium text-muted-foreground">Asset</th>
                       <th className="text-left py-3 text-sm font-medium text-muted-foreground">Amount</th>
                       <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
                       <th className="text-left py-3 text-sm font-medium text-muted-foreground">Tx Hash</th>

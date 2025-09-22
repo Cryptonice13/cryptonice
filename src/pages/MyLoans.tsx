@@ -92,6 +92,14 @@ export default function MyLoans() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <h1 className="text-3xl font-bold mb-4 sm:mb-0">My Borrow Positions</h1>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/loan-history")}
+            className="flex items-center gap-2"
+          >
+            <Clock className="w-4 h-4" />
+            History
+          </Button>
         </div>
 
         {/* Account Overview */}
