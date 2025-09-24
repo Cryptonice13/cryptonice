@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 
 interface LoanHistoryItem {
@@ -37,6 +39,7 @@ interface LoanHistoryItem {
 const LoanHistory = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [historyData, setHistoryData] = useState<LoanHistoryItem[]>([]);
   const [filteredData, setFilteredData] = useState<LoanHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,14 +259,25 @@ const LoanHistory = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
         >
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-3">
-              <History className="w-8 h-8 text-primary" />
-              Transaction History
-            </h1>
-            <p className="text-muted-foreground">
-              Track all your DeFi lending and borrowing activities
-            </p>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/my-loans')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to My Loans
+            </Button>
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-3">
+                <History className="w-8 h-8 text-primary" />
+                Transaction History
+              </h1>
+              <p className="text-muted-foreground">
+                Track all your DeFi lending and borrowing activities
+              </p>
+            </div>
           </div>
           <Button onClick={handleExportHistory} variant="outline">
             <Download className="w-4 h-4 mr-2" />
