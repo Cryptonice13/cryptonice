@@ -113,6 +113,10 @@ const Home = () => {
     name: 'Marketplace',
     icon: BookOpen,
     href: '/marketplace'
+  }, {
+    name: 'NFT Marketplace',
+    icon: Shield,
+    href: '/nft-marketplace'
   }];
   // Real-time calculated values
   const loanData = {

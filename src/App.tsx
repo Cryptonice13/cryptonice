@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import LoanApplication from "./pages/LoanApplication";
 import MyLoans from "./pages/MyLoans";
 import LoanHistory from "./pages/LoanHistory";
+import NFTMarketplace from "./pages/NFTMarketplace";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,11 @@ const App = () => (
           <Route path="/loan-history" element={
             <ProtectedRoute>
               <LoanHistory />
+            </ProtectedRoute>
+          } />
+          <Route path="/nft-marketplace" element={
+            <ProtectedRoute>
+              <NFTMarketplace />
             </ProtectedRoute>
           } />
         </Routes>
