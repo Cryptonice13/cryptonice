@@ -4,7 +4,13 @@ export const CONTRACT_ADDRESSES = {
   PRICE_ORACLE: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512', // Update after deployment
   USDC: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // Update after deployment
   USDT: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9', // Update after deployment
+  NFT: '0x0000000000000000000000000000000000000000', // Update after deployment
+  MARKETPLACE: '0x0000000000000000000000000000000000000000', // Update after deployment
 } as const;
+
+// NFT Marketplace Contract Addresses (for direct access)
+export const NFT_CONTRACT_ADDRESS = CONTRACT_ADDRESSES.NFT;
+export const MARKETPLACE_CONTRACT_ADDRESS = CONTRACT_ADDRESSES.MARKETPLACE;
 
 // Full contract ABIs will be imported from compiled artifacts
 const LendingPoolABI = [

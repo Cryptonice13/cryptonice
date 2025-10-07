@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletStore } from '@/state/walletStore';
+import { useNFT } from '@/hooks/useNFT';
 import {
   Image as ImageIcon,
   Wallet,
@@ -19,58 +20,28 @@ import {
   DollarSign,
   User,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
-
-interface NFT {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  price: string;
-  owner: string;
-  isListed: boolean;
-}
-
-const mockNFTs: NFT[] = [
-  {
-    id: '1',
-    name: 'Crypto Punk #1234',
-    description: 'Rare crypto collectible with unique traits',
-    image: '/lovable-uploads/0dbe1b75-2c74-4ff8-ba55-4be4d74abe72.png',
-    price: '2.5',
-    owner: '0x1234...5678',
-    isListed: true
-  },
-  {
-    id: '2',
-    name: 'Bored Ape #5678',
-    description: 'Premium NFT with exclusive benefits',
-    image: '/lovable-uploads/1e2a48dc-059b-4919-a1ed-44685d771a32.png',
-    price: '5.0',
-    owner: '0xabcd...efgh',
-    isListed: true
-  },
-  {
-    id: '3',
-    name: 'Doodle #9999',
-    description: 'Artistic NFT from renowned collection',
-    image: '/lovable-uploads/21f3edfb-62b5-4e35-9d03-7339d803b980.png',
-    price: '1.8',
-    owner: '0x9876...4321',
-    isListed: true
-  }
-];
 
 const NFTMarketplace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { address, isConnected } = useWalletStore();
   const [activeTab, setActiveTab] = useState('marketplace');
-  const [nfts] = useState<NFT[]>(mockNFTs);
-  const [myNFTs] = useState<NFT[]>([
-    { ...mockNFTs[0], owner: address || '0x0000...0000', isListed: false }
-  ]);
+  const [listPrice, setListPrice] = useState('');
+  
+  const {
+    loading,
+    myNFTs,
+    listedNFTs,
+    mintNFT,
+    listNFT,
+    buyNFT,
+    cancelListing,
+    fetchMyNFTs,
+    fetchListedNFTs
+  } = useNFT();
 
   // Mint NFT form state
   const [mintForm, setMintForm] = useState({
@@ -79,7 +50,6 @@ const NFTMarketplace = () => {
     image: null as File | null
   });
 
-  // Placeholder contract functions
   const handleMintNFT = async () => {
     if (!isConnected) {
       toast({
@@ -99,17 +69,28 @@ const NFTMarketplace = () => {
       return;
     }
 
-    // Placeholder for contract interaction
-    toast({
-      title: 'Minting NFT',
-      description: 'Transaction submitted. This is a placeholder for contract integration.'
-    });
+    try {
+      await mintNFT(mintForm.name, mintForm.description, mintForm.image);
+      
+      toast({
+        title: 'NFT Minted Successfully!',
+        description: 'Your NFT has been minted to your wallet'
+      });
 
-    // Reset form
-    setMintForm({ name: '', description: '', image: null });
+      // Reset form and refresh NFTs
+      setMintForm({ name: '', description: '', image: null });
+      await fetchMyNFTs();
+      setActiveTab('my-nfts');
+    } catch (error: any) {
+      toast({
+        title: 'Minting Failed',
+        description: error.message || 'Failed to mint NFT',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleBuyNFT = async (nftId: string) => {
+  const handleBuyNFT = async (tokenId: string, price: string) => {
     if (!isConnected) {
       toast({
         title: 'Wallet Not Connected',
@@ -119,14 +100,27 @@ const NFTMarketplace = () => {
       return;
     }
 
-    // Placeholder for contract interaction
-    toast({
-      title: 'Purchasing NFT',
-      description: `Buying NFT #${nftId}. This is a placeholder for contract integration.`
-    });
+    try {
+      await buyNFT(tokenId, price);
+      
+      toast({
+        title: 'NFT Purchased!',
+        description: 'The NFT has been transferred to your wallet'
+      });
+
+      // Refresh listings
+      await fetchListedNFTs();
+      await fetchMyNFTs();
+    } catch (error: any) {
+      toast({
+        title: 'Purchase Failed',
+        description: error.message || 'Failed to buy NFT',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleListNFT = async (nftId: string, price: string) => {
+  const handleListNFT = async (tokenId: string) => {
     if (!isConnected) {
       toast({
         title: 'Wallet Not Connected',
@@ -136,11 +130,55 @@ const NFTMarketplace = () => {
       return;
     }
 
-    // Placeholder for contract interaction
-    toast({
-      title: 'Listing NFT',
-      description: `Listing NFT #${nftId} for ${price} ETH. This is a placeholder for contract integration.`
-    });
+    if (!listPrice || parseFloat(listPrice) <= 0) {
+      toast({
+        title: 'Invalid Price',
+        description: 'Please enter a valid price',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await listNFT(tokenId, listPrice);
+      
+      toast({
+        title: 'NFT Listed!',
+        description: `Your NFT is now listed for ${listPrice} ETH`
+      });
+
+      // Refresh NFTs
+      await fetchMyNFTs();
+      await fetchListedNFTs();
+      setListPrice('');
+    } catch (error: any) {
+      toast({
+        title: 'Listing Failed',
+        description: error.message || 'Failed to list NFT',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCancelListing = async (tokenId: string) => {
+    try {
+      await cancelListing(tokenId);
+      
+      toast({
+        title: 'Listing Cancelled',
+        description: 'Your NFT has been removed from the marketplace'
+      });
+
+      // Refresh NFTs
+      await fetchMyNFTs();
+      await fetchListedNFTs();
+    } catch (error: any) {
+      toast({
+        title: 'Cancellation Failed',
+        description: error.message || 'Failed to cancel listing',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,55 +258,68 @@ const NFTMarketplace = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {nfts.map((nft) => (
-                  <Card key={nft.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <CardHeader className="p-0">
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        <img
-                          src={nft.image}
-                          alt={nft.name}
-                          className="w-full h-full object-cover"
-                        />
-                        {nft.isListed && (
+              {loading && listedNFTs.length === 0 ? (
+                <div className="col-span-full flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : listedNFTs.length === 0 ? (
+                <Card className="col-span-full text-center py-12">
+                  <CardContent>
+                    <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-xl font-semibold mb-2">No NFTs Listed</h3>
+                    <p className="text-muted-foreground">
+                      Be the first to list an NFT for sale!
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {listedNFTs.map((nft) => (
+                    <Card key={nft.tokenId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <CardHeader className="p-0">
+                        <div className="aspect-square bg-muted relative overflow-hidden">
+                          <img
+                            src={nft.image}
+                            alt={nft.name}
+                            className="w-full h-full object-cover"
+                          />
                           <Badge className="absolute top-2 right-2 bg-primary">
                             For Sale
                           </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <CardTitle className="text-lg mb-2">{nft.name}</CardTitle>
-                      <CardDescription className="text-sm mb-4">
-                        {nft.description}
-                      </CardDescription>
-                      
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="w-4 h-4" />
-                          {nft.owner}
                         </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-5 h-5 text-primary" />
-                          <span className="text-xl font-bold">{nft.price} ETH</span>
-                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <CardTitle className="text-lg mb-2">{nft.name}</CardTitle>
+                        <CardDescription className="text-sm mb-4">
+                          {nft.description}
+                        </CardDescription>
                         
-                        {nft.isListed && (
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="w-4 h-4" />
+                            {nft.owner.slice(0, 6)}...{nft.owner.slice(-4)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-5 h-5 text-primary" />
+                            <span className="text-xl font-bold">{nft.price} ETH</span>
+                          </div>
+                          
                           <Button 
-                            onClick={() => handleBuyNFT(nft.id)}
+                            onClick={() => handleBuyNFT(nft.tokenId, nft.price!)}
                             size="sm"
+                            disabled={loading || nft.owner.toLowerCase() === address?.toLowerCase()}
                           >
-                            Buy Now
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buy Now'}
                           </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
@@ -338,10 +389,19 @@ const NFTMarketplace = () => {
                     onClick={handleMintNFT} 
                     className="w-full" 
                     size="lg"
-                    disabled={!isConnected}
+                    disabled={!isConnected || loading}
                   >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {isConnected ? 'Mint NFT' : 'Connect Wallet to Mint'}
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Minting...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {isConnected ? 'Mint NFT' : 'Connect Wallet to Mint'}
+                      </>
+                    )}
                   </Button>
                 </CardContent>
               </Card>
@@ -383,10 +443,14 @@ const NFTMarketplace = () => {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {myNFTs.map((nft) => (
-                    <Card key={nft.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card key={nft.tokenId} className="overflow-hidden hover:shadow-lg transition-shadow">
                       <CardHeader className="p-0">
                         <div className="aspect-square bg-muted relative overflow-hidden">
                           <img
@@ -410,19 +474,40 @@ const NFTMarketplace = () => {
                             <Badge variant="outline" className="w-full justify-center">
                               Listed for {nft.price} ETH
                             </Badge>
-                            <Button variant="outline" className="w-full" size="sm">
-                              Unlist
+                            <Button 
+                              variant="outline" 
+                              className="w-full" 
+                              size="sm"
+                              onClick={() => handleCancelListing(nft.tokenId)}
+                              disabled={loading}
+                            >
+                              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Unlist'}
                             </Button>
                           </div>
                         ) : (
-                          <Button 
-                            onClick={() => handleListNFT(nft.id, '1.5')}
-                            className="w-full"
-                            size="sm"
-                          >
-                            <Tag className="w-4 h-4 mr-2" />
-                            List for Sale
-                          </Button>
+                          <div className="space-y-2">
+                            <Input
+                              type="number"
+                              placeholder="Price in ETH"
+                              value={listPrice}
+                              onChange={(e) => setListPrice(e.target.value)}
+                              step="0.01"
+                              min="0"
+                            />
+                            <Button 
+                              onClick={() => handleListNFT(nft.tokenId)}
+                              className="w-full"
+                              size="sm"
+                              disabled={loading || !listPrice}
+                            >
+                              {loading ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : (
+                                <Tag className="w-4 h-4 mr-2" />
+                              )}
+                              List for Sale
+                            </Button>
+                          </div>
                         )}
                       </CardContent>
                     </Card>
