@@ -117,6 +117,10 @@ const Home = () => {
     name: 'NFT Marketplace',
     icon: Shield,
     href: '/nft-marketplace'
+  }, {
+    name: 'Staking',
+    icon: TrendingUp,
+    href: '/finance'
   }];
   // Real-time calculated values
   const loanData = {
