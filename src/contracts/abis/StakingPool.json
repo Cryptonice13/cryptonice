@@ -1,0 +1,14 @@
+[
+  "function stake(uint256 amount) external",
+  "function unstake(uint256 amount) external",
+  "function claimReward() external",
+  "function getStakingInfo(address account) external view returns (uint256 staked, uint256 earnedRewards, uint256 totalPoolStaked, uint256 apy)",
+  "function stakedBalance(address account) external view returns (uint256)",
+  "function rewards(address account) external view returns (uint256)",
+  "function totalStaked() external view returns (uint256)",
+  "function rewardRate() external view returns (uint256)",
+  "function earned(address account) external view returns (uint256)",
+  "event Staked(address indexed user, uint256 amount)",
+  "event Unstaked(address indexed user, uint256 amount)",
+  "event RewardClaimed(address indexed user, uint256 amount)"
+]

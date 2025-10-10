@@ -1,0 +1,17 @@
+[
+  "function createLoan(uint256 _amount, uint256 _duration, uint256 _interestRate, string memory _purpose) external returns (uint256)",
+  "function fundLoan(uint256 _loanId) external",
+  "function disburseLoan(uint256 _loanId) external",
+  "function repayLoan(uint256 _loanId) external",
+  "function cancelLoan(uint256 _loanId) external",
+  "function getBorrowerLoans(address _borrower) external view returns (uint256[] memory)",
+  "function getLenderLoans(address _lender) external view returns (uint256[] memory)",
+  "function getAllPendingLoans() external view returns (tuple(uint256 id, address borrower, address lender, uint256 amount, uint256 duration, uint256 interestRate, string purpose, uint256 createdAt, uint256 fundedAt, uint256 repaidAt, uint8 status, uint256 totalRepayment)[] memory)",
+  "function getLoanDetails(uint256 _loanId) external view returns (tuple(uint256 id, address borrower, address lender, uint256 amount, uint256 duration, uint256 interestRate, string purpose, uint256 createdAt, uint256 fundedAt, uint256 repaidAt, uint8 status, uint256 totalRepayment))",
+  "function loanCounter() external view returns (uint256)",
+  "event LoanCreated(uint256 indexed loanId, address indexed borrower, uint256 amount, uint256 duration, uint256 interestRate)",
+  "event LoanFunded(uint256 indexed loanId, address indexed lender)",
+  "event LoanDisbursed(uint256 indexed loanId)",
+  "event LoanRepaid(uint256 indexed loanId, uint256 amount)",
+  "event LoanCancelled(uint256 indexed loanId)"
+]
