@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { FeaturesSection } from "@/components/features/FeaturesSection";
 import { PricingSection } from "@/components/pricing/PricingSection";
@@ -12,6 +13,14 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
 const Index = () => {
   const navigate = useNavigate();
+
+  // Redirect to home on mobile view
+  useEffect(() => {
+    const isMobile = window.innerWidth < 1024; // lg breakpoint
+    if (isMobile) {
+      navigate('/home');
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-black text-foreground">

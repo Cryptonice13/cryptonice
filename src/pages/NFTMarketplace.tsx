@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletStore } from '@/state/walletStore';
 import { useNFT } from '@/hooks/useNFT';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import {
   Image as ImageIcon,
   Wallet,
@@ -189,7 +190,7 @@ const NFTMarketplace = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <motion.div
@@ -518,6 +519,7 @@ const NFTMarketplace = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <MobileBottomNav />
     </div>
   );
 };

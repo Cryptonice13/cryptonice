@@ -12,6 +12,7 @@ import { BorrowModal } from '@/components/BorrowModal';
 import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/format';
 import { SUPPORTED_TOKENS } from '@/config/tokens';
 import { supabase } from '@/integrations/supabase/client';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ const Marketplace = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center space-y-4 mb-8">
@@ -403,6 +404,7 @@ const Marketplace = () => {
         onOpenChange={setIsBorrowModalOpen}
         tokenSymbol={selectedToken}
       />
+      <MobileBottomNav />
     </div>
   );
 };

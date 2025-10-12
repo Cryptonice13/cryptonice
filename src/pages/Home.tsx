@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLendingStore } from '@/state/lendingStore';
 import { useLendingPool } from '@/hooks/useLendingPool';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Menu, X, Home as HomeIcon, CreditCard, History, BookOpen, Shield, User, LogOut, Plus, Clock, TrendingUp, AlertTriangle, Info, ChevronRight, Calendar, Settings, Wallet, Copy, ExternalLink } from 'lucide-react';
 interface Profile {
   name: string;
@@ -744,7 +745,7 @@ const Home = () => {
               </div>
 
               {/* Footer */}
-              <div className="pt-8 border-t border-border">
+              <div className="pt-8 pb-20 lg:pb-8 border-t border-border">
                 <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
                   <a href="#" className="hover:text-foreground transition-colors">Terms</a>
                   <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
@@ -761,6 +762,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+      <MobileBottomNav />
     </div>;
 };
 export default Home;
