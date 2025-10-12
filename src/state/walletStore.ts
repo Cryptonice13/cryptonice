@@ -24,11 +24,26 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   setProvider: (p) => set({ provider: p }),
 
   connect: async () => {
-    if (!window.ethereum) throw new Error("No wallet found");
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    // If on mobile and MetaMask is not injected, open MetaMask app via deep link
+    if (isMobile && !window.ethereum) {
+      const currentUrl = encodeURIComponent(window.location.href);
+      const metamaskAppDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+      window.location.href = metamaskAppDeepLink;
+      throw new Error("Opening MetaMask app...");
+    }
+    
+    if (!window.ethereum) {
+      throw new Error("No wallet found. Please install MetaMask or use a Web3 browser.");
+    }
     
     set({ isConnecting: true });
     
     try {
+      // Request accounts first (triggers MetaMask popup/connection)
+      await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
+      
       const provider = new BrowserProvider(window.ethereum as any);
       const signer = await provider.getSigner();
       const address = await signer.getAddress();

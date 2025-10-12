@@ -11,9 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Wallet, TrendingUp, DollarSign, Users, ArrowLeft } from 'lucide-react';
 import { formatUnits } from 'ethers';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Finance() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { address, isConnected, connect } = useWalletStore();
   const {
     loans,
@@ -88,7 +90,22 @@ export default function Finance() {
             <CardDescription>Please connect your wallet to access the Finance page</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={connect} className="w-full">
+            <Button 
+              onClick={async () => {
+                try {
+                  await connect();
+                } catch (error: any) {
+                  if (!error.message.includes("Opening MetaMask")) {
+                    toast({
+                      title: "Connection Failed",
+                      description: error.message,
+                      variant: "destructive"
+                    });
+                  }
+                }
+              }} 
+              className="w-full"
+            >
               <Wallet className="mr-2 h-4 w-4" />
               Connect Wallet
             </Button>

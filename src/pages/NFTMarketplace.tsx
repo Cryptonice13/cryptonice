@@ -227,7 +227,22 @@ const NFTMarketplace = () => {
                 {address?.slice(0, 6)}...{address?.slice(-4)}
               </Badge>
             ) : (
-              <Button variant="default" onClick={() => useWalletStore.getState().connect()}>
+              <Button 
+                variant="default" 
+                onClick={async () => {
+                  try {
+                    await useWalletStore.getState().connect();
+                  } catch (error: any) {
+                    if (!error.message.includes("Opening MetaMask")) {
+                      toast({
+                        title: "Connection Failed",
+                        description: error.message,
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }}
+              >
                 <Wallet className="w-4 h-4 mr-2" />
                 Connect Wallet
               </Button>
@@ -424,7 +439,21 @@ const NFTMarketplace = () => {
                     <p className="text-muted-foreground mb-6">
                       Connect your wallet to view your NFT collection
                     </p>
-                    <Button onClick={() => useWalletStore.getState().connect()}>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          await useWalletStore.getState().connect();
+                        } catch (error: any) {
+                          if (!error.message.includes("Opening MetaMask")) {
+                            toast({
+                              title: "Connection Failed",
+                              description: error.message,
+                              variant: "destructive"
+                            });
+                          }
+                        }
+                      }}
+                    >
                       <Wallet className="w-4 h-4 mr-2" />
                       Connect Wallet
                     </Button>
