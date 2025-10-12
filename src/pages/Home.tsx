@@ -103,7 +103,7 @@ const Home = () => {
     }
   };
   const menuItems = [{
-    name: 'Dashboard',
+    name: 'Home',
     icon: HomeIcon,
     href: '/home'
   }, {
