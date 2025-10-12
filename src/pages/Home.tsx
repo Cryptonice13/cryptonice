@@ -106,10 +106,6 @@ const Home = () => {
     icon: HomeIcon,
     href: '/home'
   }, {
-    name: 'My Borrow',
-    icon: CreditCard,
-    href: '/my-loans'
-  }, {
     name: 'Marketplace',
     icon: BookOpen,
     href: '/marketplace'
@@ -117,10 +113,6 @@ const Home = () => {
     name: 'NFT Marketplace',
     icon: Shield,
     href: '/nft-marketplace'
-  }, {
-    name: 'Staking',
-    icon: TrendingUp,
-    href: '/finance'
   }];
   // Real-time calculated values
   const loanData = {
@@ -504,6 +496,24 @@ const Home = () => {
                       </CardContent>
                     </Card>
                   </motion.div>)}
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button
+                  onClick={() => navigate('/my-loans')}
+                  className="h-16 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  My Borrow
+                </Button>
+                <Button
+                  onClick={() => navigate('/finance')}
+                  className="h-16 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Staking
+                </Button>
               </div>
 
               {/* Assets to Borrow Section */}
