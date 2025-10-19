@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { WagmiProvider } from 'wagmi';
 import { config } from '@/lib/wagmi';
+import { useEffect } from 'react';
+import { useWalletStore } from '@/state/walletStore';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -21,6 +23,16 @@ import Finance from "./pages/Finance";
 
 const queryClient = new QueryClient();
 
+const WalletInitializer = () => {
+  const initialize = useWalletStore(state => state.initialize);
+  
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+  
+  return null;
+};
+
 const App = () => (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
@@ -29,6 +41,7 @@ const App = () => (
           <div className="min-h-screen bg-background">
             <Toaster />
             <Sonner />
+            <WalletInitializer />
             <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

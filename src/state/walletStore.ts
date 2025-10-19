@@ -11,6 +11,7 @@ type WalletState = {
   connect: () => Promise<void>;
   disconnect: () => void;
   setProvider: (p: any) => void;
+  initialize: () => Promise<void>;
 };
 
 export const useWalletStore = create<WalletState>((set, get) => ({
@@ -93,5 +94,53 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       isConnected: false,
       isConnecting: false
     });
+  },
+
+  initialize: async () => {
+    if (!window.ethereum) return;
+    
+    try {
+      // Check if already connected without triggering a popup
+      const accounts = await (window.ethereum as any).request({ 
+        method: 'eth_accounts' 
+      });
+      
+      if (accounts.length > 0) {
+        const provider = new BrowserProvider(window.ethereum as any);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        const network = await provider.getNetwork();
+        
+        set({ 
+          provider, 
+          signer, 
+          address, 
+          chainId: Number(network.chainId),
+          isConnected: true,
+          isConnecting: false
+        });
+
+        // Set up listeners
+        (window.ethereum as any).on?.("accountsChanged", async (accounts: string[]) => {
+          if (accounts.length === 0) {
+            get().disconnect();
+          } else {
+            try {
+              const s = await provider.getSigner();
+              const addr = await s.getAddress();
+              set({ signer: s, address: addr });
+            } catch (error) {
+              console.error("Error updating account:", error);
+            }
+          }
+        });
+
+        (window.ethereum as any).on?.("chainChanged", () => {
+          window.location.reload();
+        });
+      }
+    } catch (error) {
+      console.error("Failed to initialize wallet:", error);
+    }
   }
 }));
