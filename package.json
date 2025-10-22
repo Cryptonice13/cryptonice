@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aave/client": "^0.7.0",
     "@geist-ui/core": "^2.3.8",
     "@hookform/resolvers": "^3.9.0",
     "@lottiefiles/dotlottie-react": "^0.10.0",

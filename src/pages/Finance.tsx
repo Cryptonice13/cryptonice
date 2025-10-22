@@ -2,20 +2,23 @@ import { useState, useEffect } from 'react';
 import { useWalletStore } from '@/state/walletStore';
 import { useLending } from '@/hooks/useLending';
 import { useStaking } from '@/hooks/useStaking';
+import { useAave } from '@/hooks/useAave';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Wallet, TrendingUp, DollarSign, Users, ArrowLeft } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign, Users, ArrowLeft, ExternalLink } from 'lucide-react';
 import { formatUnits } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useChainId } from 'wagmi';
 
 export default function Finance() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const chainId = useChainId();
   const { address, isConnected, connect } = useWalletStore();
   const {
     loans,
@@ -41,6 +44,16 @@ export default function Finance() {
     mintTokens: mintStakingTokens,
   } = useStaking();
 
+  const {
+    availableChains,
+    aaveMarkets,
+    userPositions,
+    isLoading: aaveLoading,
+    error: aaveError,
+    fetchMarkets,
+    fetchUserPositions,
+  } = useAave();
+
   const [loanForm, setLoanForm] = useState({
     amount: '',
     duration: '',
@@ -57,6 +70,15 @@ export default function Finance() {
       getTokenBalance().then(setLendingTokenBalance);
     }
   }, [isConnected, getTokenBalance]);
+
+  useEffect(() => {
+    if (chainId && isConnected) {
+      fetchMarkets(chainId);
+      if (address) {
+        fetchUserPositions(chainId);
+      }
+    }
+  }, [chainId, isConnected, address, fetchMarkets, fetchUserPositions]);
 
   const handleCreateLoan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,9 +209,10 @@ export default function Finance() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="lending" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="lending">Lending</TabsTrigger>
             <TabsTrigger value="staking">Staking Pool</TabsTrigger>
+            <TabsTrigger value="aave">Aave Protocol</TabsTrigger>
           </TabsList>
 
           {/* Lending Section */}
@@ -518,6 +541,126 @@ export default function Finance() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Aave Protocol Section */}
+          <TabsContent value="aave" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  Aave Protocol Integration
+                  <ExternalLink className="h-4 w-4" />
+                </CardTitle>
+                <CardDescription>
+                  Access Aave V3 lending and borrowing markets directly from this platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Aave Info */}
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">About Aave Integration</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Aave is a decentralized lending protocol where users can supply assets to earn interest 
+                    or borrow assets against their collateral. This integration allows you to interact with 
+                    Aave V3 markets directly.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Current Chain</p>
+                      <p className="font-semibold">Chain ID: {chainId || 'Not Connected'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Available Chains</p>
+                      <p className="font-semibold">{availableChains.length} Supported</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button
+                    onClick={() => chainId && fetchMarkets(chainId)}
+                    disabled={!chainId || aaveLoading}
+                    className="w-full"
+                  >
+                    {aaveLoading ? 'Loading...' : 'Fetch Aave Markets'}
+                  </Button>
+                  <Button
+                    onClick={() => chainId && fetchUserPositions(chainId)}
+                    disabled={!chainId || !address || aaveLoading}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {aaveLoading ? 'Loading...' : 'Fetch My Positions'}
+                  </Button>
+                </div>
+
+                {/* Error Display */}
+                {aaveError && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                    <p className="text-sm text-destructive">{aaveError}</p>
+                  </div>
+                )}
+
+                {/* Markets Display */}
+                {aaveMarkets.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Available Markets</h3>
+                    <div className="space-y-2">
+                      {aaveMarkets.map((market) => (
+                        <Card key={market.id} className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">{market.name}</p>
+                              <p className="text-xs text-muted-foreground">ID: {market.id}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm">
+                                <span className="text-green-600">Supply APY: {market.supplyApy}%</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-orange-600">Borrow APY: {market.borrowApy}%</span>
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* User Positions Display */}
+                {userPositions.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Your Positions</h3>
+                    <div className="space-y-2">
+                      {userPositions.map((position, idx) => (
+                        <Card key={idx} className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">{position.symbol}</p>
+                              <p className="text-xs text-muted-foreground">{position.underlyingAsset}</p>
+                            </div>
+                            <div className="text-right text-sm">
+                              <p>Supplied: {position.currentATokenBalance}</p>
+                              <p>Borrowed: {position.currentVariableDebt}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!aaveLoading && aaveMarkets.length === 0 && userPositions.length === 0 && !aaveError && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Click "Fetch Aave Markets" to view available lending markets</p>
+                    <p className="text-sm mt-2">Connect your wallet and fetch positions to see your Aave assets</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
