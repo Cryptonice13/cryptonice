@@ -83,6 +83,11 @@ const App = () => (
               <Finance />
             </ProtectedRoute>
           } />
+          <Route path="/aave-dashboard" element={
+            <ProtectedRoute>
+              <AaveDashboard />
+            </ProtectedRoute>
+          } />
         </Routes>
             </BrowserRouter>
           </div>

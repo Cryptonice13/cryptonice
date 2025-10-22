@@ -47,11 +47,10 @@ export default function Finance() {
   const {
     availableChains,
     aaveMarkets,
-    userPositions,
+    selectedMarket,
     isLoading: aaveLoading,
     error: aaveError,
     fetchMarkets,
-    fetchUserPositions,
   } = useAave();
 
   const [loanForm, setLoanForm] = useState({
@@ -73,12 +72,9 @@ export default function Finance() {
 
   useEffect(() => {
     if (chainId && isConnected) {
-      fetchMarkets(chainId);
-      if (address) {
-        fetchUserPositions(chainId);
-      }
+      fetchMarkets(chainId, address);
     }
-  }, [chainId, isConnected, address, fetchMarkets, fetchUserPositions]);
+  }, [chainId, isConnected, address, fetchMarkets]);
 
   const handleCreateLoan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +208,7 @@ export default function Finance() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="lending">Lending</TabsTrigger>
             <TabsTrigger value="staking">Staking Pool</TabsTrigger>
-            <TabsTrigger value="aave">Aave Protocol</TabsTrigger>
+            <TabsTrigger value="aave" onClick={() => navigate('/aave-dashboard')}>Aave Protocol</TabsTrigger>
           </TabsList>
 
           {/* Lending Section */}
