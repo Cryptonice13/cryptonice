@@ -339,8 +339,27 @@ export default function Finance() {
             {/* Available Loans for Lenders */}
             <Card>
               <CardHeader>
-                <CardTitle>Available Loan Requests</CardTitle>
-                <CardDescription>Fund loans and earn interest</CardDescription>
+                <CardTitle>For Lenders: Earn Interest on Your Crypto</CardTitle>
+                <CardDescription>
+                  <div className="space-y-2 mt-2">
+                    <p className="font-semibold">How it works:</p>
+                    <ul className="text-sm space-y-1 list-disc list-inside">
+                      <li>Deposit crypto assets (ETH, USDT, USDC) into the lending pool</li>
+                      <li>Your funds automatically add to the liquidity reserve</li>
+                      <li>Smart contract tracks your share and accrues interest over time</li>
+                      <li>Interest is distributed based on pool utilization rate</li>
+                    </ul>
+                    <div className="mt-3 p-3 bg-muted rounded-md">
+                      <p className="text-xs font-semibold mb-1">Technical Stack:</p>
+                      <p className="text-xs">
+                        <span className="font-medium">Smart Contract:</span> LendingPool.sol | 
+                        <span className="font-medium"> Libraries:</span> OpenZeppelin ERC20 | 
+                        <span className="font-medium"> Price Oracle:</span> Chainlink | 
+                        <span className="font-medium"> Frontend:</span> React + ethers.js
+                      </p>
+                    </div>
+                  </div>
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
