@@ -14,6 +14,8 @@ import { formatUnits } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useChainId } from 'wagmi';
+import { DepositModal } from '@/components/DepositModal';
+import { SUPPORTED_TOKENS } from '@/config/tokens';
 
 export default function Finance() {
   const navigate = useNavigate();
@@ -63,6 +65,8 @@ export default function Finance() {
   const [stakeAmount, setStakeAmount] = useState('');
   const [unstakeAmount, setUnstakeAmount] = useState('');
   const [lendingTokenBalance, setLendingTokenBalance] = useState('0');
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<string>('');
 
   useEffect(() => {
     if (isConnected) {
@@ -336,7 +340,7 @@ export default function Finance() {
               </Card>
             </div>
 
-            {/* Available Loans for Lenders */}
+            {/* Lending Pool - Deposit Assets */}
             <Card>
               <CardHeader>
                 <CardTitle>For Lenders: Earn Interest on Your Crypto</CardTitle>
@@ -344,10 +348,11 @@ export default function Finance() {
                   <div className="space-y-2 mt-2">
                     <p className="font-semibold">How it works:</p>
                     <ul className="text-sm space-y-1 list-disc list-inside">
-                      <li>Deposit crypto assets (ETH, USDT, USDC) into the lending pool</li>
+                      <li>Deposit crypto assets into the lending pool to provide liquidity</li>
                       <li>Your funds automatically add to the liquidity reserve</li>
                       <li>Smart contract tracks your share and accrues interest over time</li>
-                      <li>Interest is distributed based on pool utilization rate</li>
+                      <li>Borrowers take loans from this pool by providing collateral</li>
+                      <li>Interest is distributed to lenders based on pool utilization rate</li>
                     </ul>
                     <div className="mt-3 p-3 bg-muted rounded-md">
                       <p className="text-xs font-semibold mb-1">Technical Stack:</p>
@@ -362,51 +367,79 @@ export default function Finance() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {loans.length === 0 ? (
-                    <p className="text-sm text-muted-foreground col-span-full text-center py-4">
-                      No pending loan requests
-                    </p>
-                  ) : (
-                    loans.map((loan) => (
-                      <Card key={loan.id} className="p-4">
-                        <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {SUPPORTED_TOKENS.map((token) => (
+                    <Card key={token.symbol} className="p-4 hover:shadow-lg transition-shadow">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={token.logo} 
+                            alt={token.name}
+                            className="w-10 h-10 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
                           <div>
-                            <p className="font-semibold text-lg">{loan.amount} USDC</p>
-                            <p className="text-xs text-muted-foreground">
-                              Borrower: {loan.borrower.slice(0, 6)}...{loan.borrower.slice(-4)}
-                            </p>
+                            <p className="font-semibold text-lg">{token.symbol}</p>
+                            <p className="text-xs text-muted-foreground">{token.name}</p>
                           </div>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Duration:</span>
-                              <span>{Math.floor(Number(loan.duration) / 86400)} days</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Interest:</span>
-                              <span className="text-green-600 font-semibold">{loan.interestRate}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Returns:</span>
-                              <span className="font-semibold">{loan.totalRepayment} USDC</span>
-                            </div>
-                          </div>
-                          <p className="text-xs border-t pt-2">{loan.purpose}</p>
-                          <Button
-                            className="w-full"
-                            size="sm"
-                            onClick={() => fundLoan(loan.id)}
-                            disabled={lendingLoading || loan.borrower === address}
-                          >
-                            Fund Loan
-                          </Button>
                         </div>
-                      </Card>
-                    ))
-                  )}
+                        
+                        <div className="space-y-2 bg-muted/30 p-3 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Supply APY</span>
+                            <span className="text-lg font-bold text-green-600">{token.supplyAPY}%</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Total Supply</span>
+                            <span className="font-medium">{parseFloat(token.totalSupply).toLocaleString()} {token.symbol}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Utilization</span>
+                            <span className="font-medium">
+                              {((parseFloat(token.totalBorrow) / parseFloat(token.totalSupply)) * 100).toFixed(2)}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <Button
+                          className="w-full button-gradient"
+                          onClick={() => {
+                            setSelectedToken(token.symbol);
+                            setDepositModalOpen(true);
+                          }}
+                          disabled={!isConnected}
+                        >
+                          {isConnected ? `Deposit ${token.symbol}` : 'Connect Wallet'}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
+
+                {!isConnected && (
+                  <div className="mt-4 p-4 bg-muted/30 rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Connect your wallet to start earning interest on your crypto assets
+                    </p>
+                    <Button onClick={connect} variant="outline">
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Connect Wallet
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Deposit Modal */}
+            {selectedToken && (
+              <DepositModal
+                open={depositModalOpen}
+                onOpenChange={setDepositModalOpen}
+                tokenSymbol={selectedToken}
+              />
+            )}
 
             {/* Funded Loans */}
             {lenderLoans.length > 0 && (
