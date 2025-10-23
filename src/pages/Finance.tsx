@@ -218,123 +218,164 @@ export default function Finance() {
           {/* Lending Section */}
           <TabsContent value="lending" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Borrower Section */}
+              {/* Your Lending Positions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Request a Loan</CardTitle>
+                  <CardTitle>Your Lending Positions</CardTitle>
                   <CardDescription>
-                    Fill out the form to create a loan request
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span>USDC Balance: {parseFloat(lendingTokenBalance).toFixed(2)}</span>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0"
-                        onClick={() => mintLendingTokens('1000')}
-                      >
-                        Get Test USDC
-                      </Button>
-                    </div>
+                    View and manage your deposits in the lending pool
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCreateLoan} className="space-y-4">
-                    <div>
-                      <Label htmlFor="amount">Loan Amount (USDC)</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        placeholder="1000"
-                        value={loanForm.amount}
-                        onChange={(e) => setLoanForm({ ...loanForm, amount: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="duration">Duration (days)</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        placeholder="30"
-                        value={loanForm.duration}
-                        onChange={(e) => setLoanForm({ ...loanForm, duration: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                      <Input
-                        id="interestRate"
-                        type="number"
-                        step="0.1"
-                        placeholder="5.0"
-                        value={loanForm.interestRate}
-                        onChange={(e) => setLoanForm({ ...loanForm, interestRate: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="purpose">Purpose</Label>
-                      <Textarea
-                        id="purpose"
-                        placeholder="Describe the purpose of the loan"
-                        value={loanForm.purpose}
-                        onChange={(e) => setLoanForm({ ...loanForm, purpose: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={lendingLoading}>
-                      {lendingLoading ? 'Creating...' : 'Create Loan Request'}
-                    </Button>
-                  </form>
+                  <div className="space-y-4">
+                    {SUPPORTED_TOKENS.map((token) => (
+                      <Card key={token.symbol} className="p-4 bg-muted/30">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src={token.logo} 
+                                alt={token.name}
+                                className="w-8 h-8 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                              <div>
+                                <p className="font-semibold">{token.symbol}</p>
+                                <p className="text-xs text-muted-foreground">{token.name}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Supply APY</p>
+                              <p className="font-bold text-green-600">{token.supplyAPY}%</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 bg-background/50 p-3 rounded-lg">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Deposited</p>
+                              <p className="font-semibold">0.00 {token.symbol}</p>
+                              <p className="text-xs text-muted-foreground">≈ $0.00</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Interest Earned</p>
+                              <p className="font-semibold text-green-600">+0.00 {token.symbol}</p>
+                              <p className="text-xs text-muted-foreground">≈ $0.00</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => {
+                                setSelectedToken(token.symbol);
+                                setDepositModalOpen(true);
+                              }}
+                              disabled={!isConnected}
+                            >
+                              Deposit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              disabled={!isConnected}
+                            >
+                              Withdraw
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    
+                    {!isConnected && (
+                      <div className="text-center py-6">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Connect your wallet to view your lending positions
+                        </p>
+                        <Button onClick={connect} variant="outline" size="sm">
+                          <Wallet className="mr-2 h-4 w-4" />
+                          Connect Wallet
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* My Loans */}
+              {/* Lending Overview */}
               <Card>
                 <CardHeader>
-                  <CardTitle>My Loans</CardTitle>
-                  <CardDescription>Your active loans as borrower</CardDescription>
+                  <CardTitle>Lending Overview</CardTitle>
+                  <CardDescription>Your lending activity and statistics</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                    {borrowerLoans.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No loans yet</p>
-                    ) : (
-                      borrowerLoans.map((loan) => (
-                        <Card key={loan.id} className="p-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-semibold">{loan.amount} USDC</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {loan.interestRate}% interest • {Math.floor(Number(loan.duration) / 86400)} days
-                                </p>
-                              </div>
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                loan.status === 'Funded' ? 'bg-blue-100 text-blue-800' :
-                                loan.status === 'Repaid' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {loan.status}
-                              </span>
-                            </div>
-                            <p className="text-xs">{loan.purpose}</p>
-                            {loan.status === 'Funded' && (
-                              <div className="flex gap-2 pt-2">
-                                <Button size="sm" onClick={() => disburseLoan(loan.id)} disabled={lendingLoading}>
-                                  Disburse
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => repayLoan(loan.id)} disabled={lendingLoading}>
-                                  Repay ({loan.totalRepayment} USDC)
-                                </Button>
-                              </div>
-                            )}
+                  <div className="space-y-6">
+                    {/* Total Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Total Deposited</p>
+                          <p className="text-2xl font-bold">$0.00</p>
+                          <p className="text-xs text-green-600">Earning Interest</p>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Total Earned</p>
+                          <p className="text-2xl font-bold text-green-600">$0.00</p>
+                          <p className="text-xs text-muted-foreground">Lifetime</p>
+                        </div>
+                      </Card>
+                    </div>
+
+                    {/* How Lending Works */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                      <h4 className="font-semibold text-sm">How Your Lending Works:</h4>
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <div className="flex gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                          <p>Your deposits are added to the liquidity pool instantly</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <DollarSign className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <p>Interest accrues continuously based on pool utilization</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Users className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                          <p>Borrowers use your liquidity by providing collateral</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pool Metrics */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">Pool Metrics</h4>
+                      {SUPPORTED_TOKENS.map((token) => (
+                        <div key={token.symbol} className="flex justify-between items-center text-sm">
+                          <div className="flex items-center gap-2">
+                            <img 
+                              src={token.logo} 
+                              alt={token.name}
+                              className="w-5 h-5 rounded-full"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                            <span>{token.symbol}</span>
                           </div>
-                        </Card>
-                      ))
-                    )}
+                          <div className="text-right">
+                            <p className="font-medium">{token.supplyAPY}% APY</p>
+                            <p className="text-xs text-muted-foreground">
+                              {((parseFloat(token.totalBorrow) / parseFloat(token.totalSupply)) * 100).toFixed(1)}% utilized
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
