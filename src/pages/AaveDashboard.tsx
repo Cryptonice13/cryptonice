@@ -167,11 +167,13 @@ export default function AaveDashboard() {
                 <SelectValue placeholder="Select a market" />
               </SelectTrigger>
               <SelectContent>
-                {aaveMarkets.map((market) => (
-                  <SelectItem key={market.id} value={market.id}>
-                    {market.name} - {market.chain.name}
-                  </SelectItem>
-                ))}
+                {aaveMarkets
+                  .filter(market => market.id && market.id.trim() !== '')
+                  .map((market) => (
+                    <SelectItem key={market.id} value={market.id}>
+                      {market.name} - {market.chain.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

@@ -154,16 +154,16 @@ export function ReserveList({
 
         <TabsContent value="supply" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {supplyReserves.map((reserve) => (
-              <ReserveCard key={reserve.underlyingToken.address} reserve={reserve} type="supply" />
+            {supplyReserves.map((reserve, idx) => (
+              <ReserveCard key={`supply-${reserve.underlyingToken.address}-${idx}`} reserve={reserve} type="supply" />
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="borrow" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {borrowReserves.map((reserve) => (
-              <ReserveCard key={reserve.underlyingToken.address} reserve={reserve} type="borrow" />
+            {borrowReserves.map((reserve, idx) => (
+              <ReserveCard key={`borrow-${reserve.underlyingToken.address}-${idx}`} reserve={reserve} type="borrow" />
             ))}
           </div>
         </TabsContent>
