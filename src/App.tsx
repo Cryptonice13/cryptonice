@@ -20,6 +20,7 @@ import MyLoans from "./pages/MyLoans";
 import LoanHistory from "./pages/LoanHistory";
 import NFTMarketplace from "./pages/NFTMarketplace";
 import Finance from "./pages/Finance";
+import AaveDashboard from "./pages/AaveDashboard";
 
 const queryClient = new QueryClient();
 
