@@ -44,7 +44,7 @@ const PricingTier = ({
         </ul>
         <Button 
           className="button-gradient w-full"
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/nft-marketplace')}
         >
           Get Started
         </Button>
@@ -64,7 +64,7 @@ export const PricingSection = () => {
           className="text-5xl md:text-6xl font-normal mb-6"
         >
           Choose Your{" "}
-          <span className="text-gradient font-medium">Lending Experience</span>
+          <span className="text-gradient font-medium">NFT Experience</span>
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -72,46 +72,46 @@ export const PricingSection = () => {
           transition={{ delay: 0.1, duration: 0.5 }}
           className="text-lg text-gray-400"
         >
-          Find the perfect plan whether you're borrowing or lending with transparent rates
+          Find the perfect plan whether you're collecting or creating NFTs on our marketplace
         </motion.p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         <PricingTier
-          name="Basic Borrower"
-          price="3-8%"
-          description="Perfect for first-time borrowers building credit"
+          name="NFT Collector"
+          price="2.5%"
+          description="Perfect for discovering and collecting unique NFTs"
           features={[
-            "Loans up to $1,000",
-            "Flexible repayment terms",
-            "Build on-chain reputation",
-            "Community support"
+            "Buy NFTs instantly",
+            "Secure wallet integration",
+            "Browse marketplace",
+            "Community access"
           ]}
         />
         <PricingTier
-          name="Verified Lender"
-          price="5-12%"
-          description="Start earning passive income through micro-lending"
+          name="NFT Creator"
+          price="5%"
+          description="Start creating and selling your digital products"
           features={[
-            "Diversified loan portfolio",
-            "Automated investment tools",
-            "Detailed borrower profiles",
-            "Risk assessment tools",
-            "Social impact tracking"
+            "Mint unlimited NFTs",
+            "List items for sale",
+            "Creator dashboard",
+            "Royalty management",
+            "Marketing tools"
           ]}
           isPopular
         />
         <PricingTier
-          name="Institutional"
+          name="Enterprise"
           price="Custom"
-          description="Large-scale lending solutions for organizations"
+          description="Large-scale NFT solutions for brands and organizations"
           features={[
-            "Bulk lending programs",
-            "Custom risk parameters",
-            "Dedicated fund management",
+            "Custom marketplace",
+            "Bulk minting tools",
             "Advanced analytics",
             "White-label solutions",
-            "24/7 priority support"
+            "Dedicated support",
+            "API access"
           ]}
         />
       </div>
