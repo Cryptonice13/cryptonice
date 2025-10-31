@@ -46,18 +46,18 @@ const Index = () => {
         >
           <span className="text-sm font-medium">
             <Command className="w-4 h-4 inline-block mr-2" />
-            Decentralized microfinance platform
+            Decentralized NFT Marketplace
           </span>
         </motion.div>
         
         <div className="max-w-4xl relative z-10">
           <h1 className="text-5xl md:text-7xl font-normal mb-4 tracking-tight text-left">
             <span className="text-gray-200">
-              <TextGenerateEffect words="Empowering Dreams," />
+              <TextGenerateEffect words="Trade Digital Assets," />
             </span>
             <br />
             <span className="text-white font-medium">
-              <TextGenerateEffect words="One Micro-Loan at a Time" />
+              <TextGenerateEffect words="Build Your NFT Collection" />
             </span>
           </h1>
           
@@ -67,8 +67,8 @@ const Index = () => {
             transition={{ delay: 0.4 }}
             className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl text-left"
           >
-            Connect borrowers and lenders worldwide through decentralized, transparent, and borderless microfinance powered by Web3.{" "}
-            <span className="text-white">Join the financial revolution.</span>
+            Buy, sell, and discover unique digital products and ideas on our decentralized NFT marketplace. Powered by blockchain technology for transparent, secure, and borderless transactions.{" "}
+            <span className="text-white">Join the digital revolution.</span>
           </motion.p>
           
           <motion.div
@@ -80,17 +80,17 @@ const Index = () => {
             <Button 
               size="lg" 
               className="button-gradient"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/nft-marketplace')}
             >
-              Let Borrow
+              Explore NFTs
             </Button>
             <Button 
               size="lg" 
               variant="link" 
               className="text-white"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/nft-marketplace')}
             >
-              Become a Lender <ArrowRight className="ml-2 w-4 h-4" />
+              Create & Sell <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </motion.div>
         </div>
@@ -104,7 +104,7 @@ const Index = () => {
           <div className="glass rounded-xl overflow-hidden">
             <img
               src="/lovable-uploads/c32c6788-5e4a-4fee-afee-604b03113c7f.png"
-              alt="Microfinance Platform Dashboard"
+              alt="NFT Marketplace Platform"
               className="w-full h-auto"
             />
           </div>
@@ -146,16 +146,16 @@ const Index = () => {
           className="bg-[#0A0A0A]/80 backdrop-blur-lg border border-white/10 rounded-2xl p-8 md:p-12 text-center relative z-10"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Join the Decentralized Finance Revolution
+            Start Your NFT Journey Today
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Connect with borrowers and lenders worldwide to create positive financial impact.
+            Discover, collect, and trade unique digital assets. Connect your wallet and explore the world of NFTs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
               className="button-gradient"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/nft-marketplace')}
             >
               Get Started
               <ArrowRight className="ml-2 w-4 h-4" />
@@ -164,7 +164,7 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               className="border-white/20 hover:bg-white/10"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/nft-marketplace')}
             >
               View Marketplace
             </Button>
