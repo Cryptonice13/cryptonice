@@ -291,7 +291,11 @@ const NFTMarketplace = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {listedNFTs.map((nft) => (
-                    <Card key={nft.tokenId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card 
+                      key={nft.tokenId} 
+                      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => navigate(`/nft/${nft.tokenId}`)}
+                    >
                       <CardHeader className="p-0">
                         <div className="aspect-square bg-muted relative overflow-hidden">
                           <img
@@ -304,7 +308,7 @@ const NFTMarketplace = () => {
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4">
+                      <CardContent className="p-4" onClick={(e) => e.stopPropagation()}>
                         <CardTitle className="text-lg mb-2">{nft.name}</CardTitle>
                         <CardDescription className="text-sm mb-4">
                           {nft.description}
@@ -480,7 +484,11 @@ const NFTMarketplace = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {myNFTs.map((nft) => (
-                    <Card key={nft.tokenId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card 
+                      key={nft.tokenId} 
+                      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => navigate(`/nft/${nft.tokenId}`)}
+                    >
                       <CardHeader className="p-0">
                         <div className="aspect-square bg-muted relative overflow-hidden">
                           <img
@@ -493,7 +501,7 @@ const NFTMarketplace = () => {
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4">
+                      <CardContent className="p-4" onClick={(e) => e.stopPropagation()}>
                         <CardTitle className="text-lg mb-2">{nft.name}</CardTitle>
                         <CardDescription className="text-sm mb-4">
                           {nft.description}

@@ -19,6 +19,7 @@ import LoanApplication from "./pages/LoanApplication";
 import MyLoans from "./pages/MyLoans";
 import LoanHistory from "./pages/LoanHistory";
 import NFTMarketplace from "./pages/NFTMarketplace";
+import NFTDetail from "./pages/NFTDetail";
 import Finance from "./pages/Finance";
 import AaveDashboard from "./pages/AaveDashboard";
 
@@ -77,6 +78,11 @@ const App = () => (
           <Route path="/nft-marketplace" element={
             <ProtectedRoute>
               <NFTMarketplace />
+            </ProtectedRoute>
+          } />
+          <Route path="/nft/:tokenId" element={
+            <ProtectedRoute>
+              <NFTDetail />
             </ProtectedRoute>
           } />
           <Route path="/finance" element={
