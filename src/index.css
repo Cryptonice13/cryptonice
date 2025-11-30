@@ -7,26 +7,31 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
+    --background: 220 25% 3%;
     --foreground: 0 0% 100%;
-    --card: 0 0% 4%;
+    --card: 220 20% 6%;
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 4%;
+    --popover: 220 20% 6%;
     --popover-foreground: 0 0% 100%;
-    --primary: 142 84% 58%;
+    --primary: 160 84% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 9%;
+    --secondary: 220 15% 10%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 9%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 0 0% 9%;
+    --muted: 220 15% 12%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 190 80% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
-    --ring: 142 84% 58%;
+    --border: 220 15% 15%;
+    --input: 220 15% 12%;
+    --ring: 160 84% 45%;
     --radius: 0.75rem;
+    
+    /* Custom DeFi gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(160, 84%, 45%) 0%, hsl(190, 80%, 50%) 100%);
+    --gradient-glow: linear-gradient(135deg, hsl(160, 84%, 45%, 0.3) 0%, hsl(190, 80%, 50%, 0.3) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220, 20%, 8%) 0%, hsl(220, 25%, 4%) 100%);
   }
 }
 
@@ -40,6 +45,7 @@
   }
 }
 
+/* Glass morphism */
 .glass {
   @apply bg-white/5 backdrop-blur-lg;
   border: 1px solid transparent;
@@ -53,7 +59,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(225deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  background: linear-gradient(225deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -65,10 +71,123 @@
   @apply transition-all duration-300 hover:bg-white/10;
 }
 
+/* Gradient text */
 .text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[#22c55e];
+  @apply bg-clip-text text-transparent;
+  background-image: var(--gradient-primary);
 }
 
+.gradient-text {
+  @apply bg-clip-text text-transparent;
+  background-image: var(--gradient-primary);
+}
+
+/* Gradient buttons */
 .button-gradient {
-  @apply bg-gradient-to-r from-primary to-[#22c55e] hover:opacity-90 transition-opacity rounded-full;
+  background-image: var(--gradient-primary);
+  @apply hover:opacity-90 transition-all duration-300 rounded-full shadow-lg;
+  box-shadow: 0 0 30px hsl(160, 84%, 45%, 0.3);
+}
+
+.button-gradient:hover {
+  box-shadow: 0 0 40px hsl(160, 84%, 45%, 0.5);
+}
+
+/* Gradient border card */
+.gradient-border {
+  position: relative;
+  background: hsl(220, 20%, 6%);
+  border-radius: var(--radius);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gradient-primary);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 60px hsl(160, 84%, 45%, 0.2), 0 0 100px hsl(190, 80%, 50%, 0.1);
+}
+
+.glow-accent {
+  box-shadow: 0 0 40px hsl(190, 80%, 50%, 0.3);
+}
+
+/* Orbit animation */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(120px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(120px) rotate(-360deg);
+  }
+}
+
+@keyframes orbit-reverse {
+  from {
+    transform: rotate(360deg) translateX(100px) rotate(-360deg);
+  }
+  to {
+    transform: rotate(0deg) translateX(100px) rotate(0deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-orbit {
+  animation: orbit 20s linear infinite;
+}
+
+.animate-orbit-reverse {
+  animation: orbit-reverse 25s linear infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Grid background pattern */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Radial gradient overlay */
+.radial-gradient-overlay {
+  background: radial-gradient(ellipse at 50% 0%, hsl(160, 84%, 45%, 0.15) 0%, transparent 60%);
 }
