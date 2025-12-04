@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { 
   Wallet, 
-  TrendingUp, 
+  TrendingUp,
+  User,
+  Settings,
+  LogOut,
   Shield, 
   Zap, 
   ArrowRight, 
@@ -158,14 +162,6 @@ const Home = () => {
                     {address.slice(0, 6)}...{address.slice(-4)}
                   </span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => disconnect()}
-                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                >
-                  Disconnect
-                </Button>
               </div>
             ) : (
               <Button 
@@ -177,6 +173,34 @@ const Home = () => {
                 {isPending ? 'Connecting...' : 'Connect Wallet'}
               </Button>
             )}
+
+            {/* Profile Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center hover:from-primary/30 hover:to-accent/30 transition-all">
+                  <User className="w-5 h-5 text-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 glass border-border/50">
+                <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                {isConnected && (
+                  <>
+                    <DropdownMenuSeparator className="bg-border/50" />
+                    <DropdownMenuItem onClick={() => disconnect()} className="cursor-pointer text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Disconnect Wallet
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <button 
               className="lg:hidden p-2 rounded-lg hover:bg-white/10"
@@ -195,15 +219,40 @@ const Home = () => {
             className="lg:hidden glass border-t border-border/50 p-4"
           >
             <nav className="flex flex-col gap-2">
-              <button onClick={() => { navigate('/markets'); setMobileMenuOpen(false); }} className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80">Markets</button>
-              <button onClick={() => { navigate('/aave-dashboard'); setMobileMenuOpen(false); }} className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80">Dashboard</button>
-              <button className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80">Governance</button>
-              <button className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80">Docs</button>
+              <button onClick={() => { navigate('/markets'); setMobileMenuOpen(false); }} className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                <TrendingUp className="w-4 h-4" />
+                Markets
+              </button>
+              <button onClick={() => { navigate('/aave-dashboard'); setMobileMenuOpen(false); }} className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                <BarChart3 className="w-4 h-4" />
+                Dashboard
+              </button>
+              <button className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                <Users className="w-4 h-4" />
+                Governance
+              </button>
+              <button className="text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                <ExternalLink className="w-4 h-4" />
+                Docs
+              </button>
+              
+              <div className="pt-2 border-t border-border/50 mt-2">
+                <button onClick={() => { navigate('/profile'); setMobileMenuOpen(false); }} className="w-full text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                  <User className="w-4 h-4" />
+                  Profile
+                </button>
+                <button onClick={() => { navigate('/settings'); setMobileMenuOpen(false); }} className="w-full text-left py-3 px-4 rounded-lg hover:bg-white/10 text-foreground/80 flex items-center gap-3">
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </div>
+
               {isConnected && address && (
                 <div className="pt-2 border-t border-border/50 mt-2">
                   <div className="flex items-center justify-between px-4 py-2">
                     <span className="text-sm font-mono text-muted-foreground">{address.slice(0, 6)}...{address.slice(-4)}</span>
                     <Button variant="ghost" size="sm" onClick={() => disconnect()} className="text-destructive">
+                      <LogOut className="w-4 h-4 mr-1" />
                       Disconnect
                     </Button>
                   </div>
