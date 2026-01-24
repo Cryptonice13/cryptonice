@@ -14,66 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      loan_requests: {
+      flexes: {
         Row: {
-          asset_name: string | null
-          business_name: string | null
-          business_registration_hash: string | null
-          collateral_type: string | null
-          collateral_value: number | null
-          country: string | null
+          caption: string
+          cid: string
           created_at: string
-          duration_months: number
+          flex_type: string
+          hashtags: string[] | null
           id: string
-          id_proof_hash: string | null
-          income_estimate: number | null
-          interest_type: string | null
-          loan_amount: number
-          owner_name: string | null
-          purpose: string | null
-          status: string
-          updated_at: string
-          user_id: string
+          image_cid: string | null
+          show_portfolio_value: boolean | null
+          wallet_address: string
         }
         Insert: {
-          asset_name?: string | null
-          business_name?: string | null
-          business_registration_hash?: string | null
-          collateral_type?: string | null
-          collateral_value?: number | null
-          country?: string | null
+          caption: string
+          cid: string
           created_at?: string
-          duration_months: number
+          flex_type?: string
+          hashtags?: string[] | null
           id?: string
-          id_proof_hash?: string | null
-          income_estimate?: number | null
-          interest_type?: string | null
-          loan_amount: number
-          owner_name?: string | null
-          purpose?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
+          image_cid?: string | null
+          show_portfolio_value?: boolean | null
+          wallet_address: string
         }
         Update: {
-          asset_name?: string | null
-          business_name?: string | null
-          business_registration_hash?: string | null
-          collateral_type?: string | null
-          collateral_value?: number | null
-          country?: string | null
+          caption?: string
+          cid?: string
           created_at?: string
-          duration_months?: number
+          flex_type?: string
+          hashtags?: string[] | null
           id?: string
-          id_proof_hash?: string | null
-          income_estimate?: number | null
-          interest_type?: string | null
-          loan_amount?: number
-          owner_name?: string | null
-          purpose?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
+          image_cid?: string | null
+          show_portfolio_value?: boolean | null
+          wallet_address?: string
         }
         Relationships: []
       }
@@ -112,7 +85,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_flexes_with_urls: {
+        Args: {
+          limit_count?: number
+          offset_count?: number
+          wallet_filter?: string
+        }
+        Returns: {
+          caption: string
+          cid: string
+          created_at: string
+          flex_type: string
+          hashtags: string[]
+          id: string
+          image_cid: string
+          image_url: string
+          metadata_url: string
+          show_portfolio_value: boolean
+          wallet_address: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
