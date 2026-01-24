@@ -1,1 +1,4 @@
 project_id = "ttqhdfxzrajwgpbkkhjj"
+
+[functions.crypto-ai]
+verify_jwt = false
