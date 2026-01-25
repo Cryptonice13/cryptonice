@@ -33,7 +33,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { useMarketData } from '@/hooks/useMarketData';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function Dashboard() {
   const navigate = useNavigate();

@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMarketData, useWatchlist } from '@/hooks/useMarketData';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function Markets() {
   const navigate = useNavigate();
