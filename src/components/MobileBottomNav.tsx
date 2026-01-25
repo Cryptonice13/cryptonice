@@ -1,4 +1,4 @@
-import { Home, ShoppingBag, Shield } from 'lucide-react';
+import { Home, LineChart, Briefcase, Bell } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -13,20 +13,25 @@ const MobileBottomNav = () => {
       path: '/home',
     },
     {
-      name: 'Marketplace',
-      icon: ShoppingBag,
-      path: '/marketplace',
+      name: 'Markets',
+      icon: LineChart,
+      path: '/markets',
     },
     {
-      name: 'NFT',
-      icon: Shield,
-      path: '/nft-marketplace',
+      name: 'Portfolio',
+      icon: Briefcase,
+      path: '/portfolio',
+    },
+    {
+      name: 'Alerts',
+      icon: Bell,
+      path: '/alerts',
     },
   ];
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
-      <nav className="flex items-center justify-around px-4 py-3">
+      <nav className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -36,7 +41,7 @@ const MobileBottomNav = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[60px]",
                 isActive 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
