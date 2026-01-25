@@ -112,6 +112,16 @@ export default function Dashboard() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Profile Icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/profile')}
+              className="hidden sm:flex"
+            >
+              <User className="w-5 h-5" />
+            </Button>
+
             {isConnected ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -120,7 +130,7 @@ export default function Dashboard() {
                     <span className="hidden sm:inline">{formatAddress(address!)}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="w-4 h-4 mr-2" />
                     Profile
