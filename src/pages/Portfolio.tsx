@@ -48,7 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData, usePortfolio } from '@/hooks/useMarketData';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function Portfolio() {
   const navigate = useNavigate();

@@ -48,7 +48,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData, useWatchlist } from '@/hooks/useMarketData';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function Alerts() {
   const navigate = useNavigate();
