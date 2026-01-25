@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { useMarketData } from '@/hooks/useMarketData';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -43,6 +44,27 @@ export default function Dashboard() {
   const { disconnect } = useDisconnect();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { assets } = useMarketData();
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // Fetch user profile name
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (profile?.name) {
+          setUserName(profile.name);
+        }
+      }
+    };
+
+    fetchUserName();
+  }, []);
 
   const handleConnect = async () => {
     try {
@@ -169,7 +191,7 @@ export default function Dashboard() {
               className="space-y-2"
             >
               <h1 className="text-3xl font-bold">
-                Welcome{isConnected ? `, ${formatAddress(address!)}` : ''}
+                Welcome{userName ? `, ${userName}` : isConnected ? '' : ''}
               </h1>
               <p className="text-muted-foreground">
                 Your AI-powered crypto advisor is ready to help you make smarter decisions.
