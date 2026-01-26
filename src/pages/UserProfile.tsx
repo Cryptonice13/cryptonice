@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Calendar,
   Building,
-  CheckCircle
+  CheckCircle,
+  Settings
 } from 'lucide-react';
 
 interface UserProfileData {
@@ -188,9 +189,14 @@ const UserProfile = () => {
             <h1 className="text-3xl font-bold">My Profile</h1>
             <p className="text-muted-foreground">Manage your account information</p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/home')}>
-            Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
+              <Settings className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/home')}>
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
 
         {/* Profile Card */}
