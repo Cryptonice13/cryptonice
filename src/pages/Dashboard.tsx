@@ -6,23 +6,14 @@ import { injected } from 'wagmi/connectors';
 import {
   Bot,
   Wallet,
-  TrendingUp,
-  PieChart,
-  Bell,
-  BarChart3,
   Settings,
   User,
   LogOut,
   Menu,
   X,
   Sparkles,
-  ChevronRight,
-  LineChart,
-  Shield,
-  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +23,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { ChatInterface } from '@/components/ai/ChatInterface';
-import { useMarketData } from '@/hooks/useMarketData';
+import { ChatSidebar } from '@/components/ai/ChatSidebar';
+import { useChatHistory } from '@/hooks/useChatHistory';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -43,8 +35,20 @@ export default function Dashboard() {
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { assets } = useMarketData();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+
+  const {
+    conversations,
+    currentConversationId,
+    messages,
+    fetchMessages,
+    createConversation,
+    addMessage,
+    deleteConversation,
+    startNewChat,
+    setMessages,
+  } = useChatHistory(address);
 
   // Fetch user profile name
   useEffect(() => {
@@ -82,17 +86,25 @@ export default function Dashboard() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const quickActions = [
-    { title: 'Portfolio', desc: 'Track your holdings', icon: PieChart, href: '/portfolio', color: 'from-blue-500 to-cyan-500' },
-    { title: 'Markets', desc: 'Explore crypto markets', icon: BarChart3, href: '/markets', color: 'from-green-500 to-emerald-500' },
-    { title: 'Signals', desc: 'AI trading signals', icon: TrendingUp, href: '/markets', color: 'from-purple-500 to-pink-500' },
-    { title: 'Alerts', desc: 'Price alerts & watchlist', icon: Bell, href: '/alerts', color: 'from-orange-500 to-red-500' },
-  ];
+  const handleNewChat = () => {
+    startNewChat();
+  };
 
-  const topMovers = assets.slice(0, 4).sort((a, b) => Math.abs(b.priceChange24h) - Math.abs(a.priceChange24h));
+  const handleSelectConversation = (id: string) => {
+    fetchMessages(id);
+  };
+
+  const handleSendMessage = async (content: string, role: 'user' | 'assistant') => {
+    // If no current conversation, create one first
+    if (!currentConversationId) {
+      const newConv = await createConversation();
+      if (!newConv) return;
+    }
+    await addMessage(role, content);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -189,162 +201,59 @@ export default function Dashboard() {
         )}
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 pt-20 pb-24 md:pb-8">
-        <div className="grid lg:grid-cols-3 gap-6 mt-6">
-          {/* Left Column - AI Chat */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Welcome Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-2"
-            >
-              <h1 className="text-3xl font-bold">
-                Welcome{userName ? `, ${userName}` : isConnected ? '' : ''}
-              </h1>
-              <p className="text-muted-foreground">
-                Your AI-powered crypto advisor is ready to help you make smarter decisions.
-              </p>
-            </motion.div>
+      {/* Main Content with Sidebar */}
+      <main className="flex-1 flex pt-16 pb-20 md:pb-0">
+        {/* Chat Sidebar - Hidden on mobile */}
+        <div className="hidden md:block">
+          <ChatSidebar
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
+            onDeleteConversation={deleteConversation}
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </div>
 
-            {/* Quick Actions */}
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Welcome Header */}
+          <div className="p-4 md:p-6 border-b border-border/50">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+              className="flex items-center gap-3"
             >
-              {quickActions.map((action, i) => (
-                <Link key={i} to={action.href}>
-                  <Card className="glass-card p-4 hover:scale-105 transition-transform cursor-pointer group">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-3`}>
-                      <action.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-sm">{action.title}</h3>
-                    <p className="text-xs text-muted-foreground">{action.desc}</p>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground mt-2 group-hover:translate-x-1 transition-transform" />
-                  </Card>
-                </Link>
-              ))}
-            </motion.div>
-
-            {/* AI Chat Interface */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="h-[500px]"
-            >
-              <ChatInterface />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold">
+                  Welcome{userName ? `, ${userName}` : isConnected ? '' : ''}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Your AI-powered crypto advisor is ready to help you make smarter decisions.
+                </p>
+              </div>
             </motion.div>
           </div>
 
-          {/* Right Column - Market Overview */}
-          <div className="space-y-6">
-            {/* AI Features */}
+          {/* Full-height Chat Interface */}
+          <div className="flex-1 p-4 md:p-6 overflow-hidden">
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="h-full"
             >
-              <Card className="glass-card p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">AI Features</h3>
-                    <p className="text-xs text-muted-foreground">Powered by advanced AI</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <PieChart className="w-5 h-5 text-blue-400" />
-                    <div>
-                      <p className="text-sm font-medium">Portfolio Analysis</p>
-                      <p className="text-xs text-muted-foreground">AI-powered insights</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <LineChart className="w-5 h-5 text-green-400" />
-                    <div>
-                      <p className="text-sm font-medium">Market Predictions</p>
-                      <p className="text-xs text-muted-foreground">Data-driven forecasts</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <Zap className="w-5 h-5 text-yellow-400" />
-                    <div>
-                      <p className="text-sm font-medium">Trading Signals</p>
-                      <p className="text-xs text-muted-foreground">Buy/sell recommendations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <Shield className="w-5 h-5 text-purple-400" />
-                    <div>
-                      <p className="text-sm font-medium">Risk Assessment</p>
-                      <p className="text-xs text-muted-foreground">Portfolio protection</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              <ChatInterface
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                currentConversationId={currentConversationId}
+                onCreateConversation={createConversation}
+                setMessages={setMessages}
+              />
             </motion.div>
-
-            {/* Top Movers */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card className="glass-card p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Top Movers</h3>
-                  <Link to="/markets" className="text-xs text-primary hover:underline">View All</Link>
-                </div>
-                <div className="space-y-3">
-                  {topMovers.map((asset, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 hover:bg-muted/30 rounded-lg transition-colors">
-                      <div className="flex items-center gap-3">
-                        <img src={asset.logo} alt={asset.name} className="w-8 h-8 rounded-full" />
-                        <div>
-                          <p className="font-medium text-sm">{asset.symbol}</p>
-                          <p className="text-xs text-muted-foreground">{asset.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-mono text-sm">${asset.price.toLocaleString()}</p>
-                        <p className={`text-xs ${asset.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {asset.priceChange24h >= 0 ? '+' : ''}{asset.priceChange24h.toFixed(2)}%
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* Connect Wallet CTA */}
-            {!isConnected && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <Card className="glass-card p-6 text-center space-y-4 gradient-border">
-                  <Wallet className="w-12 h-12 mx-auto text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Connect Wallet</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Connect your wallet to get personalized AI analysis of your portfolio.
-                    </p>
-                  </div>
-                  <Button onClick={handleConnect} className="w-full button-gradient">
-                    Connect Wallet
-                  </Button>
-                </Card>
-              </motion.div>
-            )}
           </div>
         </div>
       </main>

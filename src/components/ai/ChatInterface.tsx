@@ -4,19 +4,44 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useCryptoAI } from '@/hooks/useCryptoAI';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface ChatInterfaceProps {
+  messages?: Message[];
+  onSendMessage?: (content: string, role: 'user' | 'assistant') => Promise<void>;
+  currentConversationId?: string | null;
+  onCreateConversation?: () => Promise<{ id: string } | null>;
+  setMessages?: React.Dispatch<React.SetStateAction<any[]>>;
   portfolioContext?: any;
   className?: string;
 }
 
-export function ChatInterface({ portfolioContext, className = '' }: ChatInterfaceProps) {
+const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-ai`;
+
+export function ChatInterface({ 
+  messages: externalMessages, 
+  onSendMessage,
+  currentConversationId,
+  onCreateConversation,
+  setMessages: setExternalMessages,
+  portfolioContext, 
+  className = '' 
+}: ChatInterfaceProps) {
   const [input, setInput] = useState('');
-  const { messages, isLoading, error, sendMessage, clearMessages } = useCryptoAI();
+  const [internalMessages, setInternalMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Use external messages if provided, otherwise use internal state
+  const messages = externalMessages || internalMessages;
+  const setMessages = setExternalMessages || setInternalMessages;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -24,12 +49,116 @@ export function ChatInterface({ portfolioContext, className = '' }: ChatInterfac
     }
   }, [messages]);
 
+  const sendMessage = async (messageContent: string) => {
+    const userMsg: Message = { role: 'user', content: messageContent };
+    
+    // If we have external state management, use it
+    if (onSendMessage) {
+      // Create conversation if needed
+      if (!currentConversationId && onCreateConversation) {
+        const newConv = await onCreateConversation();
+        if (!newConv) return;
+      }
+      await onSendMessage(messageContent, 'user');
+    }
+    
+    // Update local/external messages
+    setMessages((prev: Message[]) => [...prev, userMsg]);
+    setIsLoading(true);
+    setError(null);
+
+    let assistantContent = '';
+
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0cWhkZnh6cmFqd2dwYmtraGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjAwMjgsImV4cCI6MjA2OTAzNjAyOH0.ZB4PiYMnNSGPcK3Pe3Z_LStE_MQGeVFiL6ZyXgwukkY`,
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMsg],
+          type: 'chat',
+          context: portfolioContext,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI response');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response stream');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const updateAssistant = (content: string) => {
+        assistantContent = content;
+        setMessages((prev: Message[]) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant') {
+            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
+          }
+          return [...prev, { role: 'assistant' as const, content }];
+        });
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantContent += content;
+              updateAssistant(assistantContent);
+            }
+          } catch {
+            buffer = line + '\n' + buffer;
+            break;
+          }
+        }
+      }
+
+      // Save assistant message to database if we have the callback
+      if (onSendMessage && assistantContent) {
+        await onSendMessage(assistantContent, 'assistant');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
-      sendMessage(input.trim(), portfolioContext);
+      sendMessage(input.trim());
       setInput('');
     }
+  };
+
+  const clearMessages = () => {
+    setMessages([]);
+    setError(null);
   };
 
   const suggestedQuestions = [
@@ -78,7 +207,7 @@ export function ChatInterface({ portfolioContext, className = '' }: ChatInterfac
                     variant="outline"
                     size="sm"
                     className="text-xs text-left h-auto py-2 px-3"
-                    onClick={() => sendMessage(question, portfolioContext)}
+                    onClick={() => sendMessage(question)}
                   >
                     {question}
                   </Button>
