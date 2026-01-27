@@ -6,6 +6,27 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Strip markdown formatting for clean display
+const stripMarkdown = (text: string): string => {
+  return text
+    .replace(/^#{1,6}\s+/gm, '') // Remove headers
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1') // Bold italic
+    .replace(/\*\*(.+?)\*\*/g, '$1') // Bold
+    .replace(/\*(.+?)\*/g, '$1') // Italic
+    .replace(/__(.+?)__/g, '$1') // Bold underscore
+    .replace(/_(.+?)_/g, '$1') // Italic underscore
+    .replace(/~~(.+?)~~/g, '$1') // Strikethrough
+    .replace(/`{3}[\s\S]*?`{3}/g, '') // Code blocks
+    .replace(/`(.+?)`/g, '$1') // Inline code
+    .replace(/^\s*[-*+]\s+/gm, '• ') // Bullet points
+    .replace(/^\s*\d+\.\s+/gm, '') // Numbered lists
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Links
+    .replace(/^>\s+/gm, '') // Blockquotes
+    .replace(/^---+$/gm, '') // Horizontal rules
+    .replace(/\n{3,}/g, '\n\n') // Multiple newlines
+    .trim();
+};
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -240,7 +261,9 @@ export function ChatInterface({
                         : 'bg-muted/50'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {msg.role === 'assistant' ? stripMarkdown(msg.content) : msg.content}
+                    </p>
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
