@@ -105,7 +105,33 @@ export function useChatHistory(walletAddress?: string) {
     }
   }, [walletAddress]);
 
-  // Add a message to a specific conversation
+  // Save message to database only (no state update) - used when UI already updated
+  const saveMessageToDb = useCallback(async (role: 'user' | 'assistant', content: string, conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          role,
+          content,
+        });
+
+      if (error) throw error;
+
+      // Update the conversation timestamp
+      await supabase
+        .from('chat_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId);
+      
+      return true;
+    } catch (err) {
+      console.error('Error saving message:', err);
+      return false;
+    }
+  }, []);
+
+  // Add a message to a specific conversation (updates state too)
   const addMessage = useCallback(async (role: 'user' | 'assistant', content: string, conversationId?: string) => {
     const targetConversationId = conversationId || currentConversationId;
     if (!targetConversationId) return null;
@@ -201,6 +227,7 @@ export function useChatHistory(walletAddress?: string) {
     fetchMessages,
     createConversation,
     addMessage,
+    saveMessageToDb,
     updateLastAssistantMessage,
     deleteConversation,
     startNewChat,
