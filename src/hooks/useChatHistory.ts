@@ -63,9 +63,24 @@ export function useChatHistory(walletAddress?: string) {
     }
   }, []);
 
-  // Create a new conversation
-  const createConversation = useCallback(async (title: string = 'New Chat') => {
+  // Generate a short title from user question
+  const generateTitle = (content: string): string => {
+    // Remove common filler words and get key terms
+    const words = content
+      .replace(/[?!.,;:'"]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 2)
+      .slice(0, 5);
+    
+    const title = words.join(' ');
+    return title.length > 40 ? title.slice(0, 40) + '...' : title || 'New Chat';
+  };
+
+  // Create a new conversation with title based on first message
+  const createConversation = useCallback(async (firstMessage?: string) => {
     if (!walletAddress) return null;
+
+    const title = firstMessage ? generateTitle(firstMessage) : 'New Chat';
 
     try {
       const { data, error } = await supabase
@@ -90,15 +105,16 @@ export function useChatHistory(walletAddress?: string) {
     }
   }, [walletAddress]);
 
-  // Add a message to the current conversation
-  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string) => {
-    if (!currentConversationId) return null;
+  // Add a message to a specific conversation
+  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string, conversationId?: string) => {
+    const targetConversationId = conversationId || currentConversationId;
+    if (!targetConversationId) return null;
 
     try {
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({
-          conversation_id: currentConversationId,
+          conversation_id: targetConversationId,
           role,
           content,
         })
@@ -109,31 +125,18 @@ export function useChatHistory(walletAddress?: string) {
       
       setMessages(prev => [...prev, { ...data, role: data.role as 'user' | 'assistant' }]);
 
-      // Update conversation title if it's the first user message
-      if (role === 'user' && messages.length === 0) {
-        const title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
-        await supabase
-          .from('chat_conversations')
-          .update({ title, updated_at: new Date().toISOString() })
-          .eq('id', currentConversationId);
-        
-        setConversations(prev => 
-          prev.map(c => c.id === currentConversationId ? { ...c, title } : c)
-        );
-      } else {
-        // Just update the timestamp
-        await supabase
-          .from('chat_conversations')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', currentConversationId);
-      }
+      // Update the conversation timestamp
+      await supabase
+        .from('chat_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', targetConversationId);
       
       return data;
     } catch (err) {
       console.error('Error adding message:', err);
       return null;
     }
-  }, [currentConversationId, messages.length]);
+  }, [currentConversationId]);
 
   // Update the last assistant message (for streaming)
   const updateLastAssistantMessage = useCallback(async (content: string) => {

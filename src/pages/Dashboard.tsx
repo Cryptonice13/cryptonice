@@ -94,13 +94,8 @@ export default function Dashboard() {
     fetchMessages(id);
   };
 
-  const handleSendMessage = async (content: string, role: 'user' | 'assistant') => {
-    // If no current conversation, create one first
-    if (!currentConversationId) {
-      const newConv = await createConversation();
-      if (!newConv) return;
-    }
-    await addMessage(role, content);
+  const handleSendMessage = async (content: string, role: 'user' | 'assistant', conversationId?: string) => {
+    await addMessage(role, content, conversationId);
   };
 
   return (
