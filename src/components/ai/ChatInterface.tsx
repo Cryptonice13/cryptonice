@@ -34,7 +34,7 @@ interface Message {
 
 interface ChatInterfaceProps {
   messages?: Message[];
-  onSendMessage?: (content: string, role: 'user' | 'assistant', conversationId?: string) => Promise<void>;
+  onSaveMessage?: (role: 'user' | 'assistant', content: string, conversationId: string) => Promise<boolean>;
   currentConversationId?: string | null;
   onCreateConversation?: (firstMessage?: string) => Promise<{ id: string } | null>;
   setMessages?: React.Dispatch<React.SetStateAction<any[]>>;
@@ -46,7 +46,7 @@ const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-a
 
 export function ChatInterface({ 
   messages: externalMessages, 
-  onSendMessage,
+  onSaveMessage,
   currentConversationId,
   onCreateConversation,
   setMessages: setExternalMessages,
@@ -72,22 +72,20 @@ export function ChatInterface({
 
   const sendMessage = async (messageContent: string) => {
     const userMsg: Message = { role: 'user', content: messageContent };
-    
     let activeConversationId = currentConversationId;
+    const hasExternalState = onSaveMessage && onCreateConversation;
     
     // If we have external state management, create conversation if needed
-    if (onSendMessage && onCreateConversation) {
+    if (hasExternalState) {
       if (!currentConversationId) {
         // Create conversation with the first message as the title
         const newConv = await onCreateConversation(messageContent);
         if (!newConv) return;
         activeConversationId = newConv.id;
       }
-      // Save user message to database with the conversation ID
-      await onSendMessage(messageContent, 'user', activeConversationId);
     }
     
-    // Update local/external messages
+    // Update messages state (only once - here for UI, database save happens separately)
     setMessages((prev: Message[]) => [...prev, userMsg]);
     setIsLoading(true);
     setError(null);
@@ -162,9 +160,14 @@ export function ChatInterface({
         }
       }
 
-      // Save assistant message to database if we have the callback
-      if (onSendMessage && assistantContent && activeConversationId) {
-        await onSendMessage(assistantContent, 'assistant', activeConversationId);
+      // Save both messages to database if we have the callback (don't update state, already done)
+      if (hasExternalState && activeConversationId) {
+        // Save user message
+        await onSaveMessage('user', messageContent, activeConversationId);
+        // Save assistant message
+        if (assistantContent) {
+          await onSaveMessage('assistant', assistantContent, activeConversationId);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

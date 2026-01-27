@@ -44,7 +44,7 @@ export default function Dashboard() {
     messages,
     fetchMessages,
     createConversation,
-    addMessage,
+    saveMessageToDb,
     deleteConversation,
     startNewChat,
     setMessages,
@@ -94,8 +94,8 @@ export default function Dashboard() {
     fetchMessages(id);
   };
 
-  const handleSendMessage = async (content: string, role: 'user' | 'assistant', conversationId?: string) => {
-    await addMessage(role, content, conversationId);
+  const handleSaveMessage = async (role: 'user' | 'assistant', content: string, conversationId: string) => {
+    return await saveMessageToDb(role, content, conversationId);
   };
 
   return (
@@ -243,7 +243,7 @@ export default function Dashboard() {
             >
               <ChatInterface
                 messages={messages}
-                onSendMessage={handleSendMessage}
+                onSaveMessage={handleSaveMessage}
                 currentConversationId={currentConversationId}
                 onCreateConversation={createConversation}
                 setMessages={setMessages}
