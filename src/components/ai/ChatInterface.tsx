@@ -13,9 +13,9 @@ interface Message {
 
 interface ChatInterfaceProps {
   messages?: Message[];
-  onSendMessage?: (content: string, role: 'user' | 'assistant') => Promise<void>;
+  onSendMessage?: (content: string, role: 'user' | 'assistant', conversationId?: string) => Promise<void>;
   currentConversationId?: string | null;
-  onCreateConversation?: () => Promise<{ id: string } | null>;
+  onCreateConversation?: (firstMessage?: string) => Promise<{ id: string } | null>;
   setMessages?: React.Dispatch<React.SetStateAction<any[]>>;
   portfolioContext?: any;
   className?: string;
@@ -52,14 +52,18 @@ export function ChatInterface({
   const sendMessage = async (messageContent: string) => {
     const userMsg: Message = { role: 'user', content: messageContent };
     
-    // If we have external state management, use it
-    if (onSendMessage) {
-      // Create conversation if needed
-      if (!currentConversationId && onCreateConversation) {
-        const newConv = await onCreateConversation();
+    let activeConversationId = currentConversationId;
+    
+    // If we have external state management, create conversation if needed
+    if (onSendMessage && onCreateConversation) {
+      if (!currentConversationId) {
+        // Create conversation with the first message as the title
+        const newConv = await onCreateConversation(messageContent);
         if (!newConv) return;
+        activeConversationId = newConv.id;
       }
-      await onSendMessage(messageContent, 'user');
+      // Save user message to database with the conversation ID
+      await onSendMessage(messageContent, 'user', activeConversationId);
     }
     
     // Update local/external messages
@@ -138,8 +142,8 @@ export function ChatInterface({
       }
 
       // Save assistant message to database if we have the callback
-      if (onSendMessage && assistantContent) {
-        await onSendMessage(assistantContent, 'assistant');
+      if (onSendMessage && assistantContent && activeConversationId) {
+        await onSendMessage(assistantContent, 'assistant', activeConversationId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
