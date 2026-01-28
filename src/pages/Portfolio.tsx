@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import {
   Bot,
@@ -19,6 +19,7 @@ import {
   RefreshCw,
   DollarSign,
   Percent,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -49,6 +50,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useMarketData, usePortfolio } from '@/hooks/useMarketData';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import { useTokenBalances } from '@/hooks/useTokenBalances';
+import { Badge } from '@/components/ui/badge';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -56,14 +59,52 @@ export default function Portfolio() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const { data: ethBalance, refetch: refetchBalance } = useBalance({ address });
+  const { balances: walletBalances, isLoading: balancesLoading } = useTokenBalances();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState('');
   const [amount, setAmount] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { assets, isLoading: marketLoading } = useMarketData();
   const { portfolio, addPosition, removePosition, getTotalValue, getTotalPnL } = usePortfolio();
+
+  // Get ETH price from market data
+  const ethPrice = assets.find(a => a.symbol === 'ETH')?.price || 0;
+  const usdcPrice = assets.find(a => a.symbol === 'USDC')?.price || 1;
+  const usdtPrice = assets.find(a => a.symbol === 'USDT')?.price || 1;
+
+  // Calculate wallet holdings value
+  const walletHoldings = [
+    ...(ethBalance && parseFloat(ethBalance.formatted) > 0 ? [{
+      symbol: 'ETH',
+      name: 'Ethereum',
+      balance: parseFloat(ethBalance.formatted),
+      value: parseFloat(ethBalance.formatted) * ethPrice,
+      logo: '/lovable-uploads/ethereum-logo.png',
+    }] : []),
+    ...walletBalances.map(b => ({
+      symbol: b.symbol,
+      name: b.token?.name || b.symbol,
+      balance: parseFloat(b.balance),
+      value: parseFloat(b.balance) * (b.symbol === 'USDC' ? usdcPrice : b.symbol === 'USDT' ? usdtPrice : 0),
+      logo: b.token?.logo || '/placeholder.svg',
+    }))
+  ];
+
+  const walletTotalValue = walletHoldings.reduce((sum, h) => sum + h.value, 0);
+
+  const handleRefreshBalances = async () => {
+    setIsRefreshing(true);
+    await refetchBalance();
+    setTimeout(() => setIsRefreshing(false), 1000);
+    toast({
+      title: 'Balances Refreshed',
+      description: 'Your wallet balances have been updated.',
+    });
+  };
 
   const handleConnect = async () => {
     try {
@@ -307,86 +348,170 @@ export default function Portfolio() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Holdings List */}
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-xl font-semibold">Holdings</h2>
-              {portfolio.length === 0 ? (
-                <Card className="glass-card p-8 text-center">
-                  <PieChart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Holdings Yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Add your first position to start tracking your portfolio.
-                  </p>
-                  <Button onClick={() => setAddDialogOpen(true)} className="button-gradient">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Position
-                  </Button>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {portfolio.map((position) => {
-                    const currentPrice = currentPrices.get(position.asset.id) || position.asset.price;
-                    const currentValue = position.amount * currentPrice;
-                    const costBasis = position.amount * position.avgBuyPrice;
-                    const pnl = currentValue - costBasis;
-                    const pnlPct = (pnl / costBasis) * 100;
+            <div className="lg:col-span-2 space-y-6">
+              {/* Wallet Holdings Section */}
+              {isConnected && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-semibold">Wallet Holdings</h2>
+                      <Badge variant="outline" className="text-xs">
+                        {formatAddress(address!)}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshBalances}
+                      disabled={isRefreshing || balancesLoading}
+                    >
+                      {isRefreshing || balancesLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
 
-                    return (
-                      <motion.div
-                        key={position.asset.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        <Card className="glass-card p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <img 
-                                src={position.asset.logo} 
-                                alt={position.asset.name} 
-                                className="w-10 h-10 rounded-full"
-                              />
-                              <div>
-                                <p className="font-semibold">{position.asset.symbol}</p>
-                                <p className="text-sm text-muted-foreground">{position.asset.name}</p>
+                  {balancesLoading ? (
+                    <Card className="glass-card p-8 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
+                      <p className="text-sm text-muted-foreground">Loading wallet balances...</p>
+                    </Card>
+                  ) : walletHoldings.length === 0 ? (
+                    <Card className="glass-card p-6 text-center">
+                      <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-muted-foreground text-sm">No tokens found in wallet</p>
+                    </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      {walletHoldings.map((holding) => (
+                        <motion.div
+                          key={holding.symbol}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <Card className="glass-card p-4 border-primary/20">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                                  <span className="text-sm font-bold">{holding.symbol.charAt(0)}</span>
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold">{holding.symbol}</p>
+                                    <Badge variant="secondary" className="text-xs">On-chain</Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">{holding.name}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono font-semibold">
+                                  {holding.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {holding.symbol}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  ${holding.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-mono font-semibold">{position.amount} {position.asset.symbol}</p>
-                              <p className="text-sm text-muted-foreground">
-                                ${currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className={`font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {pnl >= 0 ? '+' : ''}${pnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              </p>
-                              <p className={`text-sm ${pnlPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemovePosition(position.asset.id, position.asset.symbol)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-border/50 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Avg Buy Price:</span>
-                              <span className="ml-2 font-mono">${position.avgBuyPrice.toLocaleString()}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Current Price:</span>
-                              <span className="ml-2 font-mono">${currentPrice.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
+                          </Card>
+                        </motion.div>
+                      ))}
+                      <Card className="glass-card p-4 bg-primary/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Wallet Total Value</span>
+                          <span className="text-xl font-bold">
+                            ${walletTotalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Manual Portfolio Section */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Manual Positions</h2>
+                {portfolio.length === 0 ? (
+                  <Card className="glass-card p-8 text-center">
+                    <PieChart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Manual Positions</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Track positions from other wallets or exchanges.
+                    </p>
+                    <Button onClick={() => setAddDialogOpen(true)} className="button-gradient">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Position
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {portfolio.map((position) => {
+                      const currentPrice = currentPrices.get(position.asset.id) || position.asset.price;
+                      const currentValue = position.amount * currentPrice;
+                      const costBasis = position.amount * position.avgBuyPrice;
+                      const pnl = currentValue - costBasis;
+                      const pnlPct = (pnl / costBasis) * 100;
+
+                      return (
+                        <motion.div
+                          key={position.asset.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <Card className="glass-card p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <img 
+                                  src={position.asset.logo} 
+                                  alt={position.asset.name} 
+                                  className="w-10 h-10 rounded-full"
+                                />
+                                <div>
+                                  <p className="font-semibold">{position.asset.symbol}</p>
+                                  <p className="text-sm text-muted-foreground">{position.asset.name}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono font-semibold">{position.amount} {position.asset.symbol}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  ${currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {pnl >= 0 ? '+' : ''}${pnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </p>
+                                <p className={`text-sm ${pnlPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemovePosition(position.asset.id, position.asset.symbol)}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-border/50 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Avg Buy Price:</span>
+                                <span className="ml-2 font-mono">${position.avgBuyPrice.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Current Price:</span>
+                                <span className="ml-2 font-mono">${currentPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* AI Analysis */}
