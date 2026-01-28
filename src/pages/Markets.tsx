@@ -18,6 +18,8 @@ import {
   RefreshCw,
   BarChart3,
   Target,
+  Clock,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -47,7 +49,7 @@ export default function Markets() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
 
-  const { assets, isLoading, refresh } = useMarketData();
+  const { assets, isLoading, refresh, lastUpdated } = useMarketData();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
 
   const handleConnect = async () => {
@@ -71,6 +73,16 @@ export default function Markets() {
     if (cap >= 1e9) return `$${(cap / 1e9).toFixed(2)}B`;
     if (cap >= 1e6) return `$${(cap / 1e6).toFixed(2)}M`;
     return `$${cap.toLocaleString()}`;
+  };
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return 'Never';
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 60) return `${diffSecs}s ago`;
+    const diffMins = Math.floor(diffSecs / 60);
+    return `${diffMins}m ago`;
   };
 
   const filteredAssets = assets.filter(
@@ -166,8 +178,22 @@ export default function Markets() {
           {/* Page Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Markets</h1>
-              <p className="text-muted-foreground">Explore crypto markets with AI-powered insights</p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">Markets</h1>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/20 rounded-full">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-green-400 font-medium">Live</span>
+                </div>
+              </div>
+              <p className="text-muted-foreground flex items-center gap-2">
+                Real-time crypto data from CoinGecko
+                {lastUpdated && (
+                  <span className="text-xs flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Updated {formatLastUpdated(lastUpdated)}
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative flex-1 md:w-64">
@@ -180,7 +206,11 @@ export default function Markets() {
                 />
               </div>
               <Button variant="outline" size="icon" onClick={refresh} disabled={isLoading}>
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>

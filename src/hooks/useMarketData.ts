@@ -19,8 +19,8 @@ export interface WatchlistItem extends CryptoAsset {
   alertType?: 'above' | 'below';
 }
 
-// Mock market data - In production, this would fetch from CoinGecko, CoinMarketCap, etc.
-const MOCK_MARKET_DATA: CryptoAsset[] = [
+// Fallback data in case API fails
+const FALLBACK_MARKET_DATA: CryptoAsset[] = [
   {
     id: 'bitcoin',
     symbol: 'BTC',
@@ -32,7 +32,7 @@ const MOCK_MARKET_DATA: CryptoAsset[] = [
     volume24h: 45000000000,
     circulatingSupply: 19600000,
     sparkline: [95000, 95500, 96000, 95800, 96500, 97000, 97500],
-    logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg',
+    logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
   },
   {
     id: 'ethereum',
@@ -45,129 +45,75 @@ const MOCK_MARKET_DATA: CryptoAsset[] = [
     volume24h: 18000000000,
     circulatingSupply: 120000000,
     sparkline: [3300, 3350, 3400, 3380, 3420, 3440, 3450],
-    logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
-  },
-  {
-    id: 'solana',
-    symbol: 'SOL',
-    name: 'Solana',
-    price: 198,
-    priceChange24h: 5.67,
-    priceChange7d: 12.34,
-    marketCap: 92000000000,
-    volume24h: 5500000000,
-    circulatingSupply: 465000000,
-    sparkline: [175, 180, 185, 188, 192, 195, 198],
-    logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
-  },
-  {
-    id: 'cardano',
-    symbol: 'ADA',
-    name: 'Cardano',
-    price: 1.12,
-    priceChange24h: 3.21,
-    priceChange7d: 8.45,
-    marketCap: 39000000000,
-    volume24h: 1200000000,
-    circulatingSupply: 35000000000,
-    sparkline: [1.0, 1.02, 1.05, 1.08, 1.10, 1.11, 1.12],
-    logo: 'https://cryptologos.cc/logos/cardano-ada-logo.svg',
-  },
-  {
-    id: 'avalanche',
-    symbol: 'AVAX',
-    name: 'Avalanche',
-    price: 42.5,
-    priceChange24h: -1.23,
-    priceChange7d: 3.56,
-    marketCap: 17000000000,
-    volume24h: 890000000,
-    circulatingSupply: 400000000,
-    sparkline: [44, 43.5, 43, 42.8, 42.5, 42.3, 42.5],
-    logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg',
-  },
-  {
-    id: 'polkadot',
-    symbol: 'DOT',
-    name: 'Polkadot',
-    price: 8.95,
-    priceChange24h: 2.15,
-    priceChange7d: 6.78,
-    marketCap: 12500000000,
-    volume24h: 450000000,
-    circulatingSupply: 1400000000,
-    sparkline: [8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.95],
-    logo: 'https://cryptologos.cc/logos/polkadot-new-dot-logo.svg',
-  },
-  {
-    id: 'chainlink',
-    symbol: 'LINK',
-    name: 'Chainlink',
-    price: 24.8,
-    priceChange24h: 4.56,
-    priceChange7d: 9.12,
-    marketCap: 15000000000,
-    volume24h: 780000000,
-    circulatingSupply: 600000000,
-    sparkline: [22.5, 23, 23.5, 24, 24.3, 24.6, 24.8],
-    logo: 'https://cryptologos.cc/logos/chainlink-link-logo.svg',
-  },
-  {
-    id: 'uniswap',
-    symbol: 'UNI',
-    name: 'Uniswap',
-    price: 14.2,
-    priceChange24h: 1.78,
-    priceChange7d: 5.43,
-    marketCap: 10700000000,
-    volume24h: 320000000,
-    circulatingSupply: 750000000,
-    sparkline: [13.5, 13.7, 13.9, 14.0, 14.1, 14.15, 14.2],
-    logo: 'https://cryptologos.cc/logos/uniswap-uni-logo.svg',
+    logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
   },
 ];
+
+const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
 
 export function useMarketData() {
   const [assets, setAssets] = useState<CryptoAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchMarketData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Add some randomness to simulate real-time updates
-      const updatedData = MOCK_MARKET_DATA.map(asset => ({
-        ...asset,
-        price: asset.price * (1 + (Math.random() - 0.5) * 0.02),
-        priceChange24h: asset.priceChange24h + (Math.random() - 0.5) * 0.5,
+      const response = await fetch(
+        `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=24h,7d`
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedAssets: CryptoAsset[] = data.map((coin: any) => ({
+        id: coin.id,
+        symbol: coin.symbol.toUpperCase(),
+        name: coin.name,
+        price: coin.current_price || 0,
+        priceChange24h: coin.price_change_percentage_24h || 0,
+        priceChange7d: coin.price_change_percentage_7d_in_currency || 0,
+        marketCap: coin.market_cap || 0,
+        volume24h: coin.total_volume || 0,
+        circulatingSupply: coin.circulating_supply || 0,
+        sparkline: coin.sparkline_in_7d?.price?.slice(-24) || [],
+        logo: coin.image || `https://assets.coingecko.com/coins/images/1/small/bitcoin.png`,
       }));
-      
-      setAssets(updatedData);
+
+      setAssets(formattedAssets);
+      setLastUpdated(new Date());
     } catch (err) {
+      console.error('Failed to fetch market data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch market data');
+      
+      // Use fallback data if no assets loaded yet
+      if (assets.length === 0) {
+        setAssets(FALLBACK_MARKET_DATA);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [assets.length]);
 
   useEffect(() => {
     fetchMarketData();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchMarketData, 30000);
+    // Refresh every 60 seconds (CoinGecko free tier rate limit)
+    const interval = setInterval(fetchMarketData, 60000);
     return () => clearInterval(interval);
-  }, [fetchMarketData]);
+  }, []);
 
   const getAssetBySymbol = useCallback((symbol: string) => {
     return assets.find(a => a.symbol.toLowerCase() === symbol.toLowerCase());
   }, [assets]);
 
-  return { assets, isLoading, error, refresh: fetchMarketData, getAssetBySymbol };
+  return { assets, isLoading, error, refresh: fetchMarketData, getAssetBySymbol, lastUpdated };
 }
 
 export function useWatchlist() {
