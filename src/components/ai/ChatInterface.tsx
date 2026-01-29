@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Strip markdown formatting for clean display
@@ -57,8 +58,26 @@ export function ChatInterface({
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Format relative time for the live data indicator
+  const getRelativeTime = (date: Date | null) => {
+    if (!date) return null;
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    return `${Math.floor(minutes / 60)}h ago`;
+  };
+
+  // Update relative time display every 10 seconds
+  const [, setTimeUpdate] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTimeUpdate(t => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Use external messages if provided, otherwise use internal state
   const messages = externalMessages || internalMessages;
@@ -160,6 +179,9 @@ export function ChatInterface({
         }
       }
 
+      // Mark that we received live data with this response
+      setLastDataUpdate(new Date());
+
       // Save both messages to database if we have the callback (don't update state, already done)
       if (hasExternalState && activeConversationId) {
         // Save user message
@@ -205,7 +227,20 @@ export function ChatInterface({
           </div>
           <div>
             <h3 className="font-semibold">CryptoAI Advisor</h3>
-            <p className="text-xs text-muted-foreground">Powered by AI</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                <span className="relative flex h-1.5 w-1.5 mr-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                Live Data
+              </Badge>
+              {lastDataUpdate && (
+                <span className="text-[10px] text-muted-foreground">
+                  Updated {getRelativeTime(lastDataUpdate)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {messages.length > 0 && (
