@@ -191,3 +191,37 @@
 .radial-gradient-overlay {
   background: radial-gradient(ellipse at 50% 0%, hsl(160, 84%, 45%, 0.15) 0%, transparent 60%);
 }
+
+/* Safe area support for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Glass card utility */
+.glass-card {
+  @apply bg-card/80 backdrop-blur-xl border border-border/50;
+}
+
+/* Mobile-optimized scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

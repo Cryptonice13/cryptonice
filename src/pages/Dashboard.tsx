@@ -9,9 +9,9 @@ import {
   Settings,
   User,
   LogOut,
-  Menu,
-  X,
   Sparkles,
+  History,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,12 +21,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { ChatSidebar } from '@/components/ai/ChatSidebar';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -34,8 +42,8 @@ export default function Dashboard() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
 
   const {
@@ -88,10 +96,12 @@ export default function Dashboard() {
 
   const handleNewChat = () => {
     startNewChat();
+    setMobileHistoryOpen(false);
   };
 
   const handleSelectConversation = (id: string) => {
     fetchMessages(id);
+    setMobileHistoryOpen(false);
   };
 
   const handleSaveMessage = async (role: 'user' | 'assistant', content: string, conversationId: string) => {
@@ -101,13 +111,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 safe-area-top">
+        <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Bot className="w-6 h-6 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Bot className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold gradient-text hidden sm:block">CryptoAI</span>
+            <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -118,23 +128,70 @@ export default function Dashboard() {
             <Link to="/alerts" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Alerts</Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Mobile Chat History */}
+            <Sheet open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
+                  <History className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[85%] max-w-sm p-0">
+                <SheetHeader className="p-4 border-b border-border/50">
+                  <SheetTitle>Chat History</SheetTitle>
+                </SheetHeader>
+                <div className="p-3">
+                  <Button onClick={handleNewChat} className="w-full button-gradient">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Chat
+                  </Button>
+                </div>
+                <ScrollArea className="h-[calc(100vh-140px)]">
+                  <div className="p-3 space-y-2">
+                    {conversations.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        <p>No conversations yet</p>
+                        <p className="text-xs mt-1">Start a new chat to begin</p>
+                      </div>
+                    ) : (
+                      conversations.map((conv) => (
+                        <button
+                          key={conv.id}
+                          onClick={() => handleSelectConversation(conv.id)}
+                          className={`w-full text-left p-3 rounded-lg transition-colors ${
+                            currentConversationId === conv.id
+                              ? 'bg-primary/10 text-primary'
+                              : 'hover:bg-muted/50'
+                          }`}
+                        >
+                          <p className="text-sm font-medium truncate">{conv.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(conv.updated_at).toLocaleDateString()}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
+
             {/* Profile Icon */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate('/profile')}
-              className="hidden sm:flex"
+              className="hidden sm:flex h-8 w-8"
             >
-              <User className="w-5 h-5" />
+              <User className="w-4 h-4" />
             </Button>
 
             {isConnected ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Wallet className="w-4 h-4" />
-                    <span className="hidden sm:inline">{formatAddress(address!)}</span>
+                  <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2">
+                    <Wallet className="w-3.5 h-3.5" />
+                    <span className="text-xs hidden xs:inline">{formatAddress(address!)}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
@@ -154,52 +211,19 @@ export default function Dashboard() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={handleConnect} className="button-gradient">
-                <Wallet className="w-4 h-4 mr-2" />
-                Connect
+              <Button onClick={handleConnect} size="sm" className="button-gradient h-8 px-3 text-xs">
+                <Wallet className="w-3.5 h-3.5 mr-1.5" />
+                <span className="hidden xs:inline">Connect</span>
               </Button>
             )}
-
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border/50"
-          >
-            <nav className="container mx-auto px-4 py-4 space-y-2">
-              <Link to="/dashboard" className="block py-2 text-primary font-medium">Dashboard</Link>
-              <Link to="/portfolio" className="block py-2 text-muted-foreground">Portfolio</Link>
-              <Link to="/markets" className="block py-2 text-muted-foreground">Markets</Link>
-              <Link to="/alerts" className="block py-2 text-muted-foreground">Alerts</Link>
-              {isConnected && (
-                <>
-                  <Link to="/profile" className="block py-2 text-muted-foreground">Profile</Link>
-                  <Link to="/settings" className="block py-2 text-muted-foreground">Settings</Link>
-                </>
-              )}
-            </nav>
-          </motion.div>
-        )}
       </header>
 
       {/* Main Content with Sidebar */}
-      <main className="flex-1 flex pt-16 pb-20 md:pb-0">
+      <main className="flex-1 flex pt-12 pb-16 lg:pb-0">
         {/* Chat Sidebar - Hidden on mobile */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block h-[calc(100vh-48px)] sticky top-12">
           <ChatSidebar
             conversations={conversations}
             currentConversationId={currentConversationId}
@@ -212,43 +236,38 @@ export default function Dashboard() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Welcome Header */}
-          <div className="p-4 md:p-6 border-b border-border/50">
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Welcome Header - Compact on mobile */}
+          <div className="px-3 sm:px-4 lg:px-6 py-3 lg:py-4 border-b border-border/50">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2 sm:gap-3"
             >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-primary-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
                   Welcome{userName ? `, ${userName}` : isConnected ? '' : ''}
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Your AI-powered crypto advisor is ready to help you make smarter decisions.
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Your AI-powered crypto advisor
                 </p>
               </div>
             </motion.div>
           </div>
 
           {/* Full-height Chat Interface */}
-          <div className="flex-1 p-4 md:p-6 overflow-hidden">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="h-full"
-            >
-              <ChatInterface
-                messages={messages}
-                onSaveMessage={handleSaveMessage}
-                currentConversationId={currentConversationId}
-                onCreateConversation={createConversation}
-                setMessages={setMessages}
-              />
-            </motion.div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <ChatInterface
+              messages={messages}
+              onSaveMessage={handleSaveMessage}
+              currentConversationId={currentConversationId}
+              onCreateConversation={createConversation}
+              setMessages={setMessages}
+              className="flex-1 rounded-none border-0"
+            />
           </div>
         </div>
       </main>
