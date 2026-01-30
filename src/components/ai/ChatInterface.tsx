@@ -212,64 +212,66 @@ export function ChatInterface({
   };
 
   const suggestedQuestions = [
-    "What's your outlook on Bitcoin this week?",
-    "Analyze my portfolio for risks",
-    "Best DeFi tokens to watch?",
-    "Should I buy ETH now?",
+    "Bitcoin outlook?",
+    "Analyze my portfolio",
+    "Best DeFi tokens?",
+    "Buy ETH now?",
   ];
 
   return (
-    <Card className={`glass-card flex flex-col h-full ${className}`}>
-      <div className="flex items-center justify-between p-4 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+    <Card className={`glass-card flex flex-col h-full overflow-hidden ${className}`}>
+      {/* Header - More compact on mobile */}
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
           </div>
-          <div>
-            <h3 className="font-semibold">CryptoAI Advisor</h3>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
-                <span className="relative flex h-1.5 w-1.5 mr-1">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base truncate">CryptoAI Advisor</h3>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-3.5 sm:h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                <span className="relative flex h-1 w-1 sm:h-1.5 sm:w-1.5 mr-0.5 sm:mr-1">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
                 </span>
-                Live Data
+                Live
               </Badge>
               {lastDataUpdate && (
-                <span className="text-[10px] text-muted-foreground">
-                  Updated {getRelativeTime(lastDataUpdate)}
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden xs:inline">
+                  {getRelativeTime(lastDataUpdate)}
                 </span>
               )}
             </div>
           </div>
         </div>
         {messages.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearMessages}>
-            <Trash2 className="w-4 h-4" />
+          <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 sm:h-8 sm:w-8 p-0">
+            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </Button>
         )}
       </div>
 
-      <ScrollArea ref={scrollRef} className="flex-1 p-4">
-        <div className="space-y-4">
+      {/* Messages Area */}
+      <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-8 space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Bot className="w-8 h-8 text-primary" />
+            <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold">Welcome to CryptoAI</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Ask me anything about crypto markets, portfolio analysis, or trading strategies.
+                <h4 className="font-semibold text-sm sm:text-base">Welcome to CryptoAI</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
+                  Ask about crypto markets, portfolio analysis, or trading strategies.
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
+              <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto px-2">
                 {suggestedQuestions.map((question, i) => (
                   <Button
                     key={i}
                     variant="outline"
                     size="sm"
-                    className="text-xs text-left h-auto py-2 px-3"
+                    className="text-[10px] sm:text-xs text-left h-auto py-2 px-2 sm:px-3"
                     onClick={() => sendMessage(question)}
                   >
                     {question}
@@ -285,27 +287,27 @@ export function ChatInterface({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-primary-foreground" />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted/50'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
                       {msg.role === 'assistant' ? stripMarkdown(msg.content) : msg.content}
                     </p>
                   </div>
                   {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4" />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <User className="w-3 h-3 sm:w-4 sm:h-4" />
                     </div>
                   )}
                 </motion.div>
@@ -317,40 +319,41 @@ export function ChatInterface({
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-3"
+              className="flex gap-2 sm:gap-3"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Bot className="w-4 h-4 text-primary-foreground" />
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
               </div>
-              <div className="bg-muted/50 rounded-2xl px-4 py-3">
+              <div className="bg-muted/50 rounded-2xl px-3 py-2 sm:px-4 sm:py-3">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </motion.div>
           )}
 
           {error && (
-            <div className="text-center p-4 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-destructive/10 text-destructive text-xs sm:text-sm">
               {error}
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-border/50">
+      {/* Input Area */}
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-border/50 flex-shrink-0">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about crypto markets..."
+            placeholder="Ask about crypto..."
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 h-10 sm:h-11 text-sm"
           />
-          <Button type="submit" disabled={isLoading || !input.trim()} className="button-gradient">
+          <Button type="submit" disabled={isLoading || !input.trim()} className="button-gradient h-10 w-10 sm:h-11 sm:w-11 p-0">
             <Send className="w-4 h-4" />
           </Button>
         </div>
