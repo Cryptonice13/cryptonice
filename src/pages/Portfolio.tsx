@@ -17,6 +17,9 @@ import {
   DollarSign,
   Percent,
   Loader2,
+  History,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -43,8 +46,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useMarketData, usePortfolio } from '@/hooks/useMarketData';
+import { useMarketData } from '@/hooks/useMarketData';
+import { usePortfolioDb } from '@/hooks/usePortfolioDb';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
@@ -60,13 +72,27 @@ export default function Portfolio() {
   const { data: ethBalance, refetch: refetchBalance } = useBalance({ address });
   const { balances: walletBalances, isLoading: balancesLoading } = useTokenBalances();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [sellDialogOpen, setSellDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState('');
+  const [selectedSellPosition, setSelectedSellPosition] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
+  const [sellAmount, setSellAmount] = useState('');
+  const [sellPrice, setSellPrice] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
 
   const { assets, isLoading: marketLoading } = useMarketData();
-  const { portfolio, addPosition, removePosition, getTotalValue, getTotalPnL } = usePortfolio();
+  const { 
+    portfolio, 
+    transactions, 
+    isLoading: portfolioLoading,
+    addPosition, 
+    sellPosition,
+    removePosition, 
+    getTotalValue, 
+    getTotalPnL 
+  } = usePortfolioDb(address);
 
   // Get ETH price from market data
   const ethPrice = assets.find(a => a.symbol === 'ETH')?.price || 0;
@@ -117,27 +143,60 @@ export default function Portfolio() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const handleAddPosition = () => {
+  const handleAddPosition = async () => {
     const asset = assets.find(a => a.id === selectedAsset);
     if (asset && amount && buyPrice) {
-      addPosition(asset, parseFloat(amount), parseFloat(buyPrice));
-      toast({
-        title: 'Position Added',
-        description: `Added ${amount} ${asset.symbol} to your portfolio.`,
-      });
-      setAddDialogOpen(false);
-      setSelectedAsset('');
-      setAmount('');
-      setBuyPrice('');
+      const success = await addPosition(asset, parseFloat(amount), parseFloat(buyPrice));
+      if (success) {
+        toast({
+          title: 'Position Added',
+          description: `Added ${amount} ${asset.symbol} to your portfolio.`,
+        });
+        setAddDialogOpen(false);
+        setSelectedAsset('');
+        setAmount('');
+        setBuyPrice('');
+      }
     }
   };
 
-  const handleRemovePosition = (assetId: string, symbol: string) => {
-    removePosition(assetId);
-    toast({
-      title: 'Position Removed',
-      description: `Removed ${symbol} from your portfolio.`,
-    });
+  const handleSellPosition = async () => {
+    if (selectedSellPosition && sellAmount && sellPrice) {
+      const position = portfolio.find(p => p.asset_id === selectedSellPosition);
+      if (position) {
+        const success = await sellPosition(selectedSellPosition, parseFloat(sellAmount), parseFloat(sellPrice));
+        if (success) {
+          toast({
+            title: 'Position Sold',
+            description: `Sold ${sellAmount} ${position.asset_symbol}.`,
+          });
+          setSellDialogOpen(false);
+          setSelectedSellPosition(null);
+          setSellAmount('');
+          setSellPrice('');
+        }
+      }
+    }
+  };
+
+  const handleRemovePosition = async (assetId: string, symbol: string) => {
+    const success = await removePosition(assetId);
+    if (success) {
+      toast({
+        title: 'Position Removed',
+        description: `Removed ${symbol} from your portfolio.`,
+      });
+    }
+  };
+
+  const openSellDialog = (assetId: string) => {
+    const position = portfolio.find(p => p.asset_id === assetId);
+    if (position) {
+      setSelectedSellPosition(assetId);
+      const currentPrice = currentPrices.get(assetId) || 0;
+      setSellPrice(currentPrice.toString());
+      setSellDialogOpen(true);
+    }
   };
 
   // Calculate current prices map
@@ -390,8 +449,71 @@ export default function Portfolio() {
 
               {/* Manual Portfolio */}
               <div className="space-y-3">
-                <h2 className="text-base sm:text-lg font-semibold">Manual Positions</h2>
-                {portfolio.length === 0 ? (
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base sm:text-lg font-semibold">Manual Positions</h2>
+                  <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                        <History className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">History</span>
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-[90%] max-w-md">
+                      <SheetHeader>
+                        <SheetTitle>Transaction History</SheetTitle>
+                      </SheetHeader>
+                      <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+                        {transactions.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No transactions yet</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {transactions.map((tx) => (
+                              <Card key={tx.id} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      tx.transaction_type === 'buy' ? 'bg-green-500/20' : 'bg-red-500/20'
+                                    }`}>
+                                      {tx.transaction_type === 'buy' ? (
+                                        <ArrowDownRight className="w-4 h-4 text-green-400" />
+                                      ) : (
+                                        <ArrowUpRight className="w-4 h-4 text-red-400" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-sm">
+                                        {tx.transaction_type === 'buy' ? 'Bought' : 'Sold'} {tx.asset_symbol}
+                                      </p>
+                                      <p className="text-[10px] text-muted-foreground">
+                                        {new Date(tx.created_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-mono text-sm">{tx.amount}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      @ ${tx.price_per_unit.toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+                
+                {portfolioLoading ? (
+                  <Card className="glass-card p-6 text-center">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
+                    <p className="text-xs text-muted-foreground">Loading portfolio...</p>
+                  </Card>
+                ) : portfolio.length === 0 ? (
                   <Card className="glass-card p-6 text-center">
                     <Plus className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground mb-3">No positions yet</p>
@@ -402,19 +524,19 @@ export default function Portfolio() {
                 ) : (
                   <div className="space-y-2">
                     {portfolio.map((position) => {
-                      const currentPrice = currentPrices.get(position.asset.id) || position.avgBuyPrice;
-                      const pnl = (currentPrice - position.avgBuyPrice) * position.amount;
-                      const pnlPercentage = ((currentPrice - position.avgBuyPrice) / position.avgBuyPrice) * 100;
+                      const currentPrice = currentPrices.get(position.asset_id) || position.avg_buy_price;
+                      const pnl = (currentPrice - position.avg_buy_price) * position.amount;
+                      const pnlPercentage = ((currentPrice - position.avg_buy_price) / position.avg_buy_price) * 100;
 
                       return (
-                        <Card key={position.asset.id} className="glass-card p-3">
+                        <Card key={position.asset_id} className="glass-card p-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <img src={position.asset.logo} alt={position.asset.name} className="w-9 h-9 rounded-full" />
+                              <img src={position.asset_logo || '/placeholder.svg'} alt={position.asset_name} className="w-9 h-9 rounded-full" />
                               <div>
-                                <p className="font-semibold text-sm">{position.asset.symbol}</p>
+                                <p className="font-semibold text-sm">{position.asset_symbol}</p>
                                 <p className="text-[10px] text-muted-foreground">
-                                  {position.amount} @ ${position.avgBuyPrice.toLocaleString()}
+                                  {position.amount} @ ${position.avg_buy_price.toLocaleString()}
                                 </p>
                               </div>
                             </div>
@@ -428,10 +550,18 @@ export default function Portfolio() {
                                 </p>
                               </div>
                               <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => openSellDialog(position.asset_id)}
+                              >
+                                Sell
+                              </Button>
+                              <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"
-                                onClick={() => handleRemovePosition(position.asset.id, position.asset.symbol)}
+                                onClick={() => handleRemovePosition(position.asset_id, position.asset_symbol)}
                               >
                                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
                               </Button>
@@ -449,15 +579,52 @@ export default function Portfolio() {
             <div className="space-y-4">
               <PortfolioAnalysisCard
                 portfolio={portfolio.map(p => ({
-                  asset: { symbol: p.asset.symbol, name: p.asset.name, price: currentPrices.get(p.asset.id) || p.avgBuyPrice },
+                  asset: { symbol: p.asset_symbol, name: p.asset_name, price: currentPrices.get(p.asset_id) || p.avg_buy_price },
                   amount: p.amount,
-                  avgBuyPrice: p.avgBuyPrice,
+                  avgBuyPrice: p.avg_buy_price,
                 }))}
               />
             </div>
           </div>
         </div>
       </main>
+
+      {/* Sell Position Dialog */}
+      <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sell Position</DialogTitle>
+          </DialogHeader>
+          {selectedSellPosition && (
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Amount to Sell</Label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={sellAmount}
+                  onChange={(e) => setSellAmount(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Available: {portfolio.find(p => p.asset_id === selectedSellPosition)?.amount || 0}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Sell Price ($)</Label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleSellPosition} className="w-full button-gradient" disabled={!sellAmount || !sellPrice}>
+                Confirm Sale
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <MobileBottomNav />
     </div>
