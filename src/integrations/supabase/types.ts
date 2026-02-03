@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_history: {
+        Row: {
+          alert_type: string
+          asset_id: string
+          asset_symbol: string
+          id: string
+          is_read: boolean
+          target_price: number
+          triggered_at: string
+          triggered_price: number
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          alert_type: string
+          asset_id: string
+          asset_symbol: string
+          id?: string
+          is_read?: boolean
+          target_price: number
+          triggered_at?: string
+          triggered_price: number
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          alert_type?: string
+          asset_id?: string
+          asset_symbol?: string
+          id?: string
+          is_read?: boolean
+          target_price?: number
+          triggered_at?: string
+          triggered_price?: number
+          user_id?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -109,6 +148,48 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_transactions: {
+        Row: {
+          amount: number
+          asset_id: string
+          asset_symbol: string
+          created_at: string
+          id: string
+          notes: string | null
+          price_per_unit: number
+          total_value: number
+          transaction_type: string
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          asset_symbol: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          price_per_unit: number
+          total_value: number
+          transaction_type: string
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          asset_symbol?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          price_per_unit?: number
+          total_value?: number
+          transaction_type?: string
+          user_id?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -136,6 +217,93 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_portfolio: {
+        Row: {
+          amount: number
+          asset_id: string
+          asset_logo: string | null
+          asset_name: string
+          asset_symbol: string
+          avg_buy_price: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          amount?: number
+          asset_id: string
+          asset_logo?: string | null
+          asset_name: string
+          asset_symbol: string
+          avg_buy_price?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          asset_logo?: string | null
+          asset_name?: string
+          asset_symbol?: string
+          avg_buy_price?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      user_watchlist: {
+        Row: {
+          alert_price: number | null
+          alert_triggered: boolean
+          alert_type: string | null
+          asset_id: string
+          asset_logo: string | null
+          asset_name: string
+          asset_symbol: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          alert_price?: number | null
+          alert_triggered?: boolean
+          alert_type?: string | null
+          asset_id: string
+          asset_logo?: string | null
+          asset_name: string
+          asset_symbol: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          alert_price?: number | null
+          alert_triggered?: boolean
+          alert_type?: string | null
+          asset_id?: string
+          asset_logo?: string | null
+          asset_name?: string
+          asset_symbol?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string
         }
         Relationships: []
       }

@@ -38,7 +38,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
-import { useMarketData, useWatchlist } from '@/hooks/useMarketData';
+import { useMarketData } from '@/hooks/useMarketData';
+import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -54,7 +55,7 @@ export default function Markets() {
   const [analysisSheetOpen, setAnalysisSheetOpen] = useState(false);
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
-  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address);
 
   const handleConnect = async () => {
     try {
@@ -249,13 +250,13 @@ export default function Markets() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 if (isInWatchlist(asset.id)) {
-                                  removeFromWatchlist(asset.id);
+                                  await removeFromWatchlist(asset.id);
                                   toast({ title: 'Removed from watchlist' });
                                 } else {
-                                  addToWatchlist(asset);
+                                  await addToWatchlist(asset);
                                   toast({ title: 'Added to watchlist' });
                                 }
                               }}
