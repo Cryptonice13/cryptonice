@@ -10,7 +10,7 @@ const MobileBottomNav = () => {
     {
       name: 'Home',
       icon: Bot,
-      path: '/home',
+      path: '/dashboard',
     },
     {
       name: 'Markets',

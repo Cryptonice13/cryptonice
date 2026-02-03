@@ -237,21 +237,21 @@ export default function Dashboard() {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Welcome Header - Compact on mobile */}
-          <div className="px-3 sm:px-4 lg:px-6 py-3 lg:py-4 border-b border-border/50">
+          {/* Welcome Header - Hidden on mobile, visible on larger screens */}
+          <div className="hidden lg:block px-6 py-4 border-b border-border/50">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 sm:gap-3"
+              className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-6 h-6 text-primary-foreground" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
+                <h1 className="text-2xl font-bold truncate">
                   Welcome{userName ? `, ${userName}` : isConnected ? '' : ''}
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                <p className="text-sm text-muted-foreground truncate">
                   Your AI-powered crypto advisor
                 </p>
               </div>

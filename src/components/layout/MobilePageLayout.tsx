@@ -60,7 +60,7 @@ export function MobilePageLayout({
   };
 
   const navItems = [
-    { path: '/home', label: 'Dashboard' },
+    { path: '/dashboard', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
     { path: '/markets', label: 'Markets' },
     { path: '/alerts', label: 'Alerts' },
