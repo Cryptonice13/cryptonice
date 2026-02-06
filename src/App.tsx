@@ -40,14 +40,34 @@ const App = () => (
             <Sonner />
             <WalletInitializer />
             <BrowserRouter>
-              <Routes>
+            <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/home" element={<Dashboard />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-                <Route path="/markets" element={<Markets />} />
-                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/home" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/portfolio" element={
+                  <ProtectedRoute>
+                    <Portfolio />
+                  </ProtectedRoute>
+                } />
+                <Route path="/markets" element={
+                  <ProtectedRoute>
+                    <Markets />
+                  </ProtectedRoute>
+                } />
+                <Route path="/alerts" element={
+                  <ProtectedRoute>
+                    <Alerts />
+                  </ProtectedRoute>
+                } />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <UserProfile />
