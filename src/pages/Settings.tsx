@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
+import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -280,6 +281,15 @@ const Settings = () => {
                       variant="outline"
                       disabled={walletConnecting}
                       onClick={async () => {
+                        if (handleMobileDeepLink()) return;
+                        if (!hasInjectedProvider()) {
+                          toast({
+                            title: 'No Wallet Found',
+                            description: 'Please install MetaMask or use a Web3-enabled browser.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
                         setWalletConnecting(true);
                         try {
                           await connectAsync({ connector: injected() });
