@@ -40,7 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
@@ -80,11 +80,16 @@ export default function Dashboard() {
 
   const handleConnect = async () => {
     try {
-      connect({ connector: injected() });
+      await connectAsync({ connector: injected() });
+      toast({
+        title: 'Wallet Connected',
+        description: 'Your wallet has been connected successfully.',
+      });
     } catch (error) {
+      console.error('Wallet connection error:', error);
       toast({
         title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
+        description: (error as Error)?.message || 'Failed to connect wallet. Please try again.',
         variant: 'destructive',
       });
     }
