@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAuth } from "@/hooks/useAuth";
 
 const cryptoIcons = [
   { symbol: "BTC", color: "#F7931A", delay: 0 },
@@ -115,14 +116,15 @@ const features = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
+  // Redirect authenticated users (including mobile) to /home
   useEffect(() => {
-    const isMobile = window.innerWidth < 1024;
-    if (isMobile) {
+    if (!loading && user) {
       navigate('/home');
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     const interval = setInterval(() => {
