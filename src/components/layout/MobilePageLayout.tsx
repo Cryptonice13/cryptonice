@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
+import { useState } from 'react';
 import {
   Bot,
   Wallet,
@@ -40,18 +41,27 @@ export function MobilePageLayout({
   const location = useLocation();
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
+  const [isWalletConnecting, setIsWalletConnecting] = useState(false);
 
   const handleConnect = async () => {
+    setIsWalletConnecting(true);
     try {
-      connect({ connector: injected() });
+      await connectAsync({ connector: injected() });
+      toast({
+        title: 'Wallet Connected',
+        description: 'Your wallet has been connected successfully.',
+      });
     } catch (error) {
+      console.error('Wallet connection error:', error);
       toast({
         title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
+        description: (error as Error)?.message || 'Failed to connect wallet. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setIsWalletConnecting(false);
     }
   };
 
@@ -131,8 +141,12 @@ export function MobilePageLayout({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={handleConnect} size="sm" className="button-gradient h-8 px-3 text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1.5" />
+            <Button onClick={handleConnect} disabled={isWalletConnecting} size="sm" className="button-gradient h-8 px-3 text-xs">
+                {isWalletConnecting ? (
+                  <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1.5" />
+                ) : (
+                  <Wallet className="w-3.5 h-3.5 mr-1.5" />
+                )}
                 Connect
               </Button>
             )}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { injected } from 'wagmi/connectors';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -28,8 +29,10 @@ const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { address, isConnected } = useAccount();
+  const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
   const { toast } = useToast();
+  const [walletConnecting, setWalletConnecting] = useState(false);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -275,8 +278,32 @@ const Settings = () => {
                     </p>
                     <Button
                       variant="outline"
-                      onClick={() => navigate('/login')}
+                      disabled={walletConnecting}
+                      onClick={async () => {
+                        setWalletConnecting(true);
+                        try {
+                          await connectAsync({ connector: injected() });
+                          toast({
+                            title: 'Wallet Connected',
+                            description: 'Your wallet has been connected successfully.',
+                          });
+                        } catch (error) {
+                          console.error('Wallet connection error:', error);
+                          toast({
+                            title: 'Connection Failed',
+                            description: (error as Error)?.message || 'Failed to connect wallet. Please try again.',
+                            variant: 'destructive',
+                          });
+                        } finally {
+                          setWalletConnecting(false);
+                        }
+                      }}
                     >
+                      {walletConnecting ? (
+                        <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Wallet className="w-4 h-4 mr-2" />
+                      )}
                       Connect Wallet
                     </Button>
                   </div>
