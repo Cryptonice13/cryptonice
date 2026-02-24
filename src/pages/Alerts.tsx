@@ -59,11 +59,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useWatchlistDb } from '@/hooks/useWatchlistDb';
+import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function Alerts() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -83,7 +85,7 @@ export default function Alerts() {
     clearAlert,
     checkAlerts,
     markAlertRead,
-  } = useWatchlistDb(address);
+  } = useWatchlistDb(address, user?.id);
 
   const handleConnect = async () => {
     try {
@@ -277,17 +279,13 @@ export default function Alerts() {
             </Card>
           )}
 
-          {!isConnected ? (
+          {!(user || isConnected) ? (
             <Card className="glass-card p-6 text-center">
               <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <h3 className="font-semibold mb-1">Connect Wallet</h3>
+              <h3 className="font-semibold mb-1">Sign In Required</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Connect your wallet to save your watchlist and alerts.
+                Sign in to save your watchlist and alerts.
               </p>
-              <Button onClick={handleConnect} className="button-gradient">
-                <Wallet className="w-4 h-4 mr-2" />
-                Connect Wallet
-              </Button>
             </Card>
           ) : isLoading ? (
             <Card className="glass-card p-6 text-center">

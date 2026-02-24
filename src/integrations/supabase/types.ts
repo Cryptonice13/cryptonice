@@ -25,7 +25,7 @@ export type Database = {
           triggered_at: string
           triggered_price: number
           user_id: string | null
-          wallet_address: string
+          wallet_address: string | null
         }
         Insert: {
           alert_type: string
@@ -37,7 +37,7 @@ export type Database = {
           triggered_at?: string
           triggered_price: number
           user_id?: string | null
-          wallet_address: string
+          wallet_address?: string | null
         }
         Update: {
           alert_type?: string
@@ -49,7 +49,7 @@ export type Database = {
           triggered_at?: string
           triggered_price?: number
           user_id?: string | null
-          wallet_address?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }
@@ -160,7 +160,7 @@ export type Database = {
           total_value: number
           transaction_type: string
           user_id: string | null
-          wallet_address: string
+          wallet_address: string | null
         }
         Insert: {
           amount: number
@@ -173,7 +173,7 @@ export type Database = {
           total_value: number
           transaction_type: string
           user_id?: string | null
-          wallet_address: string
+          wallet_address?: string | null
         }
         Update: {
           amount?: number
@@ -186,7 +186,7 @@ export type Database = {
           total_value?: number
           transaction_type?: string
           user_id?: string | null
-          wallet_address?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }
@@ -232,7 +232,7 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string | null
-          wallet_address: string
+          wallet_address: string | null
         }
         Insert: {
           amount?: number
@@ -245,7 +245,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string | null
-          wallet_address: string
+          wallet_address?: string | null
         }
         Update: {
           amount?: number
@@ -258,7 +258,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string | null
-          wallet_address?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }
@@ -275,7 +275,7 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string | null
-          wallet_address: string
+          wallet_address: string | null
         }
         Insert: {
           alert_price?: number | null
@@ -289,7 +289,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string | null
-          wallet_address: string
+          wallet_address?: string | null
         }
         Update: {
           alert_price?: number | null
@@ -303,7 +303,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string | null
-          wallet_address?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }

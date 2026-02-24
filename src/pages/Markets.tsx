@@ -40,6 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useWatchlistDb } from '@/hooks/useWatchlistDb';
+import { useAuth } from '@/hooks/useAuth';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -47,6 +48,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 export default function Markets() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -55,7 +57,7 @@ export default function Markets() {
   const [analysisSheetOpen, setAnalysisSheetOpen] = useState(false);
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
-  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address);
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address, user?.id);
 
   const handleConnect = async () => {
     try {
