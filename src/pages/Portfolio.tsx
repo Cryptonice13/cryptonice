@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData } from '@/hooks/useMarketData';
 import { usePortfolioDb } from '@/hooks/usePortfolioDb';
+import { useAuth } from '@/hooks/useAuth';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
@@ -66,6 +67,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function Portfolio() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -92,7 +94,7 @@ export default function Portfolio() {
     removePosition, 
     getTotalValue, 
     getTotalPnL 
-  } = usePortfolioDb(address);
+  } = usePortfolioDb(address, user?.id);
 
   // Get ETH price from market data
   const ethPrice = assets.find(a => a.symbol === 'ETH')?.price || 0;

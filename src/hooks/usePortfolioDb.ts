@@ -27,26 +27,46 @@ export interface PortfolioTransaction {
   created_at: string;
 }
 
-export function usePortfolioDb(walletAddress: string | undefined) {
+export function usePortfolioDb(walletAddress: string | undefined, userId?: string) {
   const [portfolio, setPortfolio] = useState<PortfolioPosition[]>([]);
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const hasIdentifier = !!(userId || walletAddress);
+
+  // Build a query filter helper
+  const applyFilter = useCallback((query: any) => {
+    if (userId) return query.eq('user_id', userId);
+    if (walletAddress) return query.eq('wallet_address', walletAddress);
+    return query;
+  }, [userId, walletAddress]);
+
+  // Build insert data with identifiers
+  const withIdentifiers = useCallback((data: Record<string, any>) => {
+    return {
+      ...data,
+      wallet_address: walletAddress || '',
+      ...(userId ? { user_id: userId } : {}),
+    };
+  }, [userId, walletAddress]);
+
   // Fetch portfolio positions
   const fetchPortfolio = useCallback(async () => {
-    if (!walletAddress) {
+    if (!hasIdentifier) {
       setPortfolio([]);
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('user_portfolio')
         .select('*')
-        .eq('wallet_address', walletAddress)
         .order('created_at', { ascending: false });
+
+      query = applyFilter(query);
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -60,22 +80,24 @@ export function usePortfolioDb(walletAddress: string | undefined) {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAddress]);
+  }, [hasIdentifier, applyFilter]);
 
   // Fetch transaction history
   const fetchTransactions = useCallback(async () => {
-    if (!walletAddress) {
+    if (!hasIdentifier) {
       setTransactions([]);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('portfolio_transactions')
         .select('*')
-        .eq('wallet_address', walletAddress)
         .order('created_at', { ascending: false })
         .limit(50);
+
+      query = applyFilter(query);
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -89,7 +111,7 @@ export function usePortfolioDb(walletAddress: string | undefined) {
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
-  }, [walletAddress]);
+  }, [hasIdentifier, applyFilter]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -102,14 +124,12 @@ export function usePortfolioDb(walletAddress: string | undefined) {
     amount: number,
     buyPrice: number
   ) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
-      // Check if position exists
       const existing = portfolio.find(p => p.asset_id === asset.id);
 
       if (existing) {
-        // Update existing position with weighted average
         const newAmount = existing.amount + amount;
         const newAvgPrice = (existing.avg_buy_price * existing.amount + buyPrice * amount) / newAmount;
 
@@ -123,18 +143,16 @@ export function usePortfolioDb(walletAddress: string | undefined) {
 
         if (error) throw error;
       } else {
-        // Insert new position
         const { error } = await supabase
           .from('user_portfolio')
-          .insert({
-            wallet_address: walletAddress,
+          .insert(withIdentifiers({
             asset_id: asset.id,
             asset_symbol: asset.symbol,
             asset_name: asset.name,
             asset_logo: asset.logo,
             amount,
             avg_buy_price: buyPrice,
-          });
+          }) as any);
 
         if (error) throw error;
       }
@@ -142,15 +160,14 @@ export function usePortfolioDb(walletAddress: string | undefined) {
       // Record transaction
       await supabase
         .from('portfolio_transactions')
-        .insert({
-          wallet_address: walletAddress,
+        .insert(withIdentifiers({
           asset_id: asset.id,
           asset_symbol: asset.symbol,
           transaction_type: 'buy',
           amount,
           price_per_unit: buyPrice,
           total_value: amount * buyPrice,
-        });
+        }) as any);
 
       await fetchPortfolio();
       await fetchTransactions();
@@ -164,7 +181,7 @@ export function usePortfolioDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, portfolio, fetchPortfolio, fetchTransactions, toast]);
+  }, [hasIdentifier, portfolio, fetchPortfolio, fetchTransactions, toast, withIdentifiers]);
 
   // Sell/reduce a position
   const sellPosition = useCallback(async (
@@ -172,7 +189,7 @@ export function usePortfolioDb(walletAddress: string | undefined) {
     amount: number,
     sellPrice: number
   ) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
       const existing = portfolio.find(p => p.asset_id === assetId);
@@ -181,35 +198,29 @@ export function usePortfolioDb(walletAddress: string | undefined) {
       const newAmount = existing.amount - amount;
 
       if (newAmount <= 0) {
-        // Remove position entirely
         const { error } = await supabase
           .from('user_portfolio')
           .delete()
           .eq('id', existing.id);
-
         if (error) throw error;
       } else {
-        // Update with reduced amount
         const { error } = await supabase
           .from('user_portfolio')
           .update({ amount: newAmount })
           .eq('id', existing.id);
-
         if (error) throw error;
       }
 
-      // Record sell transaction
       await supabase
         .from('portfolio_transactions')
-        .insert({
-          wallet_address: walletAddress,
+        .insert(withIdentifiers({
           asset_id: assetId,
           asset_symbol: existing.asset_symbol,
           transaction_type: 'sell',
           amount,
           price_per_unit: sellPrice,
           total_value: amount * sellPrice,
-        });
+        }) as any);
 
       await fetchPortfolio();
       await fetchTransactions();
@@ -223,18 +234,20 @@ export function usePortfolioDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, portfolio, fetchPortfolio, fetchTransactions, toast]);
+  }, [hasIdentifier, portfolio, fetchPortfolio, fetchTransactions, toast, withIdentifiers]);
 
   // Remove a position completely
   const removePosition = useCallback(async (assetId: string) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('user_portfolio')
         .delete()
-        .eq('wallet_address', walletAddress)
         .eq('asset_id', assetId);
+
+      query = applyFilter(query);
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -249,7 +262,7 @@ export function usePortfolioDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, fetchPortfolio, toast]);
+  }, [hasIdentifier, applyFilter, fetchPortfolio, toast]);
 
   // Calculate totals
   const getTotalValue = useCallback((currentPrices: Map<string, number>) => {

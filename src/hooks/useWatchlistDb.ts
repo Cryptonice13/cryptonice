@@ -26,26 +26,44 @@ export interface AlertHistoryItem {
   is_read: boolean;
 }
 
-export function useWatchlistDb(walletAddress: string | undefined) {
+export function useWatchlistDb(walletAddress: string | undefined, userId?: string) {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [alertHistory, setAlertHistory] = useState<AlertHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const hasIdentifier = !!(userId || walletAddress);
+
+  const applyFilter = useCallback((query: any) => {
+    if (userId) return query.eq('user_id', userId);
+    if (walletAddress) return query.eq('wallet_address', walletAddress);
+    return query;
+  }, [userId, walletAddress]);
+
+  const withIdentifiers = useCallback((data: Record<string, any>) => {
+    return {
+      ...data,
+      wallet_address: walletAddress || '',
+      ...(userId ? { user_id: userId } : {}),
+    };
+  }, [userId, walletAddress]);
+
   // Fetch watchlist
   const fetchWatchlist = useCallback(async () => {
-    if (!walletAddress) {
+    if (!hasIdentifier) {
       setWatchlist([]);
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('user_watchlist')
         .select('*')
-        .eq('wallet_address', walletAddress)
         .order('created_at', { ascending: false });
+
+      query = applyFilter(query);
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -59,22 +77,24 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAddress]);
+  }, [hasIdentifier, applyFilter]);
 
   // Fetch alert history
   const fetchAlertHistory = useCallback(async () => {
-    if (!walletAddress) {
+    if (!hasIdentifier) {
       setAlertHistory([]);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('alert_history')
         .select('*')
-        .eq('wallet_address', walletAddress)
         .order('triggered_at', { ascending: false })
         .limit(50);
+
+      query = applyFilter(query);
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -87,7 +107,7 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     } catch (error) {
       console.error('Error fetching alert history:', error);
     }
-  }, [walletAddress]);
+  }, [hasIdentifier, applyFilter]);
 
   useEffect(() => {
     fetchWatchlist();
@@ -96,9 +116,8 @@ export function useWatchlistDb(walletAddress: string | undefined) {
 
   // Add to watchlist
   const addToWatchlist = useCallback(async (asset: CryptoAsset) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
-    // Check if already in watchlist
     if (watchlist.some(w => w.asset_id === asset.id)) {
       return false;
     }
@@ -106,13 +125,12 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     try {
       const { error } = await supabase
         .from('user_watchlist')
-        .insert({
-          wallet_address: walletAddress,
+        .insert(withIdentifiers({
           asset_id: asset.id,
           asset_symbol: asset.symbol,
           asset_name: asset.name,
           asset_logo: asset.logo,
-        });
+        }) as any);
 
       if (error) throw error;
 
@@ -127,18 +145,20 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, watchlist, fetchWatchlist, toast]);
+  }, [hasIdentifier, watchlist, fetchWatchlist, toast, withIdentifiers]);
 
   // Remove from watchlist
   const removeFromWatchlist = useCallback(async (assetId: string) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('user_watchlist')
         .delete()
-        .eq('wallet_address', walletAddress)
         .eq('asset_id', assetId);
+
+      query = applyFilter(query);
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -153,7 +173,7 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, fetchWatchlist, toast]);
+  }, [hasIdentifier, applyFilter, fetchWatchlist, toast]);
 
   // Set price alert
   const setAlert = useCallback(async (
@@ -161,18 +181,20 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     price: number,
     type: 'above' | 'below'
   ) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('user_watchlist')
         .update({
           alert_price: price,
           alert_type: type,
           alert_triggered: false,
         })
-        .eq('wallet_address', walletAddress)
         .eq('asset_id', assetId);
+
+      query = applyFilter(query);
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -187,22 +209,24 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       });
       return false;
     }
-  }, [walletAddress, fetchWatchlist, toast]);
+  }, [hasIdentifier, applyFilter, fetchWatchlist, toast]);
 
   // Clear alert
   const clearAlert = useCallback(async (assetId: string) => {
-    if (!walletAddress) return false;
+    if (!hasIdentifier) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('user_watchlist')
         .update({
           alert_price: null,
           alert_type: null,
           alert_triggered: false,
         })
-        .eq('wallet_address', walletAddress)
         .eq('asset_id', assetId);
+
+      query = applyFilter(query);
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -212,11 +236,11 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       console.error('Error clearing alert:', error);
       return false;
     }
-  }, [walletAddress, fetchWatchlist]);
+  }, [hasIdentifier, applyFilter, fetchWatchlist]);
 
   // Check and trigger alerts based on current prices
   const checkAlerts = useCallback(async (currentPrices: Map<string, number>) => {
-    if (!walletAddress) return;
+    if (!hasIdentifier) return;
 
     const triggeredAlerts: WatchlistItem[] = [];
 
@@ -233,23 +257,20 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       if (isTriggered) {
         triggeredAlerts.push(item);
 
-        // Mark as triggered in watchlist
         await supabase
           .from('user_watchlist')
           .update({ alert_triggered: true })
           .eq('id', item.id);
 
-        // Record in alert history
         await supabase
           .from('alert_history')
-          .insert({
-            wallet_address: walletAddress,
+          .insert(withIdentifiers({
             asset_id: item.asset_id,
             asset_symbol: item.asset_symbol,
             alert_type: item.alert_type,
             target_price: item.alert_price,
             triggered_price: currentPrice,
-          });
+          }) as any);
       }
     }
 
@@ -257,7 +278,6 @@ export function useWatchlistDb(walletAddress: string | undefined) {
       await fetchWatchlist();
       await fetchAlertHistory();
 
-      // Show notification
       toast({
         title: `🔔 ${triggeredAlerts.length} Alert${triggeredAlerts.length > 1 ? 's' : ''} Triggered!`,
         description: triggeredAlerts.map(a => `${a.asset_symbol} ${a.alert_type} $${a.alert_price?.toLocaleString()}`).join(', '),
@@ -265,7 +285,7 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     }
 
     return triggeredAlerts;
-  }, [walletAddress, watchlist, fetchWatchlist, fetchAlertHistory, toast]);
+  }, [hasIdentifier, watchlist, fetchWatchlist, fetchAlertHistory, toast, withIdentifiers]);
 
   // Mark alert history as read
   const markAlertRead = useCallback(async (alertId: string) => {
@@ -286,7 +306,6 @@ export function useWatchlistDb(walletAddress: string | undefined) {
     return watchlist.some(w => w.asset_id === assetId);
   }, [watchlist]);
 
-  // Get unread alert count
   const unreadAlertCount = alertHistory.filter(a => !a.is_read).length;
 
   return {
