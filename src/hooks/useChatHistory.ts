@@ -16,24 +16,32 @@ interface ChatMessage {
   created_at: string;
 }
 
-export function useChatHistory(walletAddress?: string) {
+export function useChatHistory(walletAddress?: string, userId?: string) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const hasIdentifier = !!(userId || walletAddress);
+
   // Fetch all conversations
   const fetchConversations = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!hasIdentifier) return;
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('chat_conversations')
         .select('*')
-        .eq('wallet_address', walletAddress)
         .order('updated_at', { ascending: false });
 
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        query = query.eq('wallet_address', walletAddress!);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setConversations(data || []);
     } catch (err) {
@@ -41,7 +49,7 @@ export function useChatHistory(walletAddress?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAddress]);
+  }, [walletAddress, userId, hasIdentifier]);
 
   // Fetch messages for a conversation
   const fetchMessages = useCallback(async (conversationId: string) => {
@@ -65,7 +73,6 @@ export function useChatHistory(walletAddress?: string) {
 
   // Generate a short title from user question
   const generateTitle = (content: string): string => {
-    // Remove common filler words and get key terms
     const words = content
       .replace(/[?!.,;:'"]/g, '')
       .split(/\s+/)
@@ -78,17 +85,18 @@ export function useChatHistory(walletAddress?: string) {
 
   // Create a new conversation with title based on first message
   const createConversation = useCallback(async (firstMessage?: string) => {
-    if (!walletAddress) return null;
+    if (!hasIdentifier) return null;
 
     const title = firstMessage ? generateTitle(firstMessage) : 'New Chat';
 
     try {
+      const insertData: Record<string, string> = { title };
+      if (userId) insertData.user_id = userId;
+      if (walletAddress) insertData.wallet_address = walletAddress;
+
       const { data, error } = await supabase
         .from('chat_conversations')
-        .insert({
-          wallet_address: walletAddress,
-          title,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -103,22 +111,17 @@ export function useChatHistory(walletAddress?: string) {
       console.error('Error creating conversation:', err);
       return null;
     }
-  }, [walletAddress]);
+  }, [walletAddress, userId, hasIdentifier]);
 
-  // Save message to database only (no state update) - used when UI already updated
+  // Save message to database only (no state update)
   const saveMessageToDb = useCallback(async (role: 'user' | 'assistant', content: string, conversationId: string) => {
     try {
       const { error } = await supabase
         .from('chat_messages')
-        .insert({
-          conversation_id: conversationId,
-          role,
-          content,
-        });
+        .insert({ conversation_id: conversationId, role, content });
 
       if (error) throw error;
 
-      // Update the conversation timestamp
       await supabase
         .from('chat_conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -139,11 +142,7 @@ export function useChatHistory(walletAddress?: string) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .insert({
-          conversation_id: targetConversationId,
-          role,
-          content,
-        })
+        .insert({ conversation_id: targetConversationId, role, content })
         .select()
         .single();
 
@@ -151,7 +150,6 @@ export function useChatHistory(walletAddress?: string) {
       
       setMessages(prev => [...prev, { ...data, role: data.role as 'user' | 'assistant' }]);
 
-      // Update the conversation timestamp
       await supabase
         .from('chat_conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -213,10 +211,10 @@ export function useChatHistory(walletAddress?: string) {
 
   // Load conversations on mount
   useEffect(() => {
-    if (walletAddress) {
+    if (hasIdentifier) {
       fetchConversations();
     }
-  }, [walletAddress, fetchConversations]);
+  }, [hasIdentifier, fetchConversations]);
 
   return {
     conversations,

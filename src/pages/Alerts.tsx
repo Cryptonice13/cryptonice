@@ -1,23 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { useAccount } from 'wagmi';
 import {
-  Bot,
   Wallet,
   Bell,
   Star,
-  Settings,
-  User,
-  LogOut,
   Plus,
   Trash2,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
   History,
-  Check,
   Loader2,
   X,
 } from 'lucide-react';
@@ -34,13 +27,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -61,14 +47,12 @@ import { useMarketData } from '@/hooks/useMarketData';
 import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import AppHeader from '@/components/AppHeader';
 
 export default function Alerts() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
   const [alertPrice, setAlertPrice] = useState('');
   const [alertType, setAlertType] = useState<'above' | 'below'>('above');
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
@@ -86,22 +70,6 @@ export default function Alerts() {
     checkAlerts,
     markAlertRead,
   } = useWatchlistDb(address, user?.id);
-
-  const handleConnect = async () => {
-    try {
-      connect({ connector: injected() });
-    } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
 
   const handleAddToWatchlist = async (assetId: string) => {
     const asset = assets.find(a => a.id === assetId);
@@ -138,57 +106,7 @@ export default function Alerts() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 safe-area-top">
-        <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-            <Link to="/portfolio" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Portfolio</Link>
-            <Link to="/markets" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Markets</Link>
-            <Link to="/alerts" className="text-sm font-medium text-primary">Alerts</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2">
-                    <Wallet className="w-3.5 h-3.5" />
-                    <span className="text-xs hidden sm:inline">{formatAddress(address!)}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => disconnect()} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={handleConnect} size="sm" className="button-gradient h-8 px-3 text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1.5" />
-                Connect
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader activePage="alerts" />
 
       {/* Main Content */}
       <main className="px-3 sm:px-4 pt-14 pb-20 lg:pb-8">

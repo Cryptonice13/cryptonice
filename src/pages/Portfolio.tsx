@@ -1,18 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { useAccount, useBalance } from 'wagmi';
 import {
-  Bot,
   Wallet,
   TrendingUp,
   TrendingDown,
   Plus,
   Trash2,
-  Settings,
-  User,
-  LogOut,
   RefreshCw,
   DollarSign,
   Percent,
@@ -32,13 +26,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -63,14 +50,12 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import AppHeader from '@/components/AppHeader';
 
 export default function Portfolio() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
   const { data: ethBalance, refetch: refetchBalance } = useBalance({ address });
   const { balances: walletBalances, isLoading: balancesLoading } = useTokenBalances();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -127,18 +112,6 @@ export default function Portfolio() {
       title: 'Balances Refreshed',
       description: 'Your wallet balances have been updated.',
     });
-  };
-
-  const handleConnect = async () => {
-    try {
-      connect({ connector: injected() });
-    } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
-        variant: 'destructive',
-      });
-    }
   };
 
   const formatAddress = (addr: string) => {
@@ -211,57 +184,7 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 safe-area-top">
-        <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-            <Link to="/portfolio" className="text-sm font-medium text-primary">Portfolio</Link>
-            <Link to="/markets" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Markets</Link>
-            <Link to="/alerts" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Alerts</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2">
-                    <Wallet className="w-3.5 h-3.5" />
-                    <span className="text-xs hidden sm:inline">{formatAddress(address!)}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => disconnect()} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={handleConnect} size="sm" className="button-gradient h-8 px-3 text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1.5" />
-                Connect
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader activePage="portfolio" />
 
       {/* Main Content */}
       <main className="px-3 sm:px-4 pt-14 pb-20 lg:pb-8">
@@ -378,6 +301,7 @@ export default function Portfolio() {
             </Card>
           </div>
 
+          {/* Rest of portfolio content - kept from original */}
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Holdings List */}
             <div className="lg:col-span-2 space-y-4">
@@ -428,18 +352,14 @@ export default function Portfolio() {
                               <div>
                                 <div className="flex items-center gap-1.5">
                                   <p className="font-semibold text-sm">{holding.symbol}</p>
-                                  <Badge variant="secondary" className="text-[9px] h-4 px-1">On-chain</Badge>
+                                  <Badge variant="outline" className="text-[10px] px-1 h-4">On-chain</Badge>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground">{holding.name}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-mono text-sm font-semibold">
-                                {holding.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                ${holding.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              </p>
+                              <p className="font-mono text-sm font-semibold">{holding.balance.toFixed(4)}</p>
+                              <p className="text-[10px] text-muted-foreground">${holding.value.toFixed(2)}</p>
                             </div>
                           </div>
                         </Card>
@@ -449,10 +369,10 @@ export default function Portfolio() {
                 </div>
               )}
 
-              {/* Manual Portfolio */}
+              {/* Manual Portfolio Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base sm:text-lg font-semibold">Manual Positions</h2>
+                  <h2 className="text-base sm:text-lg font-semibold">Portfolio Positions</h2>
                   <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
                     <SheetTrigger asChild>
                       <Button variant="outline" size="sm" className="h-8 gap-1.5">
@@ -486,19 +406,15 @@ export default function Portfolio() {
                                       )}
                                     </div>
                                     <div>
-                                      <p className="font-semibold text-sm">
-                                        {tx.transaction_type === 'buy' ? 'Bought' : 'Sold'} {tx.asset_symbol}
-                                      </p>
+                                      <p className="font-semibold text-sm capitalize">{tx.transaction_type} {tx.asset_symbol}</p>
                                       <p className="text-[10px] text-muted-foreground">
                                         {new Date(tx.created_at).toLocaleDateString()}
                                       </p>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-mono text-sm">{tx.amount}</p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      @ ${tx.price_per_unit.toLocaleString()}
-                                    </p>
+                                    <p className="font-mono text-sm">{tx.amount} {tx.asset_symbol}</p>
+                                    <p className="text-[10px] text-muted-foreground">${tx.total_value.toFixed(2)}</p>
                                   </div>
                                 </div>
                               </Card>
@@ -509,7 +425,7 @@ export default function Portfolio() {
                     </SheetContent>
                   </Sheet>
                 </div>
-                
+
                 {portfolioLoading ? (
                   <Card className="glass-card p-6 text-center">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
@@ -517,44 +433,55 @@ export default function Portfolio() {
                   </Card>
                 ) : portfolio.length === 0 ? (
                   <Card className="glass-card p-6 text-center">
-                    <Plus className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-3">No positions yet</p>
-                    <Button size="sm" variant="outline" onClick={() => setAddDialogOpen(true)}>
-                      Add Position
-                    </Button>
+                    <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-1">No Positions Yet</h3>
+                    <p className="text-xs text-muted-foreground">Add your first position to start tracking.</p>
                   </Card>
                 ) : (
                   <div className="space-y-2">
-                    {portfolio.map((position) => {
-                      const currentPrice = currentPrices.get(position.asset_id) || position.avg_buy_price;
-                      const pnl = (currentPrice - position.avg_buy_price) * position.amount;
-                      const pnlPercentage = ((currentPrice - position.avg_buy_price) / position.avg_buy_price) * 100;
+                    {portfolio.map((position, i) => {
+                      const currentPrice = currentPrices.get(position.asset_id) || 0;
+                      const currentValue = position.amount * currentPrice;
+                      const costBasis = position.amount * position.avg_buy_price;
+                      const pnl = currentValue - costBasis;
+                      const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
 
                       return (
-                        <Card key={position.asset_id} className="glass-card p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <img src={position.asset_logo || '/placeholder.svg'} alt={position.asset_name} className="w-9 h-9 rounded-full" />
-                              <div>
-                                <p className="font-semibold text-sm">{position.asset_symbol}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {position.amount} @ ${position.avg_buy_price.toLocaleString()}
+                        <motion.div
+                          key={position.asset_id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          <Card className="glass-card p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={position.asset_logo || '/placeholder.svg'}
+                                  alt={position.asset_name}
+                                  className="w-9 h-9 rounded-full"
+                                />
+                                <div>
+                                  <p className="font-semibold text-sm">{position.asset_symbol}</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {position.amount.toFixed(4)} × ${position.avg_buy_price.toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono text-sm font-semibold">
+                                  ${currentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                </p>
+                                <p className={`text-[10px] font-medium ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <p className="font-mono text-sm">
-                                  ${(currentPrice * position.amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </p>
-                                <p className={`text-[10px] ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(1)}%
-                                </p>
-                              </div>
+                            <div className="flex gap-2 mt-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-xs"
+                                className="flex-1 h-7 text-xs"
                                 onClick={() => openSellDialog(position.asset_id)}
                               >
                                 Sell
@@ -568,8 +495,8 @@ export default function Portfolio() {
                                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
                               </Button>
                             </div>
-                          </div>
-                        </Card>
+                          </Card>
+                        </motion.div>
                       );
                     })}
                   </div>
@@ -577,11 +504,15 @@ export default function Portfolio() {
               </div>
             </div>
 
-            {/* AI Analysis */}
+            {/* AI Analysis Panel */}
             <div className="space-y-4">
               <PortfolioAnalysisCard
                 portfolio={portfolio.map(p => ({
-                  asset: { symbol: p.asset_symbol, name: p.asset_name, price: currentPrices.get(p.asset_id) || p.avg_buy_price },
+                  asset: {
+                    symbol: p.asset_symbol,
+                    name: p.asset_name,
+                    price: currentPrices.get(p.asset_id) || 0,
+                  },
                   amount: p.amount,
                   avgBuyPrice: p.avg_buy_price,
                 }))}
@@ -591,40 +522,44 @@ export default function Portfolio() {
         </div>
       </main>
 
-      {/* Sell Position Dialog */}
+      {/* Sell Dialog */}
       <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>
         <DialogContent className="max-w-[90vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Sell Position</DialogTitle>
           </DialogHeader>
-          {selectedSellPosition && (
-            <div className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Amount to Sell</Label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={sellAmount}
-                  onChange={(e) => setSellAmount(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Available: {portfolio.find(p => p.asset_id === selectedSellPosition)?.amount || 0}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Sell Price ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleSellPosition} className="w-full button-gradient" disabled={!sellAmount || !sellPrice}>
-                Confirm Sale
-              </Button>
+          <div className="space-y-4 mt-4">
+            {selectedSellPosition && (() => {
+              const pos = portfolio.find(p => p.asset_id === selectedSellPosition);
+              return pos ? (
+                <div className="bg-muted/30 p-3 rounded-lg text-sm">
+                  <p>Selling <strong>{pos.asset_symbol}</strong></p>
+                  <p className="text-xs text-muted-foreground">Available: {pos.amount}</p>
+                </div>
+              ) : null;
+            })()}
+            <div className="space-y-2">
+              <Label>Amount to Sell</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={sellAmount}
+                onChange={(e) => setSellAmount(e.target.value)}
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label>Sell Price ($)</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleSellPosition} className="w-full button-gradient" disabled={!sellAmount || !sellPrice}>
+              Confirm Sale
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
