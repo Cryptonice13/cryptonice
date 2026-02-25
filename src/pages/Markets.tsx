@@ -1,18 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { useAccount } from 'wagmi';
 import {
-  Bot,
-  Wallet,
   TrendingUp,
   TrendingDown,
   Search,
   Star,
-  Settings,
-  User,
-  LogOut,
   RefreshCw,
   BarChart3,
   Target,
@@ -24,13 +17,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Sheet,
   SheetContent,
@@ -44,36 +30,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import AppHeader from '@/components/AppHeader';
 
 export default function Markets() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { address } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [analysisSheetOpen, setAnalysisSheetOpen] = useState(false);
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address, user?.id);
-
-  const handleConnect = async () => {
-    try {
-      connect({ connector: injected() });
-    } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
 
   const formatMarketCap = (cap: number) => {
     if (cap >= 1e12) return `$${(cap / 1e12).toFixed(1)}T`;
@@ -110,57 +78,7 @@ export default function Markets() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 safe-area-top">
-        <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-            <Link to="/portfolio" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Portfolio</Link>
-            <Link to="/markets" className="text-sm font-medium text-primary">Markets</Link>
-            <Link to="/alerts" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Alerts</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2">
-                    <Wallet className="w-3.5 h-3.5" />
-                    <span className="text-xs hidden sm:inline">{formatAddress(address!)}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => disconnect()} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={handleConnect} size="sm" className="button-gradient h-8 px-3 text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1.5" />
-                Connect
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader activePage="markets" />
 
       {/* Main Content */}
       <main className="px-3 sm:px-4 pt-14 pb-20 lg:pb-8">
