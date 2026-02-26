@@ -1,91 +1,120 @@
 
 
-## Comprehensive App Quality Upgrade
+## Advanced Feature Upgrade Plan
 
-After a thorough analysis of the entire codebase, here are the critical issues found and the plan to fix them, organized by priority.
-
----
-
-### 1. Fix Inconsistent Wallet Connect (Bug - High Priority)
-
-**Problem**: Only `Dashboard.tsx` and `Settings.tsx` use the safe `connectAsync` + mobile deep-link pattern. The `Portfolio.tsx`, `Markets.tsx`, and `Alerts.tsx` pages still use the old `connect()` call that crashes on mobile without MetaMask.
-
-**Fix**: Update the `handleConnect` function in Portfolio, Markets, and Alerts to use the same pattern:
-- Import `handleMobileDeepLink` and `hasInjectedProvider` from `@/lib/walletConnect`
-- Switch from `connect` to `connectAsync`
-- Add provider detection before attempting connection
-
-**Files**: `src/pages/Portfolio.tsx`, `src/pages/Markets.tsx`, `src/pages/Alerts.tsx`
+After analyzing every page, hook, component, and edge function in the app, here are 5 high-impact features that will make this platform significantly more powerful and futuristic -- placed exactly where they belong.
 
 ---
 
-### 2. Fix Chat History for Email-Only Users (Bug - High Priority)
+### 1. Fear & Greed Index + Market Sentiment Dashboard (Markets Page)
 
-**Problem**: `useChatHistory` only filters by `wallet_address`. Email-authenticated users without a wallet see zero chat history and can't save conversations (the RLS policy blocks inserts without a matching `user_id`).
+**Where**: Top of the Markets page, above the asset table
 
-**Fix**:
-- Update `useChatHistory` to accept an optional `userId` parameter
-- Query by `user_id` when available, fall back to `wallet_address`
-- Insert both `user_id` and `wallet_address` when creating conversations
-- Update `Dashboard.tsx` to pass `user?.id` from `useAuth`
+**What**: A live crypto Fear & Greed Index gauge with real-time market sentiment analysis. Shows the overall market mood (Extreme Fear to Extreme Greed) using data from the Alternative.me API, combined with AI-generated market commentary.
 
-**Files**: `src/hooks/useChatHistory.ts`, `src/pages/Dashboard.tsx`
+**Details**:
+- Circular gauge component showing the index value (0-100) with color gradient
+- AI-generated one-line market commentary based on current sentiment
+- Mini sparkline showing sentiment trend over 7 days
+- Updates automatically with market data refresh
 
----
-
-### 3. Fix UserProfile Page - Use Real Data (Bug - Medium Priority)
-
-**Problem**: `UserProfile.tsx` uses mock data with a fake `setTimeout` instead of reading from the `profiles` Supabase table. The profile name, email, and creation date are all fabricated.
-
-**Fix**:
-- Fetch real profile data from the `profiles` table using `user.id`
-- Display actual email from `useAuth`
-- Show real account creation date from Supabase auth
-- Remove the mock delay and hardcoded values
-
-**Files**: `src/pages/UserProfile.tsx`
+**Files**:
+- Create `src/components/ai/FearGreedGauge.tsx` -- the visual gauge component
+- Update `src/pages/Markets.tsx` -- add the gauge above the asset table
+- Update `supabase/functions/crypto-ai/index.ts` -- add Fear & Greed API fetch
 
 ---
 
-### 4. Extract Shared Navigation Header (Code Quality - Medium Priority)
+### 2. AI "Smart Alerts" -- Automatic Alert Suggestions (Alerts Page)
 
-**Problem**: The header with logo, nav links, wallet connect button, and dropdown menu is duplicated across 4 pages (Dashboard, Portfolio, Markets, Alerts) with ~50 lines of identical JSX each. Any change requires updating all 4 files.
+**Where**: Alerts page, new "AI Suggestions" tab alongside Watchlist and Add Assets
 
-**Fix**: Create a shared `AppHeader` component:
-- Accept `activePage` prop to highlight the current nav item
-- Include the wallet connect/disconnect logic with mobile-safe handling
-- Include the dropdown menu with Profile/Settings/Disconnect
+**What**: AI analyzes your watchlist and portfolio to automatically suggest price alerts based on support/resistance levels and market conditions. Instead of manually guessing alert prices, the AI recommends optimal levels.
 
-Then update all 4 pages to use `<AppHeader activePage="dashboard" />` instead of the duplicated code.
+**Details**:
+- New tab in the Alerts page: "AI Suggestions"
+- For each watchlisted asset, AI suggests 1-2 alert levels with reasoning
+- One-click to apply a suggested alert
+- Uses the existing crypto-ai edge function with a new `alert_suggestions` type
 
-**Files**: 
-- Create `src/components/AppHeader.tsx`
-- Update `src/pages/Dashboard.tsx`, `src/pages/Portfolio.tsx`, `src/pages/Markets.tsx`, `src/pages/Alerts.tsx`
-
----
-
-### 5. Remove Dead Code (Code Quality - Low Priority)
-
-**Problem**: `useMarketData.ts` still exports `useWatchlist()` and `usePortfolio()` which use localStorage. These are fully replaced by the Supabase-backed `useWatchlistDb` and `usePortfolioDb` hooks. No component imports them.
-
-**Fix**: Remove the `useWatchlist` and `usePortfolio` functions from `src/hooks/useMarketData.ts`, along with the unused `WatchlistItem` interface export from that file.
-
-**Files**: `src/hooks/useMarketData.ts`
+**Files**:
+- Create `src/components/ai/SmartAlertSuggestions.tsx` -- suggestion cards
+- Update `src/pages/Alerts.tsx` -- add the third tab
+- Update `supabase/functions/crypto-ai/index.ts` -- add `alert_suggestions` type with prompt
 
 ---
 
-### Summary of Changes
+### 3. Portfolio Performance Chart with Timeline (Portfolio Page)
 
-| File | Change |
+**Where**: Portfolio page, between the stats cards and the holdings list
+
+**What**: An interactive line chart showing portfolio value over time, built from transaction history data. Lets users visualize how their portfolio has grown.
+
+**Details**:
+- Line chart using Recharts (already installed) showing portfolio value over time
+- Toggle between 7D / 30D / All time views
+- Chart data computed from `portfolio_transactions` table
+- Shows total value at each point based on buy/sell history and current prices
+- Gradient fill under the line matching the app's primary color scheme
+
+**Files**:
+- Create `src/components/portfolio/PerformanceChart.tsx` -- the Recharts component
+- Update `src/pages/Portfolio.tsx` -- insert chart between stats and holdings
+
+---
+
+### 4. Whale Activity Tracker (Markets Page Side Panel)
+
+**Where**: Markets page right sidebar, below the AI Analysis panel (desktop) and as a new tab in the mobile bottom sheet
+
+**What**: Shows simulated whale movements -- large transactions for selected assets. Gives users insight into what big players are doing.
+
+**Details**:
+- Card component showing recent large transactions (whale buys/sells)
+- Data generated via AI analysis of volume patterns for the selected asset
+- Visual indicators: green for accumulation, red for distribution
+- Uses existing crypto-ai edge function with new `whale_analysis` type
+
+**Files**:
+- Create `src/components/ai/WhaleActivityCard.tsx` -- whale tracker card
+- Update `src/pages/Markets.tsx` -- add to sidebar and mobile sheet tabs
+- Update `supabase/functions/crypto-ai/index.ts` -- add `whale_analysis` prompt type
+
+---
+
+### 5. Quick Actions Widget on Dashboard (Dashboard Page)
+
+**Where**: Dashboard page, above the chat interface as a horizontal scrollable row
+
+**What**: Context-aware quick action buttons that adapt based on market conditions. Shows actionable cards like "BTC down 5% -- Buy the dip?", "ETH at resistance -- Set alert?", "Portfolio is 80% BTC -- Diversify?"
+
+**Details**:
+- Horizontal scrollable row of small action cards
+- Each card has an icon, short message, and action button
+- Actions navigate to the relevant page or trigger AI analysis in chat
+- Data driven by market conditions (from useMarketData) and portfolio state
+- Refreshes with market data
+
+**Files**:
+- Create `src/components/dashboard/QuickActions.tsx` -- the scrollable widget
+- Update `src/pages/Dashboard.tsx` -- add between header and chat
+
+---
+
+### Technical Summary
+
+| File | Action |
 |------|--------|
-| `src/components/AppHeader.tsx` | New shared header component |
-| `src/pages/Portfolio.tsx` | Fix wallet connect, use AppHeader |
-| `src/pages/Markets.tsx` | Fix wallet connect, use AppHeader |
-| `src/pages/Alerts.tsx` | Fix wallet connect, use AppHeader |
-| `src/pages/Dashboard.tsx` | Pass userId to chat history, use AppHeader |
-| `src/hooks/useChatHistory.ts` | Support userId for email-only users |
-| `src/pages/UserProfile.tsx` | Use real Supabase profile data |
-| `src/hooks/useMarketData.ts` | Remove dead localStorage hooks |
+| `src/components/ai/FearGreedGauge.tsx` | Create -- sentiment gauge component |
+| `src/components/ai/SmartAlertSuggestions.tsx` | Create -- AI alert suggestion cards |
+| `src/components/ai/WhaleActivityCard.tsx` | Create -- whale activity tracker |
+| `src/components/portfolio/PerformanceChart.tsx` | Create -- portfolio value chart |
+| `src/components/dashboard/QuickActions.tsx` | Create -- smart quick actions |
+| `src/pages/Markets.tsx` | Update -- add Fear & Greed gauge + whale tracker |
+| `src/pages/Alerts.tsx` | Update -- add AI Suggestions tab |
+| `src/pages/Portfolio.tsx` | Update -- add performance chart |
+| `src/pages/Dashboard.tsx` | Update -- add quick actions widget |
+| `supabase/functions/crypto-ai/index.ts` | Update -- add 3 new AI prompt types |
 
-**Database**: No schema changes needed. The existing `chat_conversations` table already has nullable `user_id` and `wallet_address` columns with appropriate RLS policies.
+**No database changes needed** -- all features use existing tables or are computed client-side / via AI.
 
