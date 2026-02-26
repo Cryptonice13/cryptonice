@@ -23,6 +23,9 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppHeader from '@/components/AppHeader';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { useMarketData } from '@/hooks/useMarketData';
+import { usePortfolioDb } from '@/hooks/usePortfolioDb';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,6 +34,8 @@ export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const { assets } = useMarketData();
+  const { portfolio } = usePortfolioDb(address, user?.id);
 
   const {
     conversations,
@@ -131,7 +136,25 @@ export default function Dashboard() {
       <AppHeader activePage="dashboard" rightContent={mobileHistoryButton} />
 
       {/* Main Content with Sidebar */}
-      <main className="flex-1 flex pt-12 pb-16 lg:pb-0">
+      <main className="flex-1 flex flex-col pt-12 pb-16 lg:pb-0">
+        {/* Quick Actions */}
+        <div className="px-3 sm:px-4 pt-2 lg:pl-[260px]">
+          <QuickActions
+            assets={assets}
+            portfolioSymbols={portfolio.map(p => p.asset_symbol)}
+            onChatAction={(msg) => {
+              // Trigger chat with the prompt
+              const chatInput = document.querySelector<HTMLTextAreaElement>('textarea');
+              if (chatInput) {
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+                nativeInputValueSetter?.call(chatInput, msg);
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            }}
+          />
+        </div>
+
+        <div className="flex-1 flex">
         {/* Chat Sidebar - Hidden on mobile */}
         <div className="hidden lg:block h-[calc(100vh-48px)] sticky top-12">
           <ChatSidebar
@@ -179,6 +202,7 @@ export default function Dashboard() {
               className="flex-1 rounded-none border-0"
             />
           </div>
+        </div>
         </div>
       </main>
 

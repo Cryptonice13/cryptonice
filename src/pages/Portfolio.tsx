@@ -51,6 +51,7 @@ import { useTokenBalances } from '@/hooks/useTokenBalances';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppHeader from '@/components/AppHeader';
+import { PerformanceChart } from '@/components/portfolio/PerformanceChart';
 
 export default function Portfolio() {
   const { toast } = useToast();
@@ -301,7 +302,10 @@ export default function Portfolio() {
             </Card>
           </div>
 
-          {/* Rest of portfolio content - kept from original */}
+          {/* Performance Chart */}
+          <PerformanceChart transactions={transactions} currentPrices={currentPrices} />
+
+          {/* Rest of portfolio content */}
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Holdings List */}
             <div className="lg:col-span-2 space-y-4">

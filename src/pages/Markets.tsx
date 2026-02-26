@@ -29,6 +29,8 @@ import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { useAuth } from '@/hooks/useAuth';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
+import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
+import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 
@@ -117,6 +119,9 @@ export default function Markets() {
               </Button>
             </div>
           </div>
+
+          {/* Fear & Greed Gauge */}
+          <FearGreedGauge />
 
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Asset List */}
@@ -233,6 +238,15 @@ export default function Markets() {
                 </Card>
               )}
 
+              {/* Whale Activity */}
+              {selectedAssetData && (
+                <WhaleActivityCard
+                  symbol={selectedAssetData.symbol}
+                  name={selectedAssetData.name}
+                  price={selectedAssetData.price}
+                />
+              )}
+
               {/* Market Stats */}
               <Card className="glass-card p-4 space-y-3">
                 <h3 className="font-semibold text-sm">Market Overview</h3>
@@ -275,7 +289,7 @@ export default function Markets() {
           </SheetHeader>
           {selectedAssetData && (
             <Tabs defaultValue="prediction" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="prediction" className="text-xs">
                   <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
                   Prediction
@@ -283,6 +297,9 @@ export default function Markets() {
                 <TabsTrigger value="signal" className="text-xs">
                   <Target className="w-3.5 h-3.5 mr-1.5" />
                   Signal
+                </TabsTrigger>
+                <TabsTrigger value="whales" className="text-xs">
+                  🐋 Whales
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="prediction" className="mt-4">
@@ -299,6 +316,13 @@ export default function Markets() {
                   name={selectedAssetData.name}
                   price={selectedAssetData.price}
                   logo={selectedAssetData.logo}
+                />
+              </TabsContent>
+              <TabsContent value="whales" className="mt-4">
+                <WhaleActivityCard
+                  symbol={selectedAssetData.symbol}
+                  name={selectedAssetData.name}
+                  price={selectedAssetData.price}
                 />
               </TabsContent>
             </Tabs>
