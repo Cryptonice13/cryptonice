@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import {
@@ -48,6 +48,7 @@ import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
+import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
 
 export default function Alerts() {
   const { toast } = useToast();
@@ -212,10 +213,14 @@ export default function Alerts() {
             </Card>
           ) : (
             <Tabs defaultValue="watchlist" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="watchlist" className="text-xs sm:text-sm">
                   <Star className="w-3.5 h-3.5 mr-1.5" />
                   Watchlist ({watchlist.length})
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs sm:text-sm">
+                  <Bell className="w-3.5 h-3.5 mr-1.5" />
+                  AI Alerts
                 </TabsTrigger>
                 <TabsTrigger value="add" className="text-xs sm:text-sm">
                   <Plus className="w-3.5 h-3.5 mr-1.5" />
@@ -373,6 +378,21 @@ export default function Alerts() {
                     ))}
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="ai" className="mt-4">
+                <SmartAlertSuggestions
+                  watchlist={watchlist.map(w => ({
+                    asset_id: w.asset_id,
+                    asset_symbol: w.asset_symbol,
+                    asset_name: w.asset_name,
+                    asset_logo: w.asset_logo,
+                  }))}
+                  currentPrices={currentPrices}
+                  onApplyAlert={async (assetId, price, type) => {
+                    await setAlert(assetId, price, type);
+                  }}
+                />
               </TabsContent>
 
               <TabsContent value="add" className="mt-4">
