@@ -1,103 +1,67 @@
 
 
-## Advanced Feature Upgrade Plan
-
-After analyzing every page, hook, component, and edge function in the app, here are 5 high-impact features that will make this platform significantly more powerful and futuristic -- placed exactly where they belong.
+## Three-Part Upgrade: Chat, Markets Charts, and Home Redesign
 
 ---
 
-### 1. Fear & Greed Index + Market Sentiment Dashboard (Markets Page)
+### 1. Make Chat Responses Concise and Rendered with Markdown
 
-**Where**: Top of the Markets page, above the asset table
+**Problem**: The chat currently (a) strips ALL markdown formatting, producing giant text walls, and (b) the AI system prompt encourages verbose multi-section reports with tables, disclaimers, and repetitive data dumps.
 
-**What**: A live crypto Fear & Greed Index gauge with real-time market sentiment analysis. Shows the overall market mood (Extreme Fear to Extreme Greed) using data from the Alternative.me API, combined with AI-generated market commentary.
-
-**Details**:
-- Circular gauge component showing the index value (0-100) with color gradient
-- AI-generated one-line market commentary based on current sentiment
-- Mini sparkline showing sentiment trend over 7 days
-- Updates automatically with market data refresh
+**Fix**:
+- **Install `react-markdown`** -- render AI responses with proper markdown (bold, bullets, headers, code blocks) instead of stripping it
+- **Update the AI system prompt** in `crypto-ai/index.ts` to instruct the AI to be conversational, concise, and to-the-point. No lengthy disclaimers. Use short bullet points. Answer in 3-5 sentences for simple questions, expand only when the user asks for deep analysis.
+- **Remove `stripMarkdown`** from `ChatInterface.tsx` and replace with `<ReactMarkdown>` component with proper prose styling
 
 **Files**:
-- Create `src/components/ai/FearGreedGauge.tsx` -- the visual gauge component
-- Update `src/pages/Markets.tsx` -- add the gauge above the asset table
-- Update `supabase/functions/crypto-ai/index.ts` -- add Fear & Greed API fetch
+| File | Change |
+|------|--------|
+| `package.json` | Add `react-markdown` dependency |
+| `src/components/ai/ChatInterface.tsx` | Remove `stripMarkdown`, render assistant messages with `<ReactMarkdown>` and prose classes |
+| `supabase/functions/crypto-ai/index.ts` | Update chat system prompt to be concise and conversational |
 
 ---
 
-### 2. AI "Smart Alerts" -- Automatic Alert Suggestions (Alerts Page)
+### 2. Interactive Charts on the Markets Page
 
-**Where**: Alerts page, new "AI Suggestions" tab alongside Watchlist and Add Assets
+**Problem**: The Markets page shows a flat table with no visual price representation. The `sparkline` data (7-day, 24 data points) is already fetched from CoinGecko but never displayed.
 
-**What**: AI analyzes your watchlist and portfolio to automatically suggest price alerts based on support/resistance levels and market conditions. Instead of manually guessing alert prices, the AI recommends optimal levels.
-
-**Details**:
-- New tab in the Alerts page: "AI Suggestions"
-- For each watchlisted asset, AI suggests 1-2 alert levels with reasoning
-- One-click to apply a suggested alert
-- Uses the existing crypto-ai edge function with a new `alert_suggestions` type
+**Fix**:
+- **Add 7-day sparkline mini-charts** to each row in the Markets table using Recharts `<AreaChart>` (tiny, inline, no axes)
+- **Add a detailed price chart panel** when an asset is selected, showing the full sparkline with axes, tooltip, and current price overlay
+- Both integrate into the existing desktop sidebar and mobile bottom sheet
 
 **Files**:
-- Create `src/components/ai/SmartAlertSuggestions.tsx` -- suggestion cards
-- Update `src/pages/Alerts.tsx` -- add the third tab
-- Update `supabase/functions/crypto-ai/index.ts` -- add `alert_suggestions` type with prompt
+| File | Change |
+|------|--------|
+| `src/components/ai/MiniSparkline.tsx` | Create -- tiny inline sparkline component (50x24px) |
+| `src/components/ai/PriceChart.tsx` | Create -- larger interactive chart with tooltip for the selected asset |
+| `src/pages/Markets.tsx` | Add sparkline column to table, add PriceChart to sidebar tabs |
 
 ---
 
-### 3. Portfolio Performance Chart with Timeline (Portfolio Page)
+### 3. Redesign the Home Page
 
-**Where**: Portfolio page, between the stats cards and the holdings list
+**Problem**: The Home page is branded as "DeFiLend" (not matching the app's CryptoAI identity), uses static mock market data, and has an outdated layout with a lending-focused narrative that doesn't match what the app actually does (AI-powered crypto analytics, portfolio tracking, market intelligence).
 
-**What**: An interactive line chart showing portfolio value over time, built from transaction history data. Lets users visualize how their portfolio has grown.
+**Fix**: Complete redesign with these sections:
 
-**Details**:
-- Line chart using Recharts (already installed) showing portfolio value over time
-- Toggle between 7D / 30D / All time views
-- Chart data computed from `portfolio_transactions` table
-- Shows total value at each point based on buy/sell history and current prices
-- Gradient fill under the line matching the app's primary color scheme
+**a. Hero Section** -- New headline: "AI-Powered Crypto Intelligence". Animated typing effect for tagline. Two CTAs: "Launch Dashboard" and "Explore Markets". Live BTC/ETH price ticker in the hero.
 
-**Files**:
-- Create `src/components/portfolio/PerformanceChart.tsx` -- the Recharts component
-- Update `src/pages/Portfolio.tsx` -- insert chart between stats and holdings
+**b. Live Trending Ticker** -- Horizontal scrolling bar showing top 5 assets with real-time prices and 24h change from `useMarketData()`, replacing the static mock table.
 
----
+**c. Feature Showcase** -- 3 cards highlighting the app's real features: AI Advisor, Smart Alerts, Portfolio Tracker. Each with an icon, description, and link to the relevant page.
 
-### 4. Whale Activity Tracker (Markets Page Side Panel)
+**d. Market Snapshot** -- Compact grid of top 6 assets with sparklines, replacing the old lending APY table.
 
-**Where**: Markets page right sidebar, below the AI Analysis panel (desktop) and as a new tab in the mobile bottom sheet
+**e. Social Proof + CTA** -- Keep the stats section (with animated counters) and testimonials, but update styling. Simpler footer.
 
-**What**: Shows simulated whale movements -- large transactions for selected assets. Gives users insight into what big players are doing.
-
-**Details**:
-- Card component showing recent large transactions (whale buys/sells)
-- Data generated via AI analysis of volume patterns for the selected asset
-- Visual indicators: green for accumulation, red for distribution
-- Uses existing crypto-ai edge function with new `whale_analysis` type
+**f. Branding** -- Change all "DeFiLend" references to "CryptoAI" to match the rest of the app. Use Brain icon consistent with the app header.
 
 **Files**:
-- Create `src/components/ai/WhaleActivityCard.tsx` -- whale tracker card
-- Update `src/pages/Markets.tsx` -- add to sidebar and mobile sheet tabs
-- Update `supabase/functions/crypto-ai/index.ts` -- add `whale_analysis` prompt type
-
----
-
-### 5. Quick Actions Widget on Dashboard (Dashboard Page)
-
-**Where**: Dashboard page, above the chat interface as a horizontal scrollable row
-
-**What**: Context-aware quick action buttons that adapt based on market conditions. Shows actionable cards like "BTC down 5% -- Buy the dip?", "ETH at resistance -- Set alert?", "Portfolio is 80% BTC -- Diversify?"
-
-**Details**:
-- Horizontal scrollable row of small action cards
-- Each card has an icon, short message, and action button
-- Actions navigate to the relevant page or trigger AI analysis in chat
-- Data driven by market conditions (from useMarketData) and portfolio state
-- Refreshes with market data
-
-**Files**:
-- Create `src/components/dashboard/QuickActions.tsx` -- the scrollable widget
-- Update `src/pages/Dashboard.tsx` -- add between header and chat
+| File | Change |
+|------|--------|
+| `src/pages/Home.tsx` | Full redesign with live data, new sections, CryptoAI branding |
 
 ---
 
@@ -105,16 +69,12 @@ After analyzing every page, hook, component, and edge function in the app, here 
 
 | File | Action |
 |------|--------|
-| `src/components/ai/FearGreedGauge.tsx` | Create -- sentiment gauge component |
-| `src/components/ai/SmartAlertSuggestions.tsx` | Create -- AI alert suggestion cards |
-| `src/components/ai/WhaleActivityCard.tsx` | Create -- whale activity tracker |
-| `src/components/portfolio/PerformanceChart.tsx` | Create -- portfolio value chart |
-| `src/components/dashboard/QuickActions.tsx` | Create -- smart quick actions |
-| `src/pages/Markets.tsx` | Update -- add Fear & Greed gauge + whale tracker |
-| `src/pages/Alerts.tsx` | Update -- add AI Suggestions tab |
-| `src/pages/Portfolio.tsx` | Update -- add performance chart |
-| `src/pages/Dashboard.tsx` | Update -- add quick actions widget |
-| `supabase/functions/crypto-ai/index.ts` | Update -- add 3 new AI prompt types |
+| `src/components/ai/ChatInterface.tsx` | Replace stripMarkdown with react-markdown rendering |
+| `supabase/functions/crypto-ai/index.ts` | Update chat system prompt for concise responses |
+| `src/components/ai/MiniSparkline.tsx` | Create -- inline 7d sparkline for table rows |
+| `src/components/ai/PriceChart.tsx` | Create -- interactive price chart for selected asset |
+| `src/pages/Markets.tsx` | Add sparkline column + price chart panel |
+| `src/pages/Home.tsx` | Full redesign with CryptoAI branding + live data |
 
-**No database changes needed** -- all features use existing tables or are computed client-side / via AI.
+**Dependencies**: Add `react-markdown` (for chat markdown rendering). Recharts is already installed for charts.
 
