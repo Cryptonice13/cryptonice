@@ -31,6 +31,8 @@ import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
 import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
 import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
+import { MiniSparkline } from '@/components/ai/MiniSparkline';
+import { PriceChart } from '@/components/ai/PriceChart';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 
@@ -134,6 +136,7 @@ export default function Markets() {
                         <th className="text-left p-3 text-xs font-medium text-muted-foreground">Asset</th>
                         <th className="text-right p-3 text-xs font-medium text-muted-foreground">Price</th>
                         <th className="text-right p-3 text-xs font-medium text-muted-foreground">24h</th>
+                        <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">7d Chart</th>
                         <th className="text-right p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">MCap</th>
                         <th className="text-center p-3 text-xs font-medium text-muted-foreground w-10"></th>
                       </tr>
@@ -166,6 +169,11 @@ export default function Markets() {
                             <span className={`text-xs font-medium ${asset.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                               {asset.priceChange24h >= 0 ? '+' : ''}{asset.priceChange24h.toFixed(1)}%
                             </span>
+                          </td>
+                          <td className="p-3 hidden sm:table-cell">
+                            <div className="flex justify-center">
+                              <MiniSparkline data={asset.sparkline} positive={asset.priceChange7d >= 0} />
+                            </div>
                           </td>
                           <td className="p-3 text-right hidden sm:table-cell text-xs text-muted-foreground">
                             {formatMarketCap(asset.marketCap)}
@@ -200,34 +208,39 @@ export default function Markets() {
             {/* AI Analysis Panel - Desktop */}
             <div className="hidden lg:block space-y-4">
               {selectedAssetData ? (
-                <Tabs defaultValue="prediction" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="prediction" className="text-xs">
-                      <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-                      Prediction
-                    </TabsTrigger>
-                    <TabsTrigger value="signal" className="text-xs">
-                      <Target className="w-3.5 h-3.5 mr-1.5" />
-                      Signal
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="prediction" className="mt-4">
-                    <MarketPredictionCard
-                      symbol={selectedAssetData.symbol}
-                      name={selectedAssetData.name}
-                      currentPrice={selectedAssetData.price}
-                      logo={selectedAssetData.logo}
-                    />
-                  </TabsContent>
-                  <TabsContent value="signal" className="mt-4">
-                    <TradingSignalCard
-                      symbol={selectedAssetData.symbol}
-                      name={selectedAssetData.name}
-                      price={selectedAssetData.price}
-                      logo={selectedAssetData.logo}
-                    />
-                  </TabsContent>
-                </Tabs>
+                <div className="space-y-4">
+                  {/* Price Chart */}
+                  <PriceChart asset={selectedAssetData} />
+
+                  <Tabs defaultValue="prediction" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="prediction" className="text-xs">
+                        <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
+                        Prediction
+                      </TabsTrigger>
+                      <TabsTrigger value="signal" className="text-xs">
+                        <Target className="w-3.5 h-3.5 mr-1.5" />
+                        Signal
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="prediction" className="mt-4">
+                      <MarketPredictionCard
+                        symbol={selectedAssetData.symbol}
+                        name={selectedAssetData.name}
+                        currentPrice={selectedAssetData.price}
+                        logo={selectedAssetData.logo}
+                      />
+                    </TabsContent>
+                    <TabsContent value="signal" className="mt-4">
+                      <TradingSignalCard
+                        symbol={selectedAssetData.symbol}
+                        name={selectedAssetData.name}
+                        price={selectedAssetData.price}
+                        logo={selectedAssetData.logo}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </div>
               ) : (
                 <Card className="glass-card p-6 text-center">
                   <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
@@ -288,44 +301,49 @@ export default function Markets() {
             </SheetTitle>
           </SheetHeader>
           {selectedAssetData && (
-            <Tabs defaultValue="prediction" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="prediction" className="text-xs">
-                  <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-                  Prediction
-                </TabsTrigger>
-                <TabsTrigger value="signal" className="text-xs">
-                  <Target className="w-3.5 h-3.5 mr-1.5" />
-                  Signal
-                </TabsTrigger>
-                <TabsTrigger value="whales" className="text-xs">
-                  🐋 Whales
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="prediction" className="mt-4">
-                <MarketPredictionCard
-                  symbol={selectedAssetData.symbol}
-                  name={selectedAssetData.name}
-                  currentPrice={selectedAssetData.price}
-                  logo={selectedAssetData.logo}
-                />
-              </TabsContent>
-              <TabsContent value="signal" className="mt-4">
-                <TradingSignalCard
-                  symbol={selectedAssetData.symbol}
-                  name={selectedAssetData.name}
-                  price={selectedAssetData.price}
-                  logo={selectedAssetData.logo}
-                />
-              </TabsContent>
-              <TabsContent value="whales" className="mt-4">
-                <WhaleActivityCard
-                  symbol={selectedAssetData.symbol}
-                  name={selectedAssetData.name}
-                  price={selectedAssetData.price}
-                />
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-4 overflow-y-auto max-h-[calc(70vh-80px)]">
+              {/* Price Chart */}
+              <PriceChart asset={selectedAssetData} />
+
+              <Tabs defaultValue="prediction" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="prediction" className="text-xs">
+                    <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
+                    Prediction
+                  </TabsTrigger>
+                  <TabsTrigger value="signal" className="text-xs">
+                    <Target className="w-3.5 h-3.5 mr-1.5" />
+                    Signal
+                  </TabsTrigger>
+                  <TabsTrigger value="whales" className="text-xs">
+                    🐋 Whales
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="prediction" className="mt-4">
+                  <MarketPredictionCard
+                    symbol={selectedAssetData.symbol}
+                    name={selectedAssetData.name}
+                    currentPrice={selectedAssetData.price}
+                    logo={selectedAssetData.logo}
+                  />
+                </TabsContent>
+                <TabsContent value="signal" className="mt-4">
+                  <TradingSignalCard
+                    symbol={selectedAssetData.symbol}
+                    name={selectedAssetData.name}
+                    price={selectedAssetData.price}
+                    logo={selectedAssetData.logo}
+                  />
+                </TabsContent>
+                <TabsContent value="whales" className="mt-4">
+                  <WhaleActivityCard
+                    symbol={selectedAssetData.symbol}
+                    name={selectedAssetData.name}
+                    price={selectedAssetData.price}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           )}
         </SheetContent>
       </Sheet>

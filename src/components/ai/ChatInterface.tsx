@@ -1,32 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2, Radio } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Strip markdown formatting for clean display
-const stripMarkdown = (text: string): string => {
-  return text
-    .replace(/^#{1,6}\s+/gm, '') // Remove headers
-    .replace(/\*\*\*(.+?)\*\*\*/g, '$1') // Bold italic
-    .replace(/\*\*(.+?)\*\*/g, '$1') // Bold
-    .replace(/\*(.+?)\*/g, '$1') // Italic
-    .replace(/__(.+?)__/g, '$1') // Bold underscore
-    .replace(/_(.+?)_/g, '$1') // Italic underscore
-    .replace(/~~(.+?)~~/g, '$1') // Strikethrough
-    .replace(/`{3}[\s\S]*?`{3}/g, '') // Code blocks
-    .replace(/`(.+?)`/g, '$1') // Inline code
-    .replace(/^\s*[-*+]\s+/gm, '• ') // Bullet points
-    .replace(/^\s*\d+\.\s+/gm, '') // Numbered lists
-    .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Links
-    .replace(/^>\s+/gm, '') // Blockquotes
-    .replace(/^---+$/gm, '') // Horizontal rules
-    .replace(/\n{3,}/g, '\n\n') // Multiple newlines
-    .trim();
-};
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -301,9 +281,15 @@ export function ChatInterface({
                         : 'bg-muted/50'
                     }`}
                   >
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
-                      {msg.role === 'assistant' ? stripMarkdown(msg.content) : msg.content}
-                    </p>
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
+                        {msg.content}
+                      </p>
+                    )}
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
