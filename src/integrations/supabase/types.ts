@@ -220,6 +220,87 @@ export type Database = {
         }
         Relationships: []
       }
+      strategies: {
+        Row: {
+          asset_id: string
+          asset_symbol: string
+          conditions: Json | null
+          confidence: number | null
+          created_at: string
+          entry_price: number | null
+          exit_price: number | null
+          id: string
+          investment_amount: number
+          position_size: number | null
+          reasoning: string | null
+          risk_level: string
+          risk_reward: number | null
+          signal: string
+          status: string
+          stop_loss: number | null
+          strategy_name: string
+          strategy_type: string
+          take_profits: Json | null
+          timeframe: string
+          updated_at: string
+          user_id: string | null
+          wallet_address: string | null
+          win_rate: number | null
+        }
+        Insert: {
+          asset_id: string
+          asset_symbol: string
+          conditions?: Json | null
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          exit_price?: number | null
+          id?: string
+          investment_amount?: number
+          position_size?: number | null
+          reasoning?: string | null
+          risk_level?: string
+          risk_reward?: number | null
+          signal?: string
+          status?: string
+          stop_loss?: number | null
+          strategy_name: string
+          strategy_type: string
+          take_profits?: Json | null
+          timeframe?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string | null
+          win_rate?: number | null
+        }
+        Update: {
+          asset_id?: string
+          asset_symbol?: string
+          conditions?: Json | null
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          exit_price?: number | null
+          id?: string
+          investment_amount?: number
+          position_size?: number | null
+          reasoning?: string | null
+          risk_level?: string
+          risk_reward?: number | null
+          signal?: string
+          status?: string
+          stop_loss?: number | null
+          strategy_name?: string
+          strategy_type?: string
+          take_profits?: Json | null
+          timeframe?: string
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string | null
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       user_portfolio: {
         Row: {
           amount: number
