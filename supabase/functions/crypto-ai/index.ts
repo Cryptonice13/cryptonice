@@ -141,6 +141,50 @@ Based on typical volume patterns and market microstructure for ${context?.symbol
 
 Respond in JSON: { transactions: [{ type: "buy"|"sell", amount: string, value: string, timeAgo: string, exchange: string, significance: "high"|"medium"|"low" }], sentiment: string, summary: string }`;
 
+    case "strategy_builder": {
+      const stratCoin = marketData[0];
+      const stratDetails = coinDetails ? `\nMarket Cap Rank: #${coinDetails.market_cap_rank}\nATH: $${coinDetails.market_data?.ath?.usd?.toLocaleString()}\n52w High: $${coinDetails.market_data?.high_24h?.usd}\nCirculating Supply: ${coinDetails.market_data?.circulating_supply?.toLocaleString()}` : '';
+      return `You are an advanced AI crypto trading strategy architect with REAL-TIME market data. You build precise, actionable strategies.
+
+${context?.symbol} LIVE DATA (${timestamp}):
+${stratCoin ? `Price: $${stratCoin.current_price.toLocaleString()} | 24h: ${stratCoin.price_change_percentage_24h?.toFixed(2)}% | 7d: ${stratCoin.price_change_percentage_7d_in_currency?.toFixed(2)}% | Vol: $${(stratCoin.total_volume / 1e9).toFixed(2)}B | MCap: $${(stratCoin.market_cap / 1e9).toFixed(2)}B${stratDetails}` : 'No data available.'}
+
+USER REQUEST:
+- Strategy Type: ${context?.strategyType || 'momentum'}
+- Risk Tolerance: ${context?.riskLevel || 'moderate'}
+- Investment Amount: $${context?.investmentAmount || 1000}
+- Timeframe: ${context?.timeframe || '1W'}
+
+INSTRUCTIONS:
+Analyze the current market conditions for ${context?.symbol} and generate a complete trading strategy. All price levels MUST be relative to the CURRENT price of $${stratCoin?.current_price?.toLocaleString() || 'unknown'}.
+
+For ${context?.strategyType || 'momentum'} strategy:
+${context?.strategyType === 'mean_reversion' ? '- Focus on deviation from moving averages, Bollinger Bands, RSI overbought/oversold' : ''}
+${context?.strategyType === 'breakout' ? '- Focus on key support/resistance levels, volume confirmation, breakout patterns' : ''}
+${context?.strategyType === 'dca' ? '- Focus on dollar-cost averaging intervals, accumulation zones, long-term targets' : ''}
+${context?.strategyType === 'scalping' ? '- Focus on short-term price action, tight stop-losses, quick profit targets' : ''}
+${!context?.strategyType || context?.strategyType === 'momentum' ? '- Focus on trend strength, momentum indicators, MACD crossovers, volume trends' : ''}
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks):
+{
+  "strategyName": "descriptive strategy name",
+  "signal": "BUY" | "SELL" | "HOLD",
+  "entryPrice": number,
+  "exitPrice": number,
+  "stopLoss": number,
+  "takeProfits": [number, number, number],
+  "positionSize": number (percentage of investment),
+  "riskRewardRatio": number,
+  "winRateProbability": number (0-100),
+  "confidence": number (0-100),
+  "conditions": ["condition 1", "condition 2", "condition 3"],
+  "reasoning": "2-3 sentence explanation of the strategy logic based on current market data",
+  "supportLevels": [number, number],
+  "resistanceLevels": [number, number],
+  "indicators": {"rsi": number, "macdSignal": "bullish"|"bearish"|"neutral", "volumeTrend": "increasing"|"decreasing"|"stable"}
+}`;
+    }
+
     default:
       return "You are a helpful cryptocurrency advisor with real-time market data.";
   }
@@ -166,10 +210,10 @@ serve(async (req) => {
     } else if (type === "portfolio_analysis" && context?.length > 0) {
       const symbols = context.map((item: any) => item.asset?.symbol || item.symbol).filter(Boolean);
       marketData = await fetchMarketData(symbols);
-    } else if ((type === "market_prediction" || type === "trading_signal" || type === "whale_analysis") && context?.symbol) {
+    } else if ((type === "market_prediction" || type === "trading_signal" || type === "whale_analysis" || type === "strategy_builder") && context?.symbol) {
       const coinId = symbolMap[context.symbol.toUpperCase()] || context.symbol.toLowerCase();
       marketData = await fetchMarketData([context.symbol]);
-      if (type === "market_prediction") coinDetails = await fetchCoinDetails(coinId);
+      if (type === "market_prediction" || type === "strategy_builder") coinDetails = await fetchCoinDetails(coinId);
     }
 
     const timestamp = new Date().toISOString();

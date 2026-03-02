@@ -14,7 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface AppHeaderProps {
-  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts';
+  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy';
   rightContent?: React.ReactNode;
 }
 
@@ -22,6 +22,7 @@ const navItems = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   { key: 'portfolio', label: 'Portfolio', path: '/portfolio' },
   { key: 'markets', label: 'Markets', path: '/markets' },
+  { key: 'strategy', label: 'Strategy', path: '/strategy' },
   { key: 'alerts', label: 'Alerts', path: '/alerts' },
 ] as const;
 

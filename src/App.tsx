@@ -17,6 +17,7 @@ import Markets from "./pages/Markets";
 import Alerts from "./pages/Alerts";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
+import StrategyBuilder from "./pages/StrategyBuilder";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,11 @@ const App = () => (
                 <Route path="/alerts" element={
                   <ProtectedRoute>
                     <Alerts />
+                  </ProtectedRoute>
+                } />
+                <Route path="/strategy" element={
+                  <ProtectedRoute>
+                    <StrategyBuilder />
                   </ProtectedRoute>
                 } />
                 <Route path="/profile" element={
