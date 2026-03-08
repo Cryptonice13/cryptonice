@@ -13,6 +13,7 @@ interface MarketPredictionCardProps {
   name: string;
   currentPrice: number;
   logo?: string;
+  onSave?: (symbol: string, name: string, price: number, data: any) => void;
 }
 
 /** Safely format a value that may be a number or string like "$66,200" */
