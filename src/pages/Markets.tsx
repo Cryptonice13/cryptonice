@@ -347,6 +347,7 @@ export default function Markets() {
                     symbol={selectedAssetData.symbol}
                     name={selectedAssetData.name}
                     price={selectedAssetData.price}
+                    onSave={saveWhaleActivity}
                   />
                 </TabsContent>
               </Tabs>

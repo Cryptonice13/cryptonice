@@ -75,6 +75,11 @@ const App = () => (
                     <StrategyBuilder />
                   </ProtectedRoute>
                 } />
+                <Route path="/insights" element={
+                  <ProtectedRoute>
+                    <AIInsights />
+                  </ProtectedRoute>
+                } />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <UserProfile />
