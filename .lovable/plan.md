@@ -1,77 +1,67 @@
 
 
-## AI Strategy Builder -- Full-Stack Feature
+## Dashboard Page Redesign
 
-A new dedicated page (`/strategy`) where users can create, backtest, and manage AI-powered crypto trading strategies. The AI analyzes market conditions and generates complete strategy configurations with entry/exit rules, risk management, and projected outcomes -- all displayed in a structured table.
-
----
-
-### What Gets Built
-
-**1. Strategy Builder Page** (`src/pages/StrategyBuilder.tsx`)
-- Header section with "Create Strategy" button
-- Strategy configuration form: select asset(s), timeframe, risk tolerance, strategy type (momentum, mean-reversion, breakout, DCA)
-- Results panel showing AI-generated strategy with entry/exit rules, stop-loss, take-profit, position sizing
-- Strategy history table listing all saved strategies with status, performance metrics, and actions
-- Uses AppHeader and MobileBottomNav for consistent navigation
-
-**2. Strategy Table Component** (`src/components/strategy/StrategyTable.tsx`)
-- Sortable table showing: Strategy Name, Asset, Type, Signal (BUY/SELL/HOLD badge), Risk Level, Win Rate, Created Date, Status
-- Row click expands to show full AI analysis
-- Delete action per row
-
-**3. Strategy Detail Card** (`src/components/strategy/StrategyDetailCard.tsx`)
-- Expanded view when a strategy is selected
-- Shows: entry/exit conditions, risk/reward ratio, position size recommendation, AI confidence score, support/resistance levels, full AI reasoning
-- Visual risk meter and confidence gauge
-
-**4. Strategy Form Component** (`src/components/strategy/StrategyForm.tsx`)
-- Asset selector (from market data)
-- Strategy type dropdown (Momentum, Mean Reversion, Breakout, DCA, Scalping)
-- Risk tolerance slider (Conservative / Moderate / Aggressive)
-- Investment amount input
-- Timeframe selector (1D, 1W, 1M, 3M)
-- "Generate Strategy" button that calls the AI
-
-**5. Edge Function Update** (`supabase/functions/crypto-ai/index.ts`)
-- New `strategy_builder` type that accepts asset, strategy type, risk level, amount, timeframe
-- System prompt instructs AI to return structured JSON with: strategyName, signal, entryPrice, exitPrice, stopLoss, takeProfits[], positionSize, riskRewardRatio, winRateProbability, confidence, conditions[], reasoning
-- Fetches real-time market data for the selected asset to ground the strategy in current prices
-
-**6. Database Table** (`strategies`)
-- Columns: id, user_id, wallet_address, asset_symbol, asset_id, strategy_name, strategy_type, risk_level, timeframe, investment_amount, signal, entry_price, exit_price, stop_loss, take_profits (jsonb), position_size, risk_reward, win_rate, confidence, conditions (jsonb), reasoning, status (active/completed/cancelled), created_at, updated_at
-- RLS policies matching existing pattern (user_id OR wallet_address)
-
-**7. Navigation Updates**
-- `AppHeader.tsx`: Add "Strategy" to navItems array, update activePage type
-- `MobileBottomNav.tsx`: Add Strategy icon (Cpu or Zap) as 5th nav item
-- `App.tsx`: Add `/strategy` route with ProtectedRoute wrapper
+The current Dashboard is essentially a bare chat interface with a sidebar. It lacks any dashboard-like feel — no market context, no portfolio summary, no visual richness. The redesign transforms it into a proper command center while keeping the AI chat as the primary interaction.
 
 ---
 
-### Technical Details
+### Layout Structure
 
-**New Files:**
-| File | Purpose |
-|------|---------|
-| `src/pages/StrategyBuilder.tsx` | Main page with form + table + detail view |
-| `src/components/strategy/StrategyForm.tsx` | Strategy configuration form |
-| `src/components/strategy/StrategyTable.tsx` | Saved strategies table |
-| `src/components/strategy/StrategyDetailCard.tsx` | Expanded strategy analysis view |
-| `src/hooks/useStrategyBuilder.ts` | Hook for AI calls + Supabase CRUD |
+```text
+┌─────────────────────────────────────────────────┐
+│  AppHeader (fixed)                              │
+├──────────┬──────────────────────────────────────┤
+│ Chat     │  Welcome Banner (gradient bg, name)  │
+│ Sidebar  ├──────────────────────────────────────┤
+│          │  Market Ticker Strip (live prices)    │
+│ - New    ├──────────┬───────────────────────────┤
+│   Chat   │  Quick   │  Portfolio Summary Card   │
+│ - History│  Stats   │  (total value, 24h change)│
+│          │  (3 mini │                           │
+│          │  cards)  │                           │
+│          ├──────────┴───────────────────────────┤
+│          │  AI Chat Interface (main area)       │
+│          │  - Suggested prompts redesigned      │
+│          │  - Streaming responses               │
+│          │                                      │
+│          ├──────────────────────────────────────┤
+│          │  Input bar                           │
+└──────────┴──────────────────────────────────────┘
+```
 
-**Modified Files:**
-| File | Change |
+On mobile: sidebar hidden (sheet drawer), content stacks vertically.
+
+### Changes
+
+**`src/pages/Dashboard.tsx` — Full Rewrite**
+
+- **Welcome Banner**: Gradient background strip with user name, time-based greeting ("Good morning"), and a subtle animated glow. Compact — 1 line on mobile.
+- **Live Market Ticker**: Horizontal scrolling strip showing top 5 assets with price + 24h change (uses `useMarketData`). Replaces the disconnected QuickActions.
+- **Quick Stats Row**: 3 compact glass cards above the chat:
+  - Portfolio Value (from `usePortfolioDb`)
+  - Market Trend (BTC 24h change as sentiment indicator)
+  - Active Alerts count (or "Set up alerts" CTA)
+- **Chat Interface**: Remains the main area but with better framing — no redundant header (remove the "CryptoAI Advisor / Live" badge since the welcome banner already establishes context)
+- **QuickActions**: Redesigned as contextual chips inside the chat empty state rather than a separate bar above everything
+
+**`src/components/ai/ChatInterface.tsx` — Minor Updates**
+
+- Accept an optional `hideHeader` prop to avoid the duplicate "CryptoAI Advisor" header when the Dashboard already shows the welcome banner
+- Move suggested questions into a more visually appealing grid with icons
+
+**`src/components/dashboard/QuickActions.tsx` — Refactor**
+
+- Convert from a horizontal scrolling card bar to inline contextual alert chips that appear in the welcome banner area (small badges like "ZEC down 6% — Analyze")
+- Cleaner, less intrusive design
+
+### Files
+
+| File | Action |
 |------|--------|
-| `src/App.tsx` | Add `/strategy` route |
-| `src/components/AppHeader.tsx` | Add "Strategy" nav item, update type |
-| `src/components/MobileBottomNav.tsx` | Add Strategy tab |
-| `supabase/functions/crypto-ai/index.ts` | Add `strategy_builder` prompt type |
-| `supabase/config.toml` | No change needed (crypto-ai already configured) |
+| `src/pages/Dashboard.tsx` | Full rewrite with new layout sections |
+| `src/components/ai/ChatInterface.tsx` | Add `hideHeader` prop |
+| `src/components/dashboard/QuickActions.tsx` | Redesign as compact alert chips |
 
-**Database Migration:**
-- Create `strategies` table with RLS policies for user_id and wallet_address access patterns
-
-**AI Prompt Design:**
-The strategy_builder prompt will instruct the AI to analyze real-time price data for the selected asset and return a JSON object with actionable trading parameters. The prompt adapts based on strategy type (e.g., momentum strategies focus on trend strength, mean-reversion on deviation from moving averages).
+No new dependencies. Uses existing `useMarketData`, `usePortfolioDb`, `framer-motion`.
 
