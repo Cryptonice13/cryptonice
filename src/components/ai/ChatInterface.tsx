@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,7 @@ interface ChatInterfaceProps {
   setMessages?: React.Dispatch<React.SetStateAction<any[]>>;
   portfolioContext?: any;
   className?: string;
+  hideHeader?: boolean;
 }
 
 const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-ai`;
@@ -32,7 +33,8 @@ export function ChatInterface({
   onCreateConversation,
   setMessages: setExternalMessages,
   portfolioContext, 
-  className = '' 
+  className = '',
+  hideHeader = false,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
@@ -42,7 +44,6 @@ export function ChatInterface({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Format relative time for the live data indicator
   const getRelativeTime = (date: Date | null) => {
     if (!date) return null;
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -52,14 +53,12 @@ export function ChatInterface({
     return `${Math.floor(minutes / 60)}h ago`;
   };
 
-  // Update relative time display every 10 seconds
   const [, setTimeUpdate] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTimeUpdate(t => t + 1), 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Use external messages if provided, otherwise use internal state
   const messages = externalMessages || internalMessages;
   const setMessages = setExternalMessages || setInternalMessages;
 
@@ -74,17 +73,14 @@ export function ChatInterface({
     let activeConversationId = currentConversationId;
     const hasExternalState = onSaveMessage && onCreateConversation;
     
-    // If we have external state management, create conversation if needed
     if (hasExternalState) {
       if (!currentConversationId) {
-        // Create conversation with the first message as the title
         const newConv = await onCreateConversation(messageContent);
         if (!newConv) return;
         activeConversationId = newConv.id;
       }
     }
     
-    // Update messages state (only once - here for UI, database save happens separately)
     setMessages((prev: Message[]) => [...prev, userMsg]);
     setIsLoading(true);
     setError(null);
@@ -159,14 +155,10 @@ export function ChatInterface({
         }
       }
 
-      // Mark that we received live data with this response
       setLastDataUpdate(new Date());
 
-      // Save both messages to database if we have the callback (don't update state, already done)
       if (hasExternalState && activeConversationId) {
-        // Save user message
         await onSaveMessage('user', messageContent, activeConversationId);
-        // Save assistant message
         if (assistantContent) {
           await onSaveMessage('assistant', assistantContent, activeConversationId);
         }
@@ -191,71 +183,103 @@ export function ChatInterface({
     setError(null);
   };
 
-  const suggestedQuestions = [
-    "Bitcoin outlook?",
-    "Analyze my portfolio",
-    "Best DeFi tokens?",
-    "Buy ETH now?",
+  const suggestedPrompts = [
+    { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Bitcoin outlook?', desc: 'Price analysis & predictions' },
+    { icon: <BarChart3 className="w-4 h-4 text-blue-500" />, label: 'Analyze my portfolio', desc: 'Risk & performance review' },
+    { icon: <Zap className="w-4 h-4 text-amber-500" />, label: 'Best DeFi tokens?', desc: 'Top opportunities right now' },
+    { icon: <Shield className="w-4 h-4 text-purple-500" />, label: 'Buy ETH now?', desc: 'Entry point analysis' },
   ];
 
   return (
     <Card className={`glass-card flex flex-col h-full overflow-hidden ${className}`}>
-      {/* Header - More compact on mobile */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 flex-shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-sm sm:text-base truncate">CryptoAI Advisor</h3>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-3.5 sm:h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
-                <span className="relative flex h-1 w-1 sm:h-1.5 sm:w-1.5 mr-0.5 sm:mr-1">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
-                </span>
-                Live
-              </Badge>
-              {lastDataUpdate && (
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden xs:inline">
-                  {getRelativeTime(lastDataUpdate)}
-                </span>
-              )}
+      {/* Header - conditionally hidden */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm sm:text-base truncate">CryptoAI Advisor</h3>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-3.5 sm:h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                  <span className="relative flex h-1 w-1 sm:h-1.5 sm:w-1.5 mr-0.5 sm:mr-1">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
+                  </span>
+                  Live
+                </Badge>
+                {lastDataUpdate && (
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden xs:inline">
+                    {getRelativeTime(lastDataUpdate)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+          {messages.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 sm:h-8 sm:w-8 p-0">
+              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Button>
+          )}
         </div>
-        {messages.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 sm:h-8 sm:w-8 p-0">
-            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      )}
+
+      {/* Compact inline status when header is hidden */}
+      {hideHeader && messages.length > 0 && (
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border/30 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+              <span className="relative flex h-1 w-1 mr-0.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
+              </span>
+              Live
+            </Badge>
+            {lastDataUpdate && (
+              <span className="text-[9px] text-muted-foreground">{getRelativeTime(lastDataUpdate)}</span>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 p-0">
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
         <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            <div className="text-center py-6 sm:py-10 space-y-4 sm:space-y-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold text-sm sm:text-base">Welcome to CryptoAI</h4>
+                <h4 className="font-semibold text-sm sm:text-base">How can I help you today?</h4>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
                   Ask about crypto markets, portfolio analysis, or trading strategies.
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto px-2">
-                {suggestedQuestions.map((question, i) => (
-                  <Button
+              <div className="grid grid-cols-2 gap-2 max-w-md mx-auto px-2">
+                {suggestedPrompts.map((prompt, i) => (
+                  <motion.div
                     key={i}
-                    variant="outline"
-                    size="sm"
-                    className="text-[10px] sm:text-xs text-left h-auto py-2 px-2 sm:px-3"
-                    onClick={() => sendMessage(question)}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
                   >
-                    {question}
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full text-left h-auto py-3 px-3 flex flex-col items-start gap-1 hover:bg-muted/50 hover:border-primary/30 transition-colors"
+                      onClick={() => sendMessage(prompt.label)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {prompt.icon}
+                        <span className="text-xs font-semibold">{prompt.label}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{prompt.desc}</span>
+                    </Button>
+                  </motion.div>
                 ))}
               </div>
             </div>
