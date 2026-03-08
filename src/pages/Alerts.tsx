@@ -81,6 +81,15 @@ export default function Alerts() {
   const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
 
+  // Single-asset AI alert generation
+  const [aiGeneratingFor, setAiGeneratingFor] = useState<string | null>(null);
+  const [aiAssetSuggestions, setAiAssetSuggestions] = useState<{
+    asset_id: string;
+    suggestions: { type: string; price: number; reasoning: string; confidence: number }[];
+  } | null>(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [applyingAiIdx, setApplyingAiIdx] = useState<number | null>(null);
+
   const { assets } = useMarketData();
   const { 
     watchlist, 
