@@ -85,11 +85,11 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
         <div className="flex items-center gap-2">
           {rightContent}
 
-          {/* AI Chat Icon */}
+          {/* AI Insights Icon */}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/ai-insights')}
             className="h-8 w-8 relative"
           >
             <Brain className="w-4 h-4 text-primary" />
