@@ -25,21 +25,31 @@ export default function Analysis() {
   const { assetId } = useParams<{ assetId: string }>();
   const navigate = useNavigate();
   const { assets } = useMarketData();
-  const { technicalData, fundamentalData, isLoadingTechnical, isLoadingFundamental, error, runAnalysis, loadHistory } = useAnalysis();
+  const { technicalData, fundamentalData, isLoadingTechnical, isLoadingFundamental, isLoadingLatest, error, selectedHistoryId, runAnalysis, loadLatestForAsset, forceLoadLatest, selectHistoryItem, loadHistory } = useAnalysis();
   const [activeTab, setActiveTab] = useState('technical');
   const [history, setHistory] = useState<any[]>([]);
 
   const asset = assets.find(a => a.id === assetId);
 
+  // Load latest analysis from DB on mount / asset change
+  useEffect(() => {
+    if (assetId) {
+      loadLatestForAsset(assetId);
+    }
+  }, [assetId, loadLatestForAsset]);
+
+  // Refresh history whenever analysis data changes
   useEffect(() => {
     if (assetId) {
       loadHistory(assetId).then(setHistory);
     }
   }, [assetId, loadHistory, technicalData, fundamentalData]);
 
-  const handleRunAnalysis = (type: 'technical_analysis' | 'fundamental_analysis') => {
+  const handleRunAnalysis = async (type: 'technical_analysis' | 'fundamental_analysis') => {
     if (!asset) return;
-    runAnalysis(type, asset.symbol, asset.name, asset.price, asset.id);
+    await runAnalysis(type, asset.symbol, asset.name, asset.price, asset.id);
+    // Refresh history after new analysis
+    loadHistory(asset.id).then(setHistory);
   };
 
   if (!asset) {
