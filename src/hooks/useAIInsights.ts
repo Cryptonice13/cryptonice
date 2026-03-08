@@ -46,6 +46,7 @@ export function useAIInsights() {
   const [predictions, setPredictions] = useState<SavedPrediction[]>([]);
   const [signals, setSignals] = useState<SavedSignal[]>([]);
   const [whaleActivities, setWhaleActivities] = useState<SavedWhaleActivity[]>([]);
+  const [portfolioAnalyses, setPortfolioAnalyses] = useState<SavedPortfolioAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const savePrediction = useCallback(async (
