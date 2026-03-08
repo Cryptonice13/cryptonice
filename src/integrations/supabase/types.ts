@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_analysis: {
+        Row: {
+          analysis_data: Json
+          analysis_type: string
+          asset_id: string
+          asset_name: string
+          asset_symbol: string
+          created_at: string
+          current_price: number
+          id: string
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          analysis_data?: Json
+          analysis_type: string
+          asset_id: string
+          asset_name: string
+          asset_symbol: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          analysis_data?: Json
+          analysis_type?: string
+          asset_id?: string
+          asset_name?: string
+          asset_symbol?: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       ai_portfolio_analysis: {
         Row: {
           analysis_data: Json
