@@ -335,8 +335,16 @@ export function useTradingSignal() {
   const [signal, setSignal] = useState<TradingSignal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const getSignal = useCallback(async (symbol: string, price?: number) => {
+    const creditResult = await checkAndDeductCredits(2, 'Trading Signal', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
