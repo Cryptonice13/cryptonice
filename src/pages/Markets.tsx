@@ -240,6 +240,7 @@ export default function Markets() {
                         name={selectedAssetData.name}
                         price={selectedAssetData.price}
                         logo={selectedAssetData.logo}
+                        onSave={saveSignal}
                       />
                     </TabsContent>
                   </Tabs>
