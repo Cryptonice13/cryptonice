@@ -548,9 +548,7 @@ const Home = () => {
               {/* Brand */}
               <div className="col-span-2 lg:col-span-1 space-y-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Brain className="w-5 h-5 text-primary-foreground" />
-                  </div>
+                  <img src={cryptoaiLogo} alt="CryptoAI" className="w-9 h-9 rounded-xl" />
                   <span className="font-bold text-lg text-foreground">CryptoAI</span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
