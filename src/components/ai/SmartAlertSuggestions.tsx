@@ -54,7 +54,7 @@ export function SmartAlertSuggestions({ watchlist, currentPrices, onApplyAlert }
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
-      setSavedSuggestions((data as SavedSuggestion[]) || []);
+      setSavedSuggestions((data as unknown as SavedSuggestion[]) || []);
     } catch (err) {
       console.error('Failed to load suggestions:', err);
     } finally {
