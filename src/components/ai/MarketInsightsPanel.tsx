@@ -229,9 +229,9 @@ function EmptyAnalysis({ label, icon: Icon }: { label: string; icon: React.Eleme
 }
 
 /* ═══════════════════════ Main Component ═══════════════════════ */
-export function MarketInsightsPanel({ assets }: MarketInsightsPanelProps) {
+export function MarketInsightsPanel({ assets, selectedAssetId: externalSelectedId }: MarketInsightsPanelProps) {
   const navigate = useNavigate();
-  const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
+  const selectedAssetId = externalSelectedId || assets[0]?.id || '';
   const {
     technicalData,
     fundamentalData,
