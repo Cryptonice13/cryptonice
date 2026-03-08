@@ -61,14 +61,14 @@ export default function Chat() {
         portfolioAnalysisRes,
         transactionsRes,
       ] = await Promise.all([
-        supabase.from('user_watchlist').select('*').eq(identifier.key, identifier.value).limit(50),
-        supabase.from('strategies').select('*').eq(identifier.key, identifier.value).limit(20),
-        supabase.from('alert_history').select('*').eq(identifier.key, identifier.value).order('triggered_at', { ascending: false }).limit(20),
-        supabase.from('ai_predictions').select('*').eq(identifier.key, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_signals').select('*').eq(identifier.key, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_whale_activity').select('*').eq(identifier.key, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_portfolio_analysis').select('*').eq(identifier.key, identifier.value).order('created_at', { ascending: false }).limit(5),
-        supabase.from('portfolio_transactions').select('*').eq(identifier.key, identifier.value).order('created_at', { ascending: false }).limit(30),
+        supabase.from('user_watchlist').select('*').eq(identifier.key as any, identifier.value).limit(50),
+        supabase.from('strategies').select('*').eq(identifier.key as any, identifier.value).limit(20),
+        supabase.from('alert_history').select('*').eq(identifier.key as any, identifier.value).order('triggered_at', { ascending: false }).limit(20),
+        supabase.from('ai_predictions').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
+        supabase.from('ai_signals').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
+        supabase.from('ai_whale_activity').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
+        supabase.from('ai_portfolio_analysis').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(5),
+        supabase.from('portfolio_transactions').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(30),
       ]);
 
       setDbContext({

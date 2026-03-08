@@ -81,6 +81,11 @@ const App = () => (
                     <AIInsights />
                   </ProtectedRoute>
                 } />
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                } />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <UserProfile />
@@ -92,7 +97,6 @@ const App = () => (
                   </ProtectedRoute>
                 } />
               </Routes>
-              <FloatingInsightsButton />
             </BrowserRouter>
           </div>
         </TooltipProvider>
