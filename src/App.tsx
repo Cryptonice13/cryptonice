@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
 import AIInsights from "./pages/AIInsights";
 import Chat from "./pages/Chat";
+import Analysis from "./pages/Analysis";
 
 const queryClient = new QueryClient();
 
