@@ -30,6 +30,7 @@ import type { CryptoAsset } from '@/hooks/useMarketData';
 
 interface MarketInsightsPanelProps {
   assets: CryptoAsset[];
+  selectedAssetId?: string | null;
 }
 
 function getSignalColor(signal: string) {
