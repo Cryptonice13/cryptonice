@@ -1,35 +1,77 @@
 
 
-## Fix Portfolio Analysis: JSON Parsing + UI Redesign
+## AI Strategy Builder -- Full-Stack Feature
 
-### Problem
-The AI returns JSON wrapped in markdown code blocks (` ```json {...} ``` `), but the parser does a raw `JSON.parse()` which fails. The fallback dumps the entire raw string into the `diversification` field — that's why you see the raw JSON block. Additionally, the card is squeezed into a narrow sidebar column with poor visual hierarchy.
+A new dedicated page (`/strategy`) where users can create, backtest, and manage AI-powered crypto trading strategies. The AI analyzes market conditions and generates complete strategy configurations with entry/exit rules, risk management, and projected outcomes -- all displayed in a structured table.
 
-### Changes
+---
 
-**1. Fix JSON parsing in `src/hooks/useCryptoAI.ts`** (usePortfolioAnalysis)
-- Strip markdown code fences before parsing: extract content between ` ```json ` and ` ``` ` if present
-- This ensures the structured fields (healthScore, suggestions, concerns, etc.) are properly populated instead of falling back to dumping raw text
+### What Gets Built
 
-**2. Redesign `src/components/ai/PortfolioAnalysisCard.tsx`**
-- Make the card full-width instead of sidebar-only — redesign to work as a prominent section
-- Health score ring: larger, with label text beneath showing risk level
-- Diversification: show as a colored badge (Very Low/Low/Medium/High) not a text block
-- Suggestions: numbered cards with gradient left-border accents
-- Concerns: warning cards with amber left-border accents
-- Summary: blockquote-style with a subtle background
-- Add collapsible sections so the card isn't overwhelming when all data is present
-- Animate sections in with staggered framer-motion
+**1. Strategy Builder Page** (`src/pages/StrategyBuilder.tsx`)
+- Header section with "Create Strategy" button
+- Strategy configuration form: select asset(s), timeframe, risk tolerance, strategy type (momentum, mean-reversion, breakout, DCA)
+- Results panel showing AI-generated strategy with entry/exit rules, stop-loss, take-profit, position sizing
+- Strategy history table listing all saved strategies with status, performance metrics, and actions
+- Uses AppHeader and MobileBottomNav for consistent navigation
 
-**3. Update layout in `src/pages/Portfolio.tsx`**
-- Move the AI Analysis card from the narrow right sidebar to a full-width section below the holdings list
-- Remove the 3-column grid constraint that was squeezing the analysis card
+**2. Strategy Table Component** (`src/components/strategy/StrategyTable.tsx`)
+- Sortable table showing: Strategy Name, Asset, Type, Signal (BUY/SELL/HOLD badge), Risk Level, Win Rate, Created Date, Status
+- Row click expands to show full AI analysis
+- Delete action per row
 
-### Files
+**3. Strategy Detail Card** (`src/components/strategy/StrategyDetailCard.tsx`)
+- Expanded view when a strategy is selected
+- Shows: entry/exit conditions, risk/reward ratio, position size recommendation, AI confidence score, support/resistance levels, full AI reasoning
+- Visual risk meter and confidence gauge
 
-| File | Action |
+**4. Strategy Form Component** (`src/components/strategy/StrategyForm.tsx`)
+- Asset selector (from market data)
+- Strategy type dropdown (Momentum, Mean Reversion, Breakout, DCA, Scalping)
+- Risk tolerance slider (Conservative / Moderate / Aggressive)
+- Investment amount input
+- Timeframe selector (1D, 1W, 1M, 3M)
+- "Generate Strategy" button that calls the AI
+
+**5. Edge Function Update** (`supabase/functions/crypto-ai/index.ts`)
+- New `strategy_builder` type that accepts asset, strategy type, risk level, amount, timeframe
+- System prompt instructs AI to return structured JSON with: strategyName, signal, entryPrice, exitPrice, stopLoss, takeProfits[], positionSize, riskRewardRatio, winRateProbability, confidence, conditions[], reasoning
+- Fetches real-time market data for the selected asset to ground the strategy in current prices
+
+**6. Database Table** (`strategies`)
+- Columns: id, user_id, wallet_address, asset_symbol, asset_id, strategy_name, strategy_type, risk_level, timeframe, investment_amount, signal, entry_price, exit_price, stop_loss, take_profits (jsonb), position_size, risk_reward, win_rate, confidence, conditions (jsonb), reasoning, status (active/completed/cancelled), created_at, updated_at
+- RLS policies matching existing pattern (user_id OR wallet_address)
+
+**7. Navigation Updates**
+- `AppHeader.tsx`: Add "Strategy" to navItems array, update activePage type
+- `MobileBottomNav.tsx`: Add Strategy icon (Cpu or Zap) as 5th nav item
+- `App.tsx`: Add `/strategy` route with ProtectedRoute wrapper
+
+---
+
+### Technical Details
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/pages/StrategyBuilder.tsx` | Main page with form + table + detail view |
+| `src/components/strategy/StrategyForm.tsx` | Strategy configuration form |
+| `src/components/strategy/StrategyTable.tsx` | Saved strategies table |
+| `src/components/strategy/StrategyDetailCard.tsx` | Expanded strategy analysis view |
+| `src/hooks/useStrategyBuilder.ts` | Hook for AI calls + Supabase CRUD |
+
+**Modified Files:**
+| File | Change |
 |------|--------|
-| `src/hooks/useCryptoAI.ts` | Fix JSON extraction (strip markdown fences) |
-| `src/components/ai/PortfolioAnalysisCard.tsx` | Full UI redesign with proper structured layout |
-| `src/pages/Portfolio.tsx` | Move analysis card to full-width section |
+| `src/App.tsx` | Add `/strategy` route |
+| `src/components/AppHeader.tsx` | Add "Strategy" nav item, update type |
+| `src/components/MobileBottomNav.tsx` | Add Strategy tab |
+| `supabase/functions/crypto-ai/index.ts` | Add `strategy_builder` prompt type |
+| `supabase/config.toml` | No change needed (crypto-ai already configured) |
+
+**Database Migration:**
+- Create `strategies` table with RLS policies for user_id and wallet_address access patterns
+
+**AI Prompt Design:**
+The strategy_builder prompt will instruct the AI to analyze real-time price data for the selected asset and return a JSON object with actionable trading parameters. The prompt adapts based on strategy type (e.g., momentum strategies focus on trend strength, mean-reversion on deviation from moving averages).
 

@@ -306,9 +306,7 @@ export default function Portfolio() {
           <PerformanceChart transactions={transactions} currentPrices={currentPrices} />
 
           {/* Rest of portfolio content */}
-          <div className="grid lg:grid-cols-3 gap-4">
-            {/* Holdings List */}
-            <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-4">
               {/* Wallet Holdings Section */}
               {isConnected && (
                 <div className="space-y-3">
@@ -506,23 +504,21 @@ export default function Portfolio() {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* AI Analysis Panel */}
-            <div className="space-y-4">
-              <PortfolioAnalysisCard
-                portfolio={portfolio.map(p => ({
-                  asset: {
-                    symbol: p.asset_symbol,
-                    name: p.asset_name,
-                    price: currentPrices.get(p.asset_id) || 0,
-                  },
-                  amount: p.amount,
-                  avgBuyPrice: p.avg_buy_price,
-                }))}
-              />
-            </div>
           </div>
+
+          {/* AI Analysis - Full Width */}
+          <PortfolioAnalysisCard
+            portfolio={portfolio.map(p => ({
+              asset: {
+                symbol: p.asset_symbol,
+                name: p.asset_name,
+                price: currentPrices.get(p.asset_id) || 0,
+              },
+              amount: p.amount,
+              avgBuyPrice: p.avg_buy_price,
+            }))}
+          />
         </div>
       </main>
 
