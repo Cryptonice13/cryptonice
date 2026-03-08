@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Brain, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import cryptoaiLogo from "@/assets/cryptoai-logo.jpg";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useNavigate } from "react-router-dom";
