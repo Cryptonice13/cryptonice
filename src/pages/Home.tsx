@@ -25,6 +25,7 @@ import {
   Users,
   Lock,
 } from 'lucide-react';
+import CryptoAnalystAgent from '@/components/ai/CryptoAnalystAgent';
 
 const testimonials = [
   { name: 'Alex Chen', role: 'Crypto Trader', text: 'CryptoAI completely changed how I analyze the market. The AI insights are incredibly accurate.', avatar: 'AC' },
