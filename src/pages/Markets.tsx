@@ -386,7 +386,7 @@ export default function Markets() {
                     Analysis
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="prediction" className="mt-4">
+                <TabsContent value="prediction" className="mt-4 space-y-2">
                   <MarketPredictionCard
                     symbol={selectedAssetData.symbol}
                     name={selectedAssetData.name}
@@ -394,8 +394,11 @@ export default function Markets() {
                     logo={selectedAssetData.logo}
                     onSave={savePrediction}
                   />
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => { setAnalysisSheetOpen(false); navigate('/insights'); }}>
+                    View History <ArrowRight className="w-3 h-3" />
+                  </Button>
                 </TabsContent>
-                <TabsContent value="signal" className="mt-4">
+                <TabsContent value="signal" className="mt-4 space-y-2">
                   <TradingSignalCard
                     symbol={selectedAssetData.symbol}
                     name={selectedAssetData.name}
@@ -403,14 +406,20 @@ export default function Markets() {
                     logo={selectedAssetData.logo}
                     onSave={saveSignal}
                   />
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => { setAnalysisSheetOpen(false); navigate('/insights'); }}>
+                    View History <ArrowRight className="w-3 h-3" />
+                  </Button>
                 </TabsContent>
-                <TabsContent value="whales" className="mt-4">
+                <TabsContent value="whales" className="mt-4 space-y-2">
                   <WhaleActivityCard
                     symbol={selectedAssetData.symbol}
                     name={selectedAssetData.name}
                     price={selectedAssetData.price}
                     onSave={saveWhaleActivity}
                   />
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => { setAnalysisSheetOpen(false); navigate('/insights'); }}>
+                    View History <ArrowRight className="w-3 h-3" />
+                  </Button>
                 </TabsContent>
                 <TabsContent value="analysis" className="mt-4">
                   <Card className="glass-card p-4 space-y-3">
