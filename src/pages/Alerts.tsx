@@ -115,6 +115,76 @@ export default function Alerts() {
     }
   };
 
+  // Generate AI alerts for a single asset
+  const generateAiForAsset = useCallback(async (assetId: string, assetSymbol: string) => {
+    setAiGeneratingFor(assetId);
+    setAiAssetSuggestions(null);
+    setAiDialogOpen(true);
+
+    try {
+      const price = currentPrices.get(assetId) || 0;
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: `Suggest price alerts for ${assetSymbol}` }],
+          type: 'alert_suggestions',
+          context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice: price }],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed');
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (content) {
+        const cleaned = content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        const parsed = JSON.parse(cleaned);
+        const suggestionsArray = Array.isArray(parsed) ? parsed : parsed.suggestions || [];
+        const assetData = suggestionsArray[0];
+        const subs = assetData?.suggestions || [];
+
+        setAiAssetSuggestions({ asset_id: assetId, suggestions: subs });
+
+        // Save to DB
+        const inserts = subs.map((s: any) => ({
+          user_id: user?.id || null,
+          wallet_address: address || null,
+          asset_id: assetId,
+          asset_symbol: assetSymbol,
+          suggestion_type: s.type,
+          target_price: s.price,
+          reasoning: s.reasoning || null,
+          confidence: s.confidence || 0,
+          status: 'active',
+        }));
+        if (inserts.length > 0) {
+          await supabase.from('ai_alert_suggestions' as any).insert(inserts);
+        }
+      }
+    } catch (err) {
+      console.error('AI single asset error:', err);
+      toast({ title: 'Failed to generate AI alerts', variant: 'destructive' });
+    } finally {
+      setAiGeneratingFor(null);
+    }
+  }, [currentPrices, user, address, toast]);
+
+  const applyAiSuggestion = useCallback(async (assetId: string, price: number, type: 'above' | 'below', idx: number) => {
+    setApplyingAiIdx(idx);
+    try {
+      await setAlert(assetId, price, type);
+      toast({ title: 'Alert applied!' });
+      setAiDialogOpen(false);
+      setAiAssetSuggestions(null);
+    } finally {
+      setApplyingAiIdx(null);
+    }
+  }, [setAlert, toast]);
+
   const currentPrices = new Map(assets.map(a => [a.id, a.price]));
   
   useEffect(() => {
