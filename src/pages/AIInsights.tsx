@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3, Target, Fish, Trash2, Loader2, Clock, TrendingUp, TrendingDown,
-  Minus, ChevronDown, AlertTriangle, CheckCircle, RefreshCw, Brain
+  Minus, ChevronDown, AlertTriangle, CheckCircle, RefreshCw, Brain, PieChart, Shield
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
