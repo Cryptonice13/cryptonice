@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
@@ -44,9 +44,12 @@ export function useAnalysis() {
   const [fundamentalData, setFundamentalData] = useState<FundamentalAnalysis | null>(null);
   const [isLoadingTechnical, setIsLoadingTechnical] = useState(false);
   const [isLoadingFundamental, setIsLoadingFundamental] = useState(false);
+  const [isLoadingLatest, setIsLoadingLatest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const { user } = useAuth();
   const { address } = useAccount();
+  const currentAssetIdRef = useRef<string>('');
 
   const runAnalysis = useCallback(async (
     type: 'technical_analysis' | 'fundamental_analysis',
@@ -58,6 +61,7 @@ export function useAnalysis() {
     const setLoading = type === 'technical_analysis' ? setIsLoadingTechnical : setIsLoadingFundamental;
     setLoading(true);
     setError(null);
+    setSelectedHistoryId(null);
 
     try {
       const response = await fetch(CHAT_URL, {
@@ -117,6 +121,57 @@ export function useAnalysis() {
     }
   }, [user, address]);
 
+  const loadLatestForAsset = useCallback(async (assetId: string) => {
+    if (!user?.id && !address) return;
+    if (currentAssetIdRef.current === assetId && (technicalData || fundamentalData)) return;
+    
+    currentAssetIdRef.current = assetId;
+    setIsLoadingLatest(true);
+    setTechnicalData(null);
+    setFundamentalData(null);
+    setSelectedHistoryId(null);
+
+    try {
+      let query = (supabase.from('ai_analysis' as any) as any)
+        .select('*')
+        .eq('asset_id', assetId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (user?.id) {
+        query = query.eq('user_id', user.id);
+      } else if (address) {
+        query = query.eq('wallet_address', address);
+      }
+
+      const { data } = await query;
+      if (data && data.length > 0) {
+        const latestTech = data.find((d: any) => d.analysis_type === 'technical');
+        const latestFund = data.find((d: any) => d.analysis_type === 'fundamental');
+        if (latestTech) setTechnicalData(latestTech.analysis_data as TechnicalAnalysis);
+        if (latestFund) setFundamentalData(latestFund.analysis_data as FundamentalAnalysis);
+      }
+    } catch (err) {
+      console.error('Failed to load latest analysis:', err);
+    } finally {
+      setIsLoadingLatest(false);
+    }
+  }, [user, address]);
+
+  const forceLoadLatest = useCallback(async (assetId: string) => {
+    currentAssetIdRef.current = '';
+    await loadLatestForAsset(assetId);
+  }, [loadLatestForAsset]);
+
+  const selectHistoryItem = useCallback((item: any) => {
+    setSelectedHistoryId(item.id);
+    if (item.analysis_type === 'technical') {
+      setTechnicalData(item.analysis_data as TechnicalAnalysis);
+    } else {
+      setFundamentalData(item.analysis_data as FundamentalAnalysis);
+    }
+  }, []);
+
   const loadHistory = useCallback(async (assetId: string) => {
     if (!user?.id && !address) return [];
     
@@ -137,8 +192,13 @@ export function useAnalysis() {
     fundamentalData,
     isLoadingTechnical,
     isLoadingFundamental,
+    isLoadingLatest,
     error,
+    selectedHistoryId,
     runAnalysis,
+    loadLatestForAsset,
+    forceLoadLatest,
+    selectHistoryItem,
     loadHistory,
   };
 }
