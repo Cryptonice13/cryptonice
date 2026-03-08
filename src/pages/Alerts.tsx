@@ -115,14 +115,15 @@ export default function Alerts() {
     }
   };
 
+  const currentPrices = new Map(assets.map(a => [a.id, a.price]));
+
   // Generate AI alerts for a single asset
-  const generateAiForAsset = useCallback(async (assetId: string, assetSymbol: string) => {
+  const generateAiForAsset = useCallback(async (assetId: string, assetSymbol: string, currentPrice: number) => {
     setAiGeneratingFor(assetId);
     setAiAssetSuggestions(null);
     setAiDialogOpen(true);
 
     try {
-      const price = currentPrices.get(assetId) || 0;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -132,7 +133,7 @@ export default function Alerts() {
         body: JSON.stringify({
           messages: [{ role: 'user', content: `Suggest price alerts for ${assetSymbol}` }],
           type: 'alert_suggestions',
-          context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice: price }],
+          context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice }],
         }),
       });
 
@@ -149,7 +150,6 @@ export default function Alerts() {
 
         setAiAssetSuggestions({ asset_id: assetId, suggestions: subs });
 
-        // Save to DB
         const inserts = subs.map((s: any) => ({
           user_id: user?.id || null,
           wallet_address: address || null,
@@ -171,7 +171,7 @@ export default function Alerts() {
     } finally {
       setAiGeneratingFor(null);
     }
-  }, [currentPrices, user, address, toast]);
+  }, [user, address, toast]);
 
   const applyAiSuggestion = useCallback(async (assetId: string, price: number, type: 'above' | 'below', idx: number) => {
     setApplyingAiIdx(idx);
@@ -184,8 +184,6 @@ export default function Alerts() {
       setApplyingAiIdx(null);
     }
   }, [setAlert, toast]);
-
-  const currentPrices = new Map(assets.map(a => [a.id, a.price]));
   
   useEffect(() => {
     if (watchlist.length > 0 && assets.length > 0) {
