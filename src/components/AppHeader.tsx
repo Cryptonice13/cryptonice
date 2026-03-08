@@ -89,7 +89,7 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/insights')}
             className="h-8 w-8 relative"
           >
             <Brain className="w-4 h-4 text-primary" />
