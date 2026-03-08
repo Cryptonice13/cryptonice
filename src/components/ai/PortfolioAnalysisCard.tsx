@@ -1,3 +1,4 @@
+import React from 'react';
 import { PieChart, Shield, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, Loader2, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
