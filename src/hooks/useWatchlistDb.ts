@@ -301,6 +301,26 @@ export function useWatchlistDb(walletAddress: string | undefined, userId?: strin
     }
   }, [fetchAlertHistory]);
 
+  // Mark all alerts as read
+  const markAllAlertsRead = useCallback(async () => {
+    if (!hasIdentifier) return;
+
+    try {
+      let query = supabase
+        .from('alert_history')
+        .update({ is_read: true })
+        .eq('is_read', false);
+
+      query = applyFilter(query);
+      const { error } = await query;
+
+      if (error) throw error;
+      await fetchAlertHistory();
+    } catch (error) {
+      console.error('Error marking all alerts as read:', error);
+    }
+  }, [hasIdentifier, applyFilter, fetchAlertHistory]);
+
   // Check if asset is in watchlist
   const isInWatchlist = useCallback((assetId: string) => {
     return watchlist.some(w => w.asset_id === assetId);
