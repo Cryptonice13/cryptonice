@@ -339,6 +339,7 @@ export function useWatchlistDb(walletAddress: string | undefined, userId?: strin
     clearAlert,
     checkAlerts,
     markAlertRead,
+    markAllAlertsRead,
     isInWatchlist,
     refresh: fetchWatchlist,
   };
