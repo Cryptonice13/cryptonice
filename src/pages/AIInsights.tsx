@@ -415,7 +415,7 @@ export default function AIInsights() {
     loadAll();
   }, [loadAll]);
 
-  const totalInsights = predictions.length + signals.length + whaleActivities.length;
+  const totalInsights = predictions.length + signals.length + whaleActivities.length + portfolioAnalyses.length;
 
   return (
     <div className="min-h-screen bg-background">
