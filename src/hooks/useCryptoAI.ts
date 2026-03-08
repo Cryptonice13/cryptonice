@@ -169,6 +169,9 @@ export function usePortfolioAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   // Load latest saved analysis from DB on mount
   useEffect(() => {
