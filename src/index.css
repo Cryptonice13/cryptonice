@@ -216,6 +216,17 @@
   overscroll-behavior: contain;
 }
 
+/* Smooth marquee ticker */
+@keyframes marquee-smooth {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.animate-marquee-smooth {
+  animation: marquee-smooth 30s linear infinite;
+  width: max-content;
+}
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
