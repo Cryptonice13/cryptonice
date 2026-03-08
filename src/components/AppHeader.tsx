@@ -3,6 +3,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
 import { Bot, Wallet, Settings, User, LogOut, Brain, Zap } from 'lucide-react';
+import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -64,9 +65,7 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
     <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 safe-area-top">
       <div className="px-3 sm:px-4 py-2 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <img src={cryptoaiLogo} alt="CryptoAI" className="w-8 h-8 rounded-lg" />
           <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
         </Link>
 

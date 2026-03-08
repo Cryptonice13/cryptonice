@@ -9,8 +9,8 @@ import AppHeader from '@/components/AppHeader';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { useMarketData } from '@/hooks/useMarketData';
+import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
 import {
-  Brain,
   TrendingUp,
   ArrowRight,
   Sparkles,
@@ -534,7 +534,7 @@ const Home = () => {
                 size="lg"
                 className="bg-background text-foreground hover:bg-background/90 font-bold px-12 py-7 text-lg rounded-full shadow-2xl"
               >
-                <Brain className="w-5 h-5 mr-2" />
+                <img src={cryptoaiLogo} alt="CryptoAI" className="w-5 h-5 rounded mr-2" />
                 Get Started Free
               </Button>
             </div>
@@ -548,9 +548,7 @@ const Home = () => {
               {/* Brand */}
               <div className="col-span-2 lg:col-span-1 space-y-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Brain className="w-5 h-5 text-primary-foreground" />
-                  </div>
+                  <img src={cryptoaiLogo} alt="CryptoAI" className="w-9 h-9 rounded-xl" />
                   <span className="font-bold text-lg text-foreground">CryptoAI</span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">

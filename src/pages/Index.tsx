@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Brain, TrendingUp, Shield, Zap, BarChart3, Bot, ChevronDown, Star, Check, LineChart, Bell, Wallet } from "lucide-react";
+import cryptoaiLogo from "@/assets/cryptoai-logo.jpg";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -221,9 +222,7 @@ const Index = () => {
             >
               {/* Central AI Brain */}
               <div className="absolute w-40 h-40 rounded-2xl glass glow-primary flex items-center justify-center animate-float">
-                <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Brain className="w-12 h-12 text-primary-foreground" />
-                </div>
+                <img src={cryptoaiLogo} alt="CryptoAI" className="w-24 h-24 rounded-xl" />
               </div>
 
               {/* Orbiting crypto icons */}
