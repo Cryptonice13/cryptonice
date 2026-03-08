@@ -303,7 +303,7 @@ export function useTradingSignal() {
       
       if (content) {
         try {
-          const parsed = JSON.parse(content);
+          const parsed = JSON.parse(extractJSON(content));
           setSignal(parsed);
         } catch {
           setSignal({
