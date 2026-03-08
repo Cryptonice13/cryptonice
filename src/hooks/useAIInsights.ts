@@ -100,6 +100,25 @@ export function useAIInsights() {
     }
   }, [user, address]);
 
+  const savePortfolioAnalysis = useCallback(async (
+    healthScore: number, riskLevel: string, diversification: string, 
+    portfolioSnapshot: any, analysisData: any
+  ) => {
+    try {
+      await supabase.from('ai_portfolio_analysis' as any).insert({
+        user_id: user?.id || null,
+        wallet_address: address || null,
+        health_score: healthScore,
+        risk_level: riskLevel,
+        diversification: diversification,
+        portfolio_snapshot: portfolioSnapshot,
+        analysis_data: analysisData,
+      });
+    } catch (err) {
+      console.error('Failed to save portfolio analysis:', err);
+    }
+  }, [user, address]);
+
   const loadPredictions = useCallback(async () => {
     setIsLoading(true);
     try {
