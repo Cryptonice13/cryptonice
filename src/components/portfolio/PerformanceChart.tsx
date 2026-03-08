@@ -275,7 +275,7 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
                 tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`}
                 width={48}
-                domain={['auto', 'auto']}
+                domain={['dataMin', 'dataMax']}
               />
               {costBasis > 0 && (
                 <ReferenceLine
