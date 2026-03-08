@@ -273,7 +273,7 @@ export function MarketInsightsPanel({ assets }: MarketInsightsPanelProps) {
         </div>
 
         {/* ── Sentiment ── */}
-        <TabsContent value="sentiment" className="mt-0 p-0">
+        <TabsContent value="sentiment" className="mt-0 p-0 [&_.glass-card]:border-0 [&_.glass-card]:shadow-none [&_.glass-card]:rounded-none">
           <FearGreedGauge />
         </TabsContent>
 
