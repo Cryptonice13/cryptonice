@@ -265,6 +265,16 @@ serve(async (req) => {
 
     if (type === "chat" || type === "alert_suggestions") {
       marketData = (await fetchMarketData()).slice(0, 20);
+    } else if (type === "crypto_analyst") {
+      const [btcMarket, smaData, newsHeadlines] = await Promise.all([
+        fetchMarketData(["bitcoin"]),
+        fetch7DaySMA(),
+        fetchCryptoNews(),
+      ]);
+      marketData = btcMarket;
+      // Inject into context for the prompt builder
+      context.smaData = smaData;
+      context.newsHeadlines = newsHeadlines;
     } else if (type === "portfolio_analysis" && context?.length > 0) {
       const symbols = context.map((item: any) => item.asset?.symbol || item.symbol).filter(Boolean);
       marketData = await fetchMarketData(symbols);
