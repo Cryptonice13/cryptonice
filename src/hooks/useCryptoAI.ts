@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
+import { useAuth } from '@/hooks/useAuth';
+import { useAccount } from 'wagmi';
+import { checkAndDeductCredits } from '@/lib/credits';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
