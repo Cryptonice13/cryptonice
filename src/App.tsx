@@ -22,6 +22,7 @@ import AIInsights from "./pages/AIInsights";
 import Chat from "./pages/Chat";
 import Analysis from "./pages/Analysis";
 import Credits from "./pages/Credits";
+import FloatingChatButton from "./components/FloatingChatButton";
 
 const queryClient = new QueryClient();
 
