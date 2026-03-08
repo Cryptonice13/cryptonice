@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_portfolio_analysis: {
+        Row: {
+          analysis_data: Json
+          created_at: string
+          diversification: string
+          health_score: number
+          id: string
+          portfolio_snapshot: Json
+          risk_level: string
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          analysis_data?: Json
+          created_at?: string
+          diversification?: string
+          health_score?: number
+          id?: string
+          portfolio_snapshot?: Json
+          risk_level?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          analysis_data?: Json
+          created_at?: string
+          diversification?: string
+          health_score?: number
+          id?: string
+          portfolio_snapshot?: Json
+          risk_level?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       ai_predictions: {
         Row: {
           asset_name: string

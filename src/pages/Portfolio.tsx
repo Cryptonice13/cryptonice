@@ -48,6 +48,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
+import { useAIInsights } from '@/hooks/useAIInsights';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppHeader from '@/components/AppHeader';
@@ -69,6 +70,7 @@ export default function Portfolio() {
   const [sellPrice, setSellPrice] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const { savePortfolioAnalysis } = useAIInsights();
 
   const { assets, isLoading: marketLoading } = useMarketData();
   const { 
@@ -518,6 +520,15 @@ export default function Portfolio() {
               amount: p.amount,
               avgBuyPrice: p.avg_buy_price,
             }))}
+            onSave={(analysis, portfolioData) => {
+              savePortfolioAnalysis(
+                analysis.healthScore,
+                analysis.riskLevel,
+                analysis.diversification,
+                portfolioData,
+                analysis,
+              );
+            }}
           />
         </div>
       </main>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { PieChart, Shield, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, Loader2, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,16 +11,27 @@ import { useState } from 'react';
 interface PortfolioAnalysisCardProps {
   portfolio: { asset: { symbol: string; name: string; price: number }; amount: number; avgBuyPrice: number }[];
   onAnalyze?: () => void;
+  onSave?: (analysis: any, portfolio: any[]) => void;
 }
 
-export function PortfolioAnalysisCard({ portfolio }: PortfolioAnalysisCardProps) {
+export function PortfolioAnalysisCard({ portfolio, onSave }: PortfolioAnalysisCardProps) {
   const { analysis, isLoading, error, analyzePortfolio } = usePortfolioAnalysis();
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [concernsOpen, setConcernsOpen] = useState(true);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const handleAnalyze = () => {
+    setHasSaved(false);
     analyzePortfolio(portfolio);
   };
+
+  // Auto-save when analysis completes
+  React.useEffect(() => {
+    if (analysis && !hasSaved && onSave) {
+      onSave(analysis, portfolio);
+      setHasSaved(true);
+    }
+  }, [analysis, hasSaved, onSave, portfolio]);
 
   const getRiskBadge = (risk: string) => {
     switch (risk?.toLowerCase()) {
