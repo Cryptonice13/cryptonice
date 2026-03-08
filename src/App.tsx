@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
 import AIInsights from "./pages/AIInsights";
 import Chat from "./pages/Chat";
+import Analysis from "./pages/Analysis";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,11 @@ const App = () => (
                 <Route path="/insights" element={
                   <ProtectedRoute>
                     <AIInsights />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analysis/:assetId" element={
+                  <ProtectedRoute>
+                    <Analysis />
                   </ProtectedRoute>
                 } />
                 <Route path="/chat" element={

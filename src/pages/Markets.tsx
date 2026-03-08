@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import {
@@ -11,6 +12,8 @@ import {
   Target,
   Clock,
   Loader2,
+  Activity,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -39,6 +42,7 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 
 export default function Markets() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { address } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
@@ -215,7 +219,7 @@ export default function Markets() {
                   <PriceChart asset={selectedAssetData} />
 
                   <Tabs defaultValue="prediction" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="prediction" className="text-xs">
                         <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
                         Prediction
@@ -223,6 +227,10 @@ export default function Markets() {
                       <TabsTrigger value="signal" className="text-xs">
                         <Target className="w-3.5 h-3.5 mr-1.5" />
                         Signal
+                      </TabsTrigger>
+                      <TabsTrigger value="analysis" className="text-xs">
+                        <Activity className="w-3.5 h-3.5 mr-1.5" />
+                        Analysis
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="prediction" className="mt-4">
@@ -242,6 +250,23 @@ export default function Markets() {
                         logo={selectedAssetData.logo}
                         onSave={saveSignal}
                       />
+                    </TabsContent>
+                    <TabsContent value="analysis" className="mt-4">
+                      <Card className="glass-card p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-primary" />
+                          <h3 className="text-sm font-semibold">AI Deep Analysis</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Get comprehensive technical & fundamental analysis with indicators, support/resistance, tokenomics, and risk assessment.
+                        </p>
+                        <Button
+                          className="w-full gap-2"
+                          onClick={() => navigate(`/analysis/${selectedAssetData.id}`)}
+                        >
+                          Full Analysis <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </Card>
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -333,17 +358,21 @@ export default function Markets() {
               <PriceChart asset={selectedAssetData} />
 
               <Tabs defaultValue="prediction" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="prediction" className="text-xs">
-                    <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-                    Prediction
+                    <BarChart3 className="w-3.5 h-3.5 mr-1" />
+                    Predict
                   </TabsTrigger>
                   <TabsTrigger value="signal" className="text-xs">
-                    <Target className="w-3.5 h-3.5 mr-1.5" />
+                    <Target className="w-3.5 h-3.5 mr-1" />
                     Signal
                   </TabsTrigger>
                   <TabsTrigger value="whales" className="text-xs">
                     🐋 Whales
+                  </TabsTrigger>
+                  <TabsTrigger value="analysis" className="text-xs">
+                    <Activity className="w-3.5 h-3.5 mr-1" />
+                    Analysis
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="prediction" className="mt-4">
@@ -371,6 +400,26 @@ export default function Markets() {
                     price={selectedAssetData.price}
                     onSave={saveWhaleActivity}
                   />
+                </TabsContent>
+                <TabsContent value="analysis" className="mt-4">
+                  <Card className="glass-card p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-semibold">AI Deep Analysis</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Technical & fundamental analysis with detailed indicators and insights.
+                    </p>
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => {
+                        setAnalysisSheetOpen(false);
+                        navigate(`/analysis/${selectedAssetData.id}`);
+                      }}
+                    >
+                      Full Analysis <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Card>
                 </TabsContent>
               </Tabs>
             </div>
