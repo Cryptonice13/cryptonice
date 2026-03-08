@@ -63,6 +63,9 @@ export function useCryptoAI() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const sendMessage = useCallback(async (input: string, portfolioContext?: any) => {
     const userMsg: Message = { role: 'user', content: input };
