@@ -21,6 +21,7 @@ import StrategyBuilder from "./pages/StrategyBuilder";
 import AIInsights from "./pages/AIInsights";
 import Chat from "./pages/Chat";
 import Analysis from "./pages/Analysis";
+import Credits from "./pages/Credits";
 
 const queryClient = new QueryClient();
 
