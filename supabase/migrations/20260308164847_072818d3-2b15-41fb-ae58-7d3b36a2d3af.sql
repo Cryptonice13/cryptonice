@@ -1,0 +1,1 @@
+ALTER TABLE public.portfolio_transactions ADD COLUMN IF NOT EXISTS purchase_date timestamptz DEFAULT now();
