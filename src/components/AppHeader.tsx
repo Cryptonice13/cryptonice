@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
