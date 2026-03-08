@@ -18,6 +18,7 @@ import Alerts from "./pages/Alerts";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
+import AIInsights from "./pages/AIInsights";
 
 const queryClient = new QueryClient();
 
