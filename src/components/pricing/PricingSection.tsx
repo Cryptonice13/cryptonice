@@ -90,9 +90,10 @@ export const PricingSection = () => {
         />
         <PricingTier
           name="NFT Creator"
-          price="5%"
-          description="Start creating and selling your digital products"
+          price="$5"
+          description="Start with 150 AI credits to power your experience"
           features={[
+            "150 AI credits included",
             "Mint unlimited NFTs",
             "List items for sale",
             "Creator dashboard",
