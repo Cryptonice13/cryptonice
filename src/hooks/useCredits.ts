@@ -8,7 +8,7 @@ const PLANS = {
   basic: { price: 5, credits: 150 },
   pro: { price: 25, credits: 800 },
   enterprise: { price: 100, credits: 3500 },
-} as const;
+};
 
 const COUPON_CODE = 'CryptoAI';
 const COUPON_BONUS = 0.2; // 20%
