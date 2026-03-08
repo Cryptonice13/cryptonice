@@ -48,6 +48,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PortfolioAnalysisCard } from '@/components/ai/PortfolioAnalysisCard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useTokenBalances } from '@/hooks/useTokenBalances';
+import { useAIInsights } from '@/hooks/useAIInsights';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppHeader from '@/components/AppHeader';
