@@ -22,7 +22,8 @@ import {
   CheckCircle,
   Settings,
   Loader2,
-  Mail
+  Mail,
+  Zap
 } from 'lucide-react';
 
 const UserProfile = () => {
