@@ -32,7 +32,7 @@ import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { useAuth } from '@/hooks/useAuth';
 import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
 import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
-import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
+import { MarketInsightsPanel } from '@/components/ai/MarketInsightsPanel';
 import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { PriceChart } from '@/components/ai/PriceChart';
@@ -128,8 +128,8 @@ export default function Markets() {
             </div>
           </div>
 
-          {/* Fear & Greed Gauge */}
-          <FearGreedGauge />
+          {/* Market Insights Panel */}
+          <MarketInsightsPanel assets={assets} />
 
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Asset List */}
