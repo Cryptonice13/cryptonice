@@ -165,7 +165,13 @@ export function usePortfolioAnalysis() {
       
       if (content) {
         try {
-          const parsed = JSON.parse(content);
+          // Strip markdown code fences if present
+          let jsonStr = content.trim();
+          const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (fenceMatch) {
+            jsonStr = fenceMatch[1].trim();
+          }
+          const parsed = JSON.parse(jsonStr);
           setAnalysis(parsed);
         } catch {
           setAnalysis({

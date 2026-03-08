@@ -506,21 +506,20 @@ export default function Portfolio() {
               </div>
             </div>
 
-            {/* AI Analysis Panel */}
-            <div className="space-y-4">
-              <PortfolioAnalysisCard
-                portfolio={portfolio.map(p => ({
-                  asset: {
-                    symbol: p.asset_symbol,
-                    name: p.asset_name,
-                    price: currentPrices.get(p.asset_id) || 0,
-                  },
-                  amount: p.amount,
-                  avgBuyPrice: p.avg_buy_price,
-                }))}
-              />
-            </div>
           </div>
+
+          {/* AI Analysis - Full Width */}
+          <PortfolioAnalysisCard
+            portfolio={portfolio.map(p => ({
+              asset: {
+                symbol: p.asset_symbol,
+                name: p.asset_name,
+                price: currentPrices.get(p.asset_id) || 0,
+              },
+              amount: p.amount,
+              avgBuyPrice: p.avg_buy_price,
+            }))}
+          />
         </div>
       </main>
 
