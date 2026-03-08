@@ -66,13 +66,17 @@ export function WhaleActivityCard({ symbol, name, price, onSave }: WhaleActivity
 
       if (content) {
         try {
-          setAnalysis(JSON.parse(extractJSON(content)));
+          const parsed = JSON.parse(extractJSON(content));
+          setAnalysis(parsed);
+          onSave?.(symbol, name, price, parsed);
         } catch {
-          setAnalysis({
+          const fallback = {
             transactions: [],
-            sentiment: 'neutral',
+            sentiment: 'neutral' as const,
             summary: content,
-          });
+          };
+          setAnalysis(fallback);
+          onSave?.(symbol, name, price, fallback);
         }
       }
     } catch (err) {
