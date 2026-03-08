@@ -35,6 +35,7 @@ import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { PriceChart } from '@/components/ai/PriceChart';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
+import { useAIInsights } from '@/hooks/useAIInsights';
 
 export default function Markets() {
   const { toast } = useToast();
