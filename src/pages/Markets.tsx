@@ -310,12 +310,17 @@ export default function Markets() {
 
               {/* Whale Activity */}
               {selectedAssetData && (
-                <WhaleActivityCard
-                  symbol={selectedAssetData.symbol}
-                  name={selectedAssetData.name}
-                  price={selectedAssetData.price}
-                  onSave={saveWhaleActivity}
-                />
+                <div className="space-y-2">
+                  <WhaleActivityCard
+                    symbol={selectedAssetData.symbol}
+                    name={selectedAssetData.name}
+                    price={selectedAssetData.price}
+                    onSave={saveWhaleActivity}
+                  />
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => navigate('/insights')}>
+                    View History <ArrowRight className="w-3 h-3" />
+                  </Button>
+                </div>
               )}
 
               {/* Market Stats */}
