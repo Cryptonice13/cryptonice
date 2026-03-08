@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import {
@@ -17,6 +17,7 @@ import {
   Eye,
   Clock,
   BarChart3,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,6 +54,9 @@ import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
+import { supabase } from '@/integrations/supabase/client';
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
 function formatRelativeTime(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -76,6 +80,15 @@ export default function Alerts() {
   const [historyAssetFilter, setHistoryAssetFilter] = useState('all');
   const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
+
+  // Single-asset AI alert generation
+  const [aiGeneratingFor, setAiGeneratingFor] = useState<string | null>(null);
+  const [aiAssetSuggestions, setAiAssetSuggestions] = useState<{
+    asset_id: string;
+    suggestions: { type: string; price: number; reasoning: string; confidence: number }[];
+  } | null>(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [applyingAiIdx, setApplyingAiIdx] = useState<number | null>(null);
 
   const { assets } = useMarketData();
   const { 
@@ -103,6 +116,74 @@ export default function Alerts() {
   };
 
   const currentPrices = new Map(assets.map(a => [a.id, a.price]));
+
+  // Generate AI alerts for a single asset
+  const generateAiForAsset = useCallback(async (assetId: string, assetSymbol: string, currentPrice: number) => {
+    setAiGeneratingFor(assetId);
+    setAiAssetSuggestions(null);
+    setAiDialogOpen(true);
+
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: `Suggest price alerts for ${assetSymbol}` }],
+          type: 'alert_suggestions',
+          context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice }],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed');
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (content) {
+        const cleaned = content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        const parsed = JSON.parse(cleaned);
+        const suggestionsArray = Array.isArray(parsed) ? parsed : parsed.suggestions || [];
+        const assetData = suggestionsArray[0];
+        const subs = assetData?.suggestions || [];
+
+        setAiAssetSuggestions({ asset_id: assetId, suggestions: subs });
+
+        const inserts = subs.map((s: any) => ({
+          user_id: user?.id || null,
+          wallet_address: address || null,
+          asset_id: assetId,
+          asset_symbol: assetSymbol,
+          suggestion_type: s.type,
+          target_price: s.price,
+          reasoning: s.reasoning || null,
+          confidence: s.confidence || 0,
+          status: 'active',
+        }));
+        if (inserts.length > 0) {
+          await supabase.from('ai_alert_suggestions' as any).insert(inserts);
+        }
+      }
+    } catch (err) {
+      console.error('AI single asset error:', err);
+      toast({ title: 'Failed to generate AI alerts', variant: 'destructive' });
+    } finally {
+      setAiGeneratingFor(null);
+    }
+  }, [user, address, toast]);
+
+  const applyAiSuggestion = useCallback(async (assetId: string, price: number, type: 'above' | 'below', idx: number) => {
+    setApplyingAiIdx(idx);
+    try {
+      await setAlert(assetId, price, type);
+      toast({ title: 'Alert applied!' });
+      setAiDialogOpen(false);
+      setAiAssetSuggestions(null);
+    } finally {
+      setApplyingAiIdx(null);
+    }
+  }, [setAlert, toast]);
   
   useEffect(() => {
     if (watchlist.length > 0 && assets.length > 0) {
@@ -312,54 +393,70 @@ export default function Alerts() {
                               </div>
                             </div>
                           ) : (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="w-full h-8 text-xs">
-                                  <Bell className="w-3.5 h-3.5 mr-1.5" />
-                                  Set Alert
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-[90vw] sm:max-w-md">
-                                <DialogHeader>
-                                  <DialogTitle className="text-base">Set Alert for {item.asset_symbol}</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4 mt-4">
-                                  <div className="space-y-2">
-                                    <Label className="text-sm">Alert Type</Label>
-                                    <Select value={alertType} onValueChange={(v) => setAlertType(v as 'above' | 'below')}>
-                                      <SelectTrigger><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="above">Price goes above</SelectItem>
-                                        <SelectItem value="below">Price goes below</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-sm">Target Price ($)</Label>
-                                    <Input
-                                      type="number"
-                                      placeholder={item.currentPrice.toString()}
-                                      value={alertPrice}
-                                      onChange={(e) => setAlertPrice(e.target.value)}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Current: ${item.currentPrice.toLocaleString()}</p>
-                                  </div>
-                                  <Button
-                                    onClick={async () => {
-                                      if (alertPrice) {
-                                        await setAlert(item.asset_id, parseFloat(alertPrice), alertType);
-                                        setAlertPrice('');
-                                        toast({ title: 'Alert set!' });
-                                      }
-                                    }}
-                                    className="w-full button-gradient"
-                                    disabled={!alertPrice}
-                                  >
+                            <div className="flex gap-2">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
+                                    <Bell className="w-3.5 h-3.5 mr-1" />
                                     Set Alert
                                   </Button>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-[90vw] sm:max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle className="text-base">Set Alert for {item.asset_symbol}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 mt-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">Alert Type</Label>
+                                      <Select value={alertType} onValueChange={(v) => setAlertType(v as 'above' | 'below')}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="above">Price goes above</SelectItem>
+                                          <SelectItem value="below">Price goes below</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">Target Price ($)</Label>
+                                      <Input
+                                        type="number"
+                                        placeholder={item.currentPrice.toString()}
+                                        value={alertPrice}
+                                        onChange={(e) => setAlertPrice(e.target.value)}
+                                      />
+                                      <p className="text-xs text-muted-foreground">Current: ${item.currentPrice.toLocaleString()}</p>
+                                    </div>
+                                    <Button
+                                      onClick={async () => {
+                                        if (alertPrice) {
+                                          await setAlert(item.asset_id, parseFloat(alertPrice), alertType);
+                                          setAlertPrice('');
+                                          toast({ title: 'Alert set!' });
+                                        }
+                                      }}
+                                      className="w-full button-gradient"
+                                      disabled={!alertPrice}
+                                    >
+                                      Set Alert
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="flex-1 h-8 text-xs gap-1"
+                                onClick={() => generateAiForAsset(item.asset_id, item.asset_symbol, item.currentPrice)}
+                                disabled={aiGeneratingFor === item.asset_id}
+                              >
+                                {aiGeneratingFor === item.asset_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                )}
+                                AI Alerts
+                              </Button>
+                            </div>
                           )}
                         </Card>
                       </motion.div>
@@ -613,6 +710,79 @@ export default function Alerts() {
           )}
         </div>
       </main>
+
+      {/* AI Single-Asset Suggestions Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={(open) => {
+        setAiDialogOpen(open);
+        if (!open) setAiAssetSuggestions(null);
+      }}>
+        <DialogContent className="max-w-[90vw] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI Alert Suggestions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {aiGeneratingFor ? (
+              <div className="py-8 text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Analyzing support & resistance levels...</p>
+              </div>
+            ) : aiAssetSuggestions && aiAssetSuggestions.suggestions.length > 0 ? (
+              <div className="space-y-2">
+                {aiAssetSuggestions.suggestions.map((s, idx) => (
+                  <Card key={idx} className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-5 ${
+                              s.type === 'above'
+                                ? 'border-green-500/40 text-green-400'
+                                : 'border-red-500/40 text-red-400'
+                            }`}
+                          >
+                            {s.type === 'above' ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
+                            {s.type}
+                          </Badge>
+                          <span className="font-mono text-sm font-semibold">${s.price?.toLocaleString()}</span>
+                          {s.confidence > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{s.confidence}% conf.</span>
+                          )}
+                        </div>
+                        {s.reasoning && (
+                          <p className="text-[11px] text-muted-foreground leading-tight">{s.reasoning}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs shrink-0"
+                        onClick={() => applyAiSuggestion(aiAssetSuggestions.asset_id, s.price, s.type as 'above' | 'below', idx)}
+                        disabled={applyingAiIdx === idx}
+                      >
+                        {applyingAiIdx === idx ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Bell className="w-3 h-3 mr-1" />
+                            Apply
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : !aiGeneratingFor ? (
+              <div className="py-6 text-center text-muted-foreground">
+                <p className="text-sm">No suggestions generated.</p>
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <MobileBottomNav />
     </div>
