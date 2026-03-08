@@ -110,6 +110,7 @@ const App = () => (
                   </ProtectedRoute>
                 } />
               </Routes>
+              <FloatingChatButton />
             </BrowserRouter>
           </div>
         </TooltipProvider>
