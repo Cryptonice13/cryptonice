@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Loader2, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
+import { useAccount } from 'wagmi';
+import { checkAndDeductCredits } from '@/lib/credits';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
@@ -20,9 +23,19 @@ export default function CryptoAnalystAgent() {
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
 
   const runAnalysis = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
+
+    // Deduct 2 credits
+    const creditResult = await checkAndDeductCredits(2, 'Crypto Analyst Query', { userId: user?.id, walletAddress: address });
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setResponse('');

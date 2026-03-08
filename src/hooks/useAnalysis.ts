@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
+import { checkAndDeductCredits } from '@/lib/credits';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
@@ -58,6 +59,13 @@ export function useAnalysis() {
     currentPrice: number,
     assetId: string
   ) => {
+    // Deduct 5 credits for analysis
+    const creditResult = await checkAndDeductCredits(5, `${type === 'technical_analysis' ? 'Technical' : 'Fundamental'} Analysis - ${symbol}`, { userId: user?.id, walletAddress: address });
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
+
     const setLoading = type === 'technical_analysis' ? setIsLoadingTechnical : setIsLoadingFundamental;
     setLoading(true);
     setError(null);

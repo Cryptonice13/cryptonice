@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
+import { useAuth } from '@/hooks/useAuth';
+import { useAccount } from 'wagmi';
+import { checkAndDeductCredits } from '@/lib/credits';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -61,8 +63,18 @@ export function useCryptoAI() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const sendMessage = useCallback(async (input: string, portfolioContext?: any) => {
+    // Deduct 1 credit for chat
+    const result = await checkAndDeductCredits(1, 'AI Chat message', identity);
+    if (!result.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
+
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
@@ -157,6 +169,9 @@ export function usePortfolioAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   // Load latest saved analysis from DB on mount
   useEffect(() => {
@@ -192,6 +207,12 @@ export function usePortfolioAnalysis() {
   }, []);
 
   const analyzePortfolio = useCallback(async (portfolio: any[]) => {
+    // Deduct 3 credits for portfolio analysis
+    const creditResult = await checkAndDeductCredits(3, 'Portfolio Analysis', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
@@ -252,8 +273,16 @@ export function useMarketPrediction() {
   const [prediction, setPrediction] = useState<MarketPrediction | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const getPrediction = useCallback(async (symbol: string) => {
+    const creditResult = await checkAndDeductCredits(3, 'Market Prediction', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
@@ -309,8 +338,16 @@ export function useTradingSignal() {
   const [signal, setSignal] = useState<TradingSignal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const getSignal = useCallback(async (symbol: string, price?: number) => {
+    const creditResult = await checkAndDeductCredits(2, 'Trading Signal', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits } from '@/hooks/useCredits';
 
 interface AppHeaderProps {
   activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy';
@@ -32,6 +33,7 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
   const { address, isConnected } = useAccount();
   const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
+  const { balance } = useCredits();
 
   const handleConnect = async () => {
     if (handleMobileDeepLink()) return;
@@ -84,6 +86,17 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
 
         <div className="flex items-center gap-2">
           {rightContent}
+
+          {/* Credit Balance */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/credits')}
+            className="h-8 px-2 gap-1 text-xs"
+          >
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span className="font-semibold">{balance ?? '...'}</span>
+          </Button>
 
           {/* AI Chat Icon */}
           <Button
