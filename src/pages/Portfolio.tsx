@@ -305,7 +305,7 @@ export default function Portfolio() {
           </div>
 
           {/* Performance Chart */}
-          <PerformanceChart transactions={transactions} currentPrices={currentPrices} />
+          <PerformanceChart transactions={transactions} currentPrices={currentPrices} portfolio={portfolio} />
 
           {/* Rest of portfolio content */}
           <div className="space-y-4">
