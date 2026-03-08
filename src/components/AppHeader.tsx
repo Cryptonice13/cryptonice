@@ -85,7 +85,18 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
         <div className="flex items-center gap-2">
           {rightContent}
 
-          {/* Profile Icon - visible on all sizes */}
+          {/* AI Chat Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/chat')}
+            className="h-8 w-8 relative"
+          >
+            <Brain className="w-4 h-4 text-primary" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </Button>
+
+          {/* Profile Icon */}
           <Button
             variant="ghost"
             size="icon"
