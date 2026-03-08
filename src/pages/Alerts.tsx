@@ -711,6 +711,79 @@ export default function Alerts() {
         </div>
       </main>
 
+      {/* AI Single-Asset Suggestions Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={(open) => {
+        setAiDialogOpen(open);
+        if (!open) setAiAssetSuggestions(null);
+      }}>
+        <DialogContent className="max-w-[90vw] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI Alert Suggestions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {aiGeneratingFor ? (
+              <div className="py-8 text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Analyzing support & resistance levels...</p>
+              </div>
+            ) : aiAssetSuggestions && aiAssetSuggestions.suggestions.length > 0 ? (
+              <div className="space-y-2">
+                {aiAssetSuggestions.suggestions.map((s, idx) => (
+                  <Card key={idx} className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-5 ${
+                              s.type === 'above'
+                                ? 'border-green-500/40 text-green-400'
+                                : 'border-red-500/40 text-red-400'
+                            }`}
+                          >
+                            {s.type === 'above' ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
+                            {s.type}
+                          </Badge>
+                          <span className="font-mono text-sm font-semibold">${s.price?.toLocaleString()}</span>
+                          {s.confidence > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{s.confidence}% conf.</span>
+                          )}
+                        </div>
+                        {s.reasoning && (
+                          <p className="text-[11px] text-muted-foreground leading-tight">{s.reasoning}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs shrink-0"
+                        onClick={() => applyAiSuggestion(aiAssetSuggestions.asset_id, s.price, s.type as 'above' | 'below', idx)}
+                        disabled={applyingAiIdx === idx}
+                      >
+                        {applyingAiIdx === idx ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Bell className="w-3 h-3 mr-1" />
+                            Apply
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : !aiGeneratingFor ? (
+              <div className="py-6 text-center text-muted-foreground">
+                <p className="text-sm">No suggestions generated.</p>
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <MobileBottomNav />
     </div>
   );
