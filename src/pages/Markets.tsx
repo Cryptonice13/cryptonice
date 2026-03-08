@@ -35,6 +35,7 @@ import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { PriceChart } from '@/components/ai/PriceChart';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
+import { useAIInsights } from '@/hooks/useAIInsights';
 
 export default function Markets() {
   const { toast } = useToast();
@@ -46,6 +47,7 @@ export default function Markets() {
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address, user?.id);
+  const { savePrediction, saveSignal, saveWhaleActivity } = useAIInsights();
 
   const formatMarketCap = (cap: number) => {
     if (cap >= 1e12) return `$${(cap / 1e12).toFixed(1)}T`;
@@ -229,6 +231,7 @@ export default function Markets() {
                         name={selectedAssetData.name}
                         currentPrice={selectedAssetData.price}
                         logo={selectedAssetData.logo}
+                        onSave={savePrediction}
                       />
                     </TabsContent>
                     <TabsContent value="signal" className="mt-4">
@@ -237,6 +240,7 @@ export default function Markets() {
                         name={selectedAssetData.name}
                         price={selectedAssetData.price}
                         logo={selectedAssetData.logo}
+                        onSave={saveSignal}
                       />
                     </TabsContent>
                   </Tabs>
@@ -257,6 +261,7 @@ export default function Markets() {
                   symbol={selectedAssetData.symbol}
                   name={selectedAssetData.name}
                   price={selectedAssetData.price}
+                  onSave={saveWhaleActivity}
                 />
               )}
 
@@ -325,6 +330,7 @@ export default function Markets() {
                     name={selectedAssetData.name}
                     currentPrice={selectedAssetData.price}
                     logo={selectedAssetData.logo}
+                    onSave={savePrediction}
                   />
                 </TabsContent>
                 <TabsContent value="signal" className="mt-4">
@@ -333,6 +339,7 @@ export default function Markets() {
                     name={selectedAssetData.name}
                     price={selectedAssetData.price}
                     logo={selectedAssetData.logo}
+                    onSave={saveSignal}
                   />
                 </TabsContent>
                 <TabsContent value="whales" className="mt-4">
@@ -340,6 +347,7 @@ export default function Markets() {
                     symbol={selectedAssetData.symbol}
                     name={selectedAssetData.name}
                     price={selectedAssetData.price}
+                    onSave={saveWhaleActivity}
                   />
                 </TabsContent>
               </Tabs>

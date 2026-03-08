@@ -12,6 +12,7 @@ interface TradingSignalCardProps {
   name: string;
   price: number;
   logo?: string;
+  onSave?: (symbol: string, name: string, price: number, data: any) => void;
 }
 
 function formatVal(v: any): string {
@@ -32,7 +33,7 @@ function toNum(v: any): number {
   return 0;
 }
 
-export function TradingSignalCard({ symbol, name, price, logo }: TradingSignalCardProps) {
+export function TradingSignalCard({ symbol, name, price, logo, onSave }: TradingSignalCardProps) {
   const { signal, isLoading, error, getSignal } = useTradingSignal();
   const [hasLoaded, setHasLoaded] = useState(false);
   const [reasoningOpen, setReasoningOpen] = useState(true);
@@ -41,6 +42,13 @@ export function TradingSignalCard({ symbol, name, price, logo }: TradingSignalCa
     getSignal(symbol, price);
     setHasLoaded(true);
   };
+
+  // Auto-save when signal arrives
+  const prevSigRef = useState<any>(null);
+  if (signal && signal !== prevSigRef[0]) {
+    prevSigRef[0] = signal;
+    onSave?.(symbol, name, price, signal);
+  }
 
   const getSignalStyle = (s: string) => {
     switch (s) {

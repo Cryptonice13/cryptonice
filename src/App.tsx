@@ -18,6 +18,7 @@ import Alerts from "./pages/Alerts";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
+import AIInsights from "./pages/AIInsights";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,11 @@ const App = () => (
                 <Route path="/strategy" element={
                   <ProtectedRoute>
                     <StrategyBuilder />
+                  </ProtectedRoute>
+                } />
+                <Route path="/insights" element={
+                  <ProtectedRoute>
+                    <AIInsights />
                   </ProtectedRoute>
                 } />
                 <Route path="/profile" element={

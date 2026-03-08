@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_predictions: {
+        Row: {
+          asset_name: string
+          asset_symbol: string
+          created_at: string
+          current_price: number
+          id: string
+          prediction_data: Json
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          asset_name: string
+          asset_symbol: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          prediction_data?: Json
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          asset_name?: string
+          asset_symbol?: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          prediction_data?: Json
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      ai_signals: {
+        Row: {
+          asset_name: string
+          asset_symbol: string
+          created_at: string
+          current_price: number
+          id: string
+          signal_data: Json
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          asset_name: string
+          asset_symbol: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          signal_data?: Json
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          asset_name?: string
+          asset_symbol?: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          signal_data?: Json
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      ai_whale_activity: {
+        Row: {
+          asset_name: string
+          asset_symbol: string
+          created_at: string
+          current_price: number
+          id: string
+          user_id: string | null
+          wallet_address: string | null
+          whale_data: Json
+        }
+        Insert: {
+          asset_name: string
+          asset_symbol: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          user_id?: string | null
+          wallet_address?: string | null
+          whale_data?: Json
+        }
+        Update: {
+          asset_name?: string
+          asset_symbol?: string
+          created_at?: string
+          current_price?: number
+          id?: string
+          user_id?: string | null
+          wallet_address?: string | null
+          whale_data?: Json
+        }
+        Relationships: []
+      }
       alert_history: {
         Row: {
           alert_type: string

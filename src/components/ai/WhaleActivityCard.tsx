@@ -25,6 +25,7 @@ interface WhaleActivityCardProps {
   symbol: string;
   name: string;
   price: number;
+  onSave?: (symbol: string, name: string, price: number, data: any) => void;
 }
 
 function extractJSON(raw: string): string {
@@ -36,7 +37,7 @@ function extractJSON(raw: string): string {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
-export function WhaleActivityCard({ symbol, name, price }: WhaleActivityCardProps) {
+export function WhaleActivityCard({ symbol, name, price, onSave }: WhaleActivityCardProps) {
   const [analysis, setAnalysis] = useState<WhaleAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +66,17 @@ export function WhaleActivityCard({ symbol, name, price }: WhaleActivityCardProp
 
       if (content) {
         try {
-          setAnalysis(JSON.parse(extractJSON(content)));
+          const parsed = JSON.parse(extractJSON(content));
+          setAnalysis(parsed);
+          onSave?.(symbol, name, price, parsed);
         } catch {
-          setAnalysis({
+          const fallback = {
             transactions: [],
-            sentiment: 'neutral',
+            sentiment: 'neutral' as const,
             summary: content,
-          });
+          };
+          setAnalysis(fallback);
+          onSave?.(symbol, name, price, fallback);
         }
       }
     } catch (err) {
