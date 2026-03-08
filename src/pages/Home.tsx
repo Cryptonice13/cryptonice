@@ -534,7 +534,7 @@ const Home = () => {
                 size="lg"
                 className="bg-background text-foreground hover:bg-background/90 font-bold px-12 py-7 text-lg rounded-full shadow-2xl"
               >
-                <Brain className="w-5 h-5 mr-2" />
+                <img src={cryptoaiLogo} alt="CryptoAI" className="w-5 h-5 rounded mr-2" />
                 Get Started Free
               </Button>
             </div>
