@@ -208,6 +208,86 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks):
 }`;
     }
 
+    case "technical_analysis": {
+      const taCoin = marketData[0];
+      const taDetails = coinDetails ? `\nMarket Cap Rank: #${coinDetails.market_cap_rank}\nATH: $${coinDetails.market_data?.ath?.usd?.toLocaleString()}\nATL: $${coinDetails.market_data?.atl?.usd?.toLocaleString()}\nCirculating Supply: ${coinDetails.market_data?.circulating_supply?.toLocaleString()}\nMax Supply: ${coinDetails.market_data?.max_supply?.toLocaleString() || 'Unlimited'}` : '';
+      return `You are an expert technical analyst specializing in cryptocurrency markets with access to REAL-TIME data.
+
+${context?.symbol} LIVE DATA (${timestamp}):
+${taCoin ? `Price: $${taCoin.current_price.toLocaleString()} | 24h: ${taCoin.price_change_percentage_24h?.toFixed(2)}% | 7d: ${taCoin.price_change_percentage_7d_in_currency?.toFixed(2)}% | Vol: $${(taCoin.total_volume / 1e9).toFixed(2)}B | MCap: $${(taCoin.market_cap / 1e9).toFixed(2)}B | 24h High: $${taCoin.high_24h?.toLocaleString()} | 24h Low: $${taCoin.low_24h?.toLocaleString()}${taDetails}` : 'No data available.'}
+
+Perform a comprehensive technical analysis for ${context?.symbol}. Base ALL price levels on the CURRENT price of $${taCoin?.current_price?.toLocaleString() || 'unknown'}.
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks):
+{
+  "indicators": {
+    "rsi": { "value": number (0-100), "signal": "oversold"|"neutral"|"overbought", "description": "string" },
+    "macd": { "value": number, "signal": "bullish"|"bearish"|"neutral", "histogram": number, "description": "string" },
+    "bollingerBands": { "upper": number, "middle": number, "lower": number, "position": "above_upper"|"upper_half"|"middle"|"lower_half"|"below_lower", "description": "string" },
+    "movingAverages": { "sma20": number, "sma50": number, "sma200": number, "ema12": number, "ema26": number, "crossover": "golden_cross"|"death_cross"|"none", "trend": "bullish"|"bearish"|"neutral", "description": "string" }
+  },
+  "supportResistance": {
+    "supports": [{ "price": number, "strength": "strong"|"moderate"|"weak" }, { "price": number, "strength": "strong"|"moderate"|"weak" }, { "price": number, "strength": "strong"|"moderate"|"weak" }],
+    "resistances": [{ "price": number, "strength": "strong"|"moderate"|"weak" }, { "price": number, "strength": "strong"|"moderate"|"weak" }, { "price": number, "strength": "strong"|"moderate"|"weak" }]
+  },
+  "volumeAnalysis": { "trend": "increasing"|"decreasing"|"stable", "averageVolume": number, "currentVolume": number, "volumeRatio": number, "description": "string" },
+  "trendAnalysis": { "direction": "bullish"|"bearish"|"sideways", "strength": number (1-10), "timeframe": "string", "description": "string" },
+  "chartPatterns": [{ "pattern": "string", "type": "bullish"|"bearish"|"neutral", "significance": "high"|"medium"|"low" }],
+  "verdict": { "signal": "BUY"|"SELL"|"HOLD", "confidence": number (0-100), "reasoning": "string", "keyLevels": { "entry": number, "stopLoss": number, "target": number } }
+}`;
+    }
+
+    case "fundamental_analysis": {
+      const faCoin = marketData[0];
+      const faDetails = coinDetails ? `\nMarket Cap Rank: #${coinDetails.market_cap_rank}\nATH: $${coinDetails.market_data?.ath?.usd?.toLocaleString()}\nATH Change: ${coinDetails.market_data?.ath_change_percentage?.usd?.toFixed(2)}%\nCirculating Supply: ${coinDetails.market_data?.circulating_supply?.toLocaleString()}\nMax Supply: ${coinDetails.market_data?.max_supply?.toLocaleString() || 'Unlimited'}\nTotal Supply: ${coinDetails.market_data?.total_supply?.toLocaleString()}\nDescription: ${coinDetails.description?.en?.slice(0, 300) || 'N/A'}` : '';
+      return `You are a senior crypto fundamental analyst with deep knowledge of blockchain ecosystems, tokenomics, and market dynamics.
+
+${context?.symbol} LIVE DATA (${timestamp}):
+${faCoin ? `Price: $${faCoin.current_price.toLocaleString()} | 24h: ${faCoin.price_change_percentage_24h?.toFixed(2)}% | 7d: ${faCoin.price_change_percentage_7d_in_currency?.toFixed(2)}% | Vol: $${(faCoin.total_volume / 1e9).toFixed(2)}B | MCap: $${(faCoin.market_cap / 1e9).toFixed(2)}B${faDetails}` : 'No data available.'}
+
+Perform a comprehensive fundamental analysis for ${context?.symbol}. Evaluate the project's long-term value proposition.
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks):
+{
+  "overallScore": number (0-100),
+  "tokenomics": {
+    "circulatingSupply": "string",
+    "maxSupply": "string",
+    "inflationRate": "string",
+    "distribution": "string",
+    "score": number (0-100),
+    "description": "string"
+  },
+  "marketPosition": {
+    "rank": number,
+    "dominance": "string",
+    "competitors": ["string"],
+    "moat": "string",
+    "score": number (0-100),
+    "description": "string"
+  },
+  "ecosystem": {
+    "partnerships": ["string"],
+    "dapps": number,
+    "developers": "string",
+    "activity": "high"|"medium"|"low",
+    "score": number (0-100),
+    "description": "string"
+  },
+  "catalysts": [
+    { "event": "string", "impact": "high"|"medium"|"low", "timeframe": "string" }
+  ],
+  "risks": [
+    { "factor": "string", "severity": "high"|"medium"|"low", "likelihood": "high"|"medium"|"low" }
+  ],
+  "assessment": {
+    "thesis": "string",
+    "outlook": "bullish"|"bearish"|"neutral",
+    "summary": "string"
+  }
+}`;
+    }
+
     case "crypto_analyst": {
       const btcData = marketData.find(c => c.symbol === 'btc') || marketData[0];
       const smaData = context?.smaData;
