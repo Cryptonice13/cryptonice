@@ -339,6 +339,7 @@ export default function Markets() {
                     name={selectedAssetData.name}
                     price={selectedAssetData.price}
                     logo={selectedAssetData.logo}
+                    onSave={saveSignal}
                   />
                 </TabsContent>
                 <TabsContent value="whales" className="mt-4">
