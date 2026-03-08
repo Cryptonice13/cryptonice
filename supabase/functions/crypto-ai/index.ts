@@ -89,22 +89,55 @@ function buildSystemPrompt(type: string, marketData: MarketData[], coinDetails: 
   const coinData = marketData[0];
 
   switch (type) {
-    case "chat":
-      return `You are CryptoAI, a sharp and concise crypto analyst. You have real-time market data.
+    case "chat": {
+      let userDataSection = '';
+      if (context) {
+        if (context.portfolio?.length > 0) {
+          userDataSection += `\n\nUSER PORTFOLIO:\n${JSON.stringify(context.portfolio)}`;
+        }
+        if (context.watchlist?.length > 0) {
+          userDataSection += `\n\nUSER WATCHLIST:\n${JSON.stringify(context.watchlist)}`;
+        }
+        if (context.strategies?.length > 0) {
+          userDataSection += `\n\nACTIVE STRATEGIES:\n${JSON.stringify(context.strategies)}`;
+        }
+        if (context.alertHistory?.length > 0) {
+          userDataSection += `\n\nRECENT ALERT HISTORY:\n${JSON.stringify(context.alertHistory)}`;
+        }
+        if (context.recentPredictions?.length > 0) {
+          userDataSection += `\n\nRECENT AI PREDICTIONS:\n${JSON.stringify(context.recentPredictions)}`;
+        }
+        if (context.recentSignals?.length > 0) {
+          userDataSection += `\n\nRECENT AI SIGNALS:\n${JSON.stringify(context.recentSignals)}`;
+        }
+        if (context.recentWhaleActivity?.length > 0) {
+          userDataSection += `\n\nRECENT WHALE ACTIVITY:\n${JSON.stringify(context.recentWhaleActivity)}`;
+        }
+        if (context.portfolioAnalysis?.length > 0) {
+          userDataSection += `\n\nPORTFOLIO ANALYSIS HISTORY:\n${JSON.stringify(context.portfolioAnalysis)}`;
+        }
+        if (context.recentTransactions?.length > 0) {
+          userDataSection += `\n\nRECENT TRANSACTIONS:\n${JSON.stringify(context.recentTransactions)}`;
+        }
+      }
 
-LIVE DATA (${timestamp}):
+      return `You are CryptoAI, a sharp and concise crypto analyst. You have real-time market data AND full access to the user's personal data including their portfolio, watchlist, strategies, alerts, past AI predictions/signals, and transaction history.
+
+LIVE MARKET DATA (${timestamp}):
 ${realTimeDataStr}
+${userDataSection}
 
 RESPONSE RULES:
 - Be conversational and direct. Answer in 2-4 sentences for simple questions.
 - Use bullet points for key data points, keep them short (one line each).
 - Bold important numbers and percentages with **markdown**.
+- When the user asks about their portfolio, strategies, alerts, or past analyses, USE the personal data provided above to give accurate, personalized answers.
+- Reference specific holdings, P&L, strategy performance, and past predictions when relevant.
 - NO lengthy disclaimers, NO "not financial advice" boilerplate, NO repeating data the user didn't ask for.
 - Only expand into detailed analysis if the user specifically asks for a deep dive.
 - Use emoji sparingly for visual clarity (📈📉🔥⚠️).
-- Format with markdown (bold, bullets, headers) but keep it minimal.
-
-${context ? `User's portfolio: ${JSON.stringify(context)}` : ""}`;
+- Format with markdown (bold, bullets, headers) but keep it minimal.`;
+    }
 
     case "portfolio_analysis":
       return `You are a portfolio analyst AI with REAL-TIME market data.
