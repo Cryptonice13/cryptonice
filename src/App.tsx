@@ -19,7 +19,7 @@ import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
 import AIInsights from "./pages/AIInsights";
-import FloatingInsightsButton from "./components/FloatingInsightsButton";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +81,11 @@ const App = () => (
                     <AIInsights />
                   </ProtectedRoute>
                 } />
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                } />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <UserProfile />
@@ -92,7 +97,6 @@ const App = () => (
                   </ProtectedRoute>
                 } />
               </Routes>
-              <FloatingInsightsButton />
             </BrowserRouter>
           </div>
         </TooltipProvider>
