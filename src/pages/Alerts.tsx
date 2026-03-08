@@ -393,54 +393,70 @@ export default function Alerts() {
                               </div>
                             </div>
                           ) : (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="w-full h-8 text-xs">
-                                  <Bell className="w-3.5 h-3.5 mr-1.5" />
-                                  Set Alert
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-[90vw] sm:max-w-md">
-                                <DialogHeader>
-                                  <DialogTitle className="text-base">Set Alert for {item.asset_symbol}</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4 mt-4">
-                                  <div className="space-y-2">
-                                    <Label className="text-sm">Alert Type</Label>
-                                    <Select value={alertType} onValueChange={(v) => setAlertType(v as 'above' | 'below')}>
-                                      <SelectTrigger><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="above">Price goes above</SelectItem>
-                                        <SelectItem value="below">Price goes below</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-sm">Target Price ($)</Label>
-                                    <Input
-                                      type="number"
-                                      placeholder={item.currentPrice.toString()}
-                                      value={alertPrice}
-                                      onChange={(e) => setAlertPrice(e.target.value)}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Current: ${item.currentPrice.toLocaleString()}</p>
-                                  </div>
-                                  <Button
-                                    onClick={async () => {
-                                      if (alertPrice) {
-                                        await setAlert(item.asset_id, parseFloat(alertPrice), alertType);
-                                        setAlertPrice('');
-                                        toast({ title: 'Alert set!' });
-                                      }
-                                    }}
-                                    className="w-full button-gradient"
-                                    disabled={!alertPrice}
-                                  >
+                            <div className="flex gap-2">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
+                                    <Bell className="w-3.5 h-3.5 mr-1" />
                                     Set Alert
                                   </Button>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-[90vw] sm:max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle className="text-base">Set Alert for {item.asset_symbol}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 mt-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">Alert Type</Label>
+                                      <Select value={alertType} onValueChange={(v) => setAlertType(v as 'above' | 'below')}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="above">Price goes above</SelectItem>
+                                          <SelectItem value="below">Price goes below</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">Target Price ($)</Label>
+                                      <Input
+                                        type="number"
+                                        placeholder={item.currentPrice.toString()}
+                                        value={alertPrice}
+                                        onChange={(e) => setAlertPrice(e.target.value)}
+                                      />
+                                      <p className="text-xs text-muted-foreground">Current: ${item.currentPrice.toLocaleString()}</p>
+                                    </div>
+                                    <Button
+                                      onClick={async () => {
+                                        if (alertPrice) {
+                                          await setAlert(item.asset_id, parseFloat(alertPrice), alertType);
+                                          setAlertPrice('');
+                                          toast({ title: 'Alert set!' });
+                                        }
+                                      }}
+                                      className="w-full button-gradient"
+                                      disabled={!alertPrice}
+                                    >
+                                      Set Alert
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="flex-1 h-8 text-xs gap-1"
+                                onClick={() => generateAiForAsset(item.asset_id, item.asset_symbol, item.currentPrice)}
+                                disabled={aiGeneratingFor === item.asset_id}
+                              >
+                                {aiGeneratingFor === item.asset_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                )}
+                                AI Alerts
+                              </Button>
+                            </div>
                           )}
                         </Card>
                       </motion.div>
