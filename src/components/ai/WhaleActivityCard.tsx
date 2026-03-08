@@ -37,7 +37,7 @@ function extractJSON(raw: string): string {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
-export function WhaleActivityCard({ symbol, name, price }: WhaleActivityCardProps) {
+export function WhaleActivityCard({ symbol, name, price, onSave }: WhaleActivityCardProps) {
   const [analysis, setAnalysis] = useState<WhaleAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

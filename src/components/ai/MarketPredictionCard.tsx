@@ -50,15 +50,22 @@ function overallConfToNum(v: any): number {
   return 0;
 }
 
-export function MarketPredictionCard({ symbol, name, currentPrice, logo }: MarketPredictionCardProps) {
+export function MarketPredictionCard({ symbol, name, currentPrice, logo, onSave }: MarketPredictionCardProps) {
   const { prediction, isLoading, error, getPrediction } = useMarketPrediction();
   const [hasLoaded, setHasLoaded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(true);
 
-  const handleGetPrediction = () => {
-    getPrediction(symbol);
+  const handleGetPrediction = async () => {
     setHasLoaded(true);
+    await getPrediction(symbol);
   };
+
+  // Auto-save when prediction arrives
+  const prevPredRef = useState<any>(null);
+  if (prediction && prediction !== prevPredRef[0]) {
+    prevPredRef[0] = prediction;
+    onSave?.(symbol, name, currentPrice, prediction);
+  }
 
   const getSentimentColor = (sentiment: string) => {
     const s = sentiment?.toLowerCase();
