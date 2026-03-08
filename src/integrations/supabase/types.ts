@@ -439,6 +439,7 @@ export type Database = {
           id: string
           notes: string | null
           price_per_unit: number
+          purchase_date: string | null
           total_value: number
           transaction_type: string
           user_id: string | null
@@ -452,6 +453,7 @@ export type Database = {
           id?: string
           notes?: string | null
           price_per_unit: number
+          purchase_date?: string | null
           total_value: number
           transaction_type: string
           user_id?: string | null
@@ -465,6 +467,7 @@ export type Database = {
           id?: string
           notes?: string | null
           price_per_unit?: number
+          purchase_date?: string | null
           total_value?: number
           transaction_type?: string
           user_id?: string | null
