@@ -103,6 +103,11 @@ const App = () => (
                     <Settings />
                   </ProtectedRoute>
                 } />
+                <Route path="/credits" element={
+                  <ProtectedRoute>
+                    <Credits />
+                  </ProtectedRoute>
+                } />
               </Routes>
             </BrowserRouter>
           </div>

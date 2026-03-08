@@ -134,6 +134,10 @@ const UserProfile = () => {
             <p className="text-muted-foreground">Manage your account information</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/credits')} className="gap-1.5">
+              <Zap className="w-4 h-4 text-primary" />
+              Credits & Usage
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
             </Button>

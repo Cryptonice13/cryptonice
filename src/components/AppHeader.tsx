@@ -87,6 +87,17 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
         <div className="flex items-center gap-2">
           {rightContent}
 
+          {/* Credit Balance */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/credits')}
+            className="h-8 px-2 gap-1 text-xs"
+          >
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span className="font-semibold">{balance ?? '...'}</span>
+          </Button>
+
           {/* AI Chat Icon */}
           <Button
             variant="ghost"
