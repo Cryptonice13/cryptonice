@@ -122,7 +122,8 @@ export function usePortfolioDb(walletAddress: string | undefined, userId?: strin
   const addPosition = useCallback(async (
     asset: CryptoAsset,
     amount: number,
-    buyPrice: number
+    buyPrice: number,
+    purchaseDate?: Date
   ) => {
     if (!hasIdentifier) return false;
 
