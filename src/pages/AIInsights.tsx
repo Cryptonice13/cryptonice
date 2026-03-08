@@ -523,6 +523,22 @@ export default function AIInsights() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="portfolio" className="mt-4">
+                {portfolioAnalyses.length === 0 ? (
+                  <Card className="glass-card p-10 text-center">
+                    <PieChart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-1">No Portfolio Analyses Yet</h3>
+                    <p className="text-xs text-muted-foreground">Analyze your portfolio from the Portfolio page — results will be saved here automatically.</p>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {portfolioAnalyses.map(item => (
+                      <PortfolioAnalysisHistoryItem key={item.id} item={item} onDelete={deletePortfolioAnalysis} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           )}
         </div>
