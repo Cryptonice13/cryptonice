@@ -167,11 +167,27 @@ export function useAIInsights() {
     }
   }, []);
 
+  const loadPortfolioAnalyses = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data } = await supabase
+        .from('ai_portfolio_analysis' as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      setPortfolioAnalyses((data as any[]) || []);
+    } catch (err) {
+      console.error('Failed to load portfolio analyses:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const loadAll = useCallback(async () => {
     setIsLoading(true);
-    await Promise.all([loadPredictions(), loadSignals(), loadWhaleActivities()]);
+    await Promise.all([loadPredictions(), loadSignals(), loadWhaleActivities(), loadPortfolioAnalyses()]);
     setIsLoading(false);
-  }, [loadPredictions, loadSignals, loadWhaleActivities]);
+  }, [loadPredictions, loadSignals, loadWhaleActivities, loadPortfolioAnalyses]);
 
   const deletePrediction = useCallback(async (id: string) => {
     await supabase.from('ai_predictions' as any).delete().eq('id', id);
