@@ -204,10 +204,15 @@ export function useAIInsights() {
     setWhaleActivities(prev => prev.filter(w => w.id !== id));
   }, []);
 
+  const deletePortfolioAnalysis = useCallback(async (id: string) => {
+    await supabase.from('ai_portfolio_analysis' as any).delete().eq('id', id);
+    setPortfolioAnalyses(prev => prev.filter(p => p.id !== id));
+  }, []);
+
   return {
-    predictions, signals, whaleActivities, isLoading,
-    savePrediction, saveSignal, saveWhaleActivity,
-    loadAll, loadPredictions, loadSignals, loadWhaleActivities,
-    deletePrediction, deleteSignal, deleteWhaleActivity,
+    predictions, signals, whaleActivities, portfolioAnalyses, isLoading,
+    savePrediction, saveSignal, saveWhaleActivity, savePortfolioAnalysis,
+    loadAll, loadPredictions, loadSignals, loadWhaleActivities, loadPortfolioAnalyses,
+    deletePrediction, deleteSignal, deleteWhaleActivity, deletePortfolioAnalysis,
   };
 }
