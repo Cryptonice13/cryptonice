@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -167,8 +168,17 @@ export function MarketInsightsPanel({ assets, selectedAssetId: externalSelectedI
     fundamentalData,
     isLoadingTechnical,
     isLoadingFundamental,
+    isLoadingLatest,
     runAnalysis,
+    loadLatestForAsset,
   } = useAnalysis();
+
+  // Auto-load latest analysis from DB when asset changes
+  useEffect(() => {
+    if (selectedAssetId) {
+      loadLatestForAsset(selectedAssetId);
+    }
+  }, [selectedAssetId, loadLatestForAsset]);
 
   const selectedAsset = selectedAssetId ? assets.find((a) => a.id === selectedAssetId) : undefined;
 
