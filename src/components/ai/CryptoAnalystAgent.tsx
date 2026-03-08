@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Loader2, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
+import { useAccount } from 'wagmi';
+import { checkAndDeductCredits } from '@/lib/credits';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
