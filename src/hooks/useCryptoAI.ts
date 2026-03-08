@@ -68,6 +68,13 @@ export function useCryptoAI() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const sendMessage = useCallback(async (input: string, portfolioContext?: any) => {
+    // Deduct 1 credit for chat
+    const result = await checkAndDeductCredits(1, 'AI Chat message', identity);
+    if (!result.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
+
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
