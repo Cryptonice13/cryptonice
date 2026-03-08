@@ -43,6 +43,7 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 export default function Markets() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { address } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
