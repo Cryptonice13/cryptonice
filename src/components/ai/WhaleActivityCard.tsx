@@ -25,6 +25,7 @@ interface WhaleActivityCardProps {
   symbol: string;
   name: string;
   price: number;
+  onSave?: (symbol: string, name: string, price: number, data: any) => void;
 }
 
 function extractJSON(raw: string): string {
