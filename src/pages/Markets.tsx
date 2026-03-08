@@ -246,13 +246,35 @@ export default function Markets() {
                   </Tabs>
                 </div>
               ) : (
-                <Card className="glass-card p-6 text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <h3 className="font-semibold mb-1">Select an Asset</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Tap on any asset for AI predictions and trading signals.
-                  </p>
-                </Card>
+                <div className="space-y-4">
+                  {/* AI Insights Link */}
+                  <Card
+                    className="glass-card p-4 cursor-pointer hover:border-primary/40 transition-colors group"
+                    onClick={() => window.location.href = '/insights'}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                          <BarChart3 className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold group-hover:text-primary transition-colors">AI Insights</h3>
+                          <p className="text-[10px] text-muted-foreground">View saved predictions, signals & whale activity</p>
+                        </div>
+                      </div>
+                      <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </Card>
+
+                  {/* Select Asset CTA */}
+                  <Card className="glass-card p-6 text-center">
+                    <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-1">Select an Asset</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Tap on any asset for AI predictions and trading signals.
+                    </p>
+                  </Card>
+                </div>
               )}
 
               {/* Whale Activity */}

@@ -303,7 +303,7 @@ export default function AIInsights() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader activePage="insights" />
+      <AppHeader activePage="markets" />
 
       <main className="px-3 sm:px-4 pt-14 pb-20 lg:pb-8">
         <div className="mt-4 space-y-4">
