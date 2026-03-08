@@ -289,10 +289,126 @@ function WhaleHistoryItem({ item, onDelete }: { item: any; onDelete: (id: string
   );
 }
 
+// Portfolio Analysis history card
+function PortfolioAnalysisHistoryItem({ item, onDelete }: { item: any; onDelete: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const a = item.analysis_data;
+  const snapshot = item.portfolio_snapshot || [];
+
+  const getHealthColor = (score: number) => {
+    if (score >= 80) return 'text-green-400';
+    if (score >= 60) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getHealthStroke = (score: number) => {
+    if (score >= 80) return 'stroke-green-400';
+    if (score >= 60) return 'stroke-yellow-400';
+    return 'stroke-red-400';
+  };
+
+  const getRiskStyle = (r: string) => {
+    switch (r?.toLowerCase()) {
+      case 'low': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'high': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <Card className="glass-card overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <PieChart className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">Portfolio Analysis</span>
+                <Badge className={getRiskStyle(item.risk_level)}>{item.risk_level} risk</Badge>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {timeAgo(item.created_at)}
+                <span>·</span>
+                <span>{snapshot.length} asset{snapshot.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item.id)}>
+            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+          </Button>
+        </div>
+
+        <div className="p-4 space-y-3">
+          {/* Health Score + Diversification */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col items-center p-3 rounded-lg bg-muted/20 border border-border/30">
+              <div className="relative w-16 h-16 mb-1">
+                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" strokeWidth="5" className="stroke-muted/40" />
+                  <circle cx="32" cy="32" r="26" fill="none" strokeWidth="5"
+                    strokeDasharray={`${(item.health_score / 100) * 163.4} 163.4`}
+                    strokeLinecap="round"
+                    className={getHealthStroke(item.health_score)} />
+                </svg>
+                <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getHealthColor(item.health_score)}`}>
+                  {item.health_score}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Health</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/20 border border-border/30 gap-1">
+              <Shield className="w-5 h-5 text-muted-foreground" />
+              <p className="text-[10px] text-muted-foreground">Diversification</p>
+              <Badge variant="secondary" className="text-[10px]">{item.diversification}</Badge>
+            </div>
+          </div>
+
+          {/* Suggestions & Concerns */}
+          {((a?.suggestions?.length ?? 0) > 0 || (a?.concerns?.length ?? 0) > 0) && (
+            <Collapsible open={open} onOpenChange={setOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full">
+                <span className="text-xs font-semibold">Details</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 space-y-2">
+                  {a?.suggestions?.map((s: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-green-500/5 border-l-2 border-green-500/40">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs leading-relaxed">{s}</p>
+                    </div>
+                  ))}
+                  {a?.concerns?.map((c: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-yellow-500/5 border-l-2 border-yellow-500/40">
+                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs leading-relaxed">{c}</p>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Summary */}
+          {a?.summary && (
+            <div className="p-3 rounded-lg bg-muted/10 border border-border/30">
+              <p className="text-xs leading-relaxed">{a.summary}</p>
+            </div>
+          )}
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function AIInsights() {
   const {
-    predictions, signals, whaleActivities, isLoading,
-    loadAll, deletePrediction, deleteSignal, deleteWhaleActivity,
+    predictions, signals, whaleActivities, portfolioAnalyses, isLoading,
+    loadAll, deletePrediction, deleteSignal, deleteWhaleActivity, deletePortfolioAnalysis,
   } = useAIInsights();
 
   useEffect(() => {
