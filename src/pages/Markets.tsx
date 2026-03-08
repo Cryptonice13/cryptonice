@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAccount } from 'wagmi';
 import {
   TrendingUp,
   TrendingDown,
@@ -11,6 +12,8 @@ import {
   Target,
   Clock,
   Loader2,
+  Activity,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
