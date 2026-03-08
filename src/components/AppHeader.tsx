@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits } from '@/hooks/useCredits';
 
 interface AppHeaderProps {
   activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy';
