@@ -70,6 +70,7 @@ export default function Portfolio() {
   const [sellPrice, setSellPrice] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const { savePortfolioAnalysis } = useAIInsights();
 
   const { assets, isLoading: marketLoading } = useMarketData();
   const { 
