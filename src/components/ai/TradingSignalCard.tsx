@@ -12,6 +12,7 @@ interface TradingSignalCardProps {
   name: string;
   price: number;
   logo?: string;
+  onSave?: (symbol: string, name: string, price: number, data: any) => void;
 }
 
 function formatVal(v: any): string {
