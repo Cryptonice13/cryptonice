@@ -358,17 +358,21 @@ export default function Markets() {
               <PriceChart asset={selectedAssetData} />
 
               <Tabs defaultValue="prediction" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="prediction" className="text-xs">
-                    <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-                    Prediction
+                    <BarChart3 className="w-3.5 h-3.5 mr-1" />
+                    Predict
                   </TabsTrigger>
                   <TabsTrigger value="signal" className="text-xs">
-                    <Target className="w-3.5 h-3.5 mr-1.5" />
+                    <Target className="w-3.5 h-3.5 mr-1" />
                     Signal
                   </TabsTrigger>
                   <TabsTrigger value="whales" className="text-xs">
                     🐋 Whales
+                  </TabsTrigger>
+                  <TabsTrigger value="analysis" className="text-xs">
+                    <Activity className="w-3.5 h-3.5 mr-1" />
+                    Analysis
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="prediction" className="mt-4">
@@ -396,6 +400,26 @@ export default function Markets() {
                     price={selectedAssetData.price}
                     onSave={saveWhaleActivity}
                   />
+                </TabsContent>
+                <TabsContent value="analysis" className="mt-4">
+                  <Card className="glass-card p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-semibold">AI Deep Analysis</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Technical & fundamental analysis with detailed indicators and insights.
+                    </p>
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => {
+                        setAnalysisSheetOpen(false);
+                        navigate(`/analysis/${selectedAssetData.id}`);
+                      }}
+                    >
+                      Full Analysis <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Card>
                 </TabsContent>
               </Tabs>
             </div>
