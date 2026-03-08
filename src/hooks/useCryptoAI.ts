@@ -15,24 +15,43 @@ interface PortfolioAnalysis {
 }
 
 interface MarketPrediction {
-  shortTerm: { direction: string; target: number; confidence: number };
-  mediumTerm: { direction: string; target: number; confidence: number };
-  supportLevels: number[];
-  resistanceLevels: number[];
+  shortTerm: { direction: string; target: number | string; confidence: number | string };
+  mediumTerm: { direction: string; target: number | string; confidence: number | string };
+  supportLevels: (number | string)[];
+  resistanceLevels: (number | string)[];
   sentiment: string;
-  overallConfidence: number;
+  overallConfidence: number | string;
   analysis: string;
 }
 
 interface TradingSignal {
   signal: 'BUY' | 'SELL' | 'HOLD';
-  entryRange: { min: number; max: number };
-  stopLoss: number;
-  takeProfits: number[];
+  entryRange: { min: number | string; max: number | string };
+  stopLoss: number | string;
+  takeProfits: (number | string)[];
   riskReward: string;
-  strength: number;
+  strength: number | string;
   reasoning: string;
   timeframe: string;
+}
+
+/** Strip markdown code fences and extract raw JSON string */
+function extractJSON(raw: string): string {
+  let str = raw.trim();
+  const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) str = fenceMatch[1].trim();
+  return str;
+}
+
+/** Parse a value that might be "$66,200" or "65%" into a number */
+function toNum(v: any): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const cleaned = v.replace(/[$,%\s]/g, '');
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
+  return 0;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
