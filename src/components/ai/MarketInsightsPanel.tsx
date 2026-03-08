@@ -273,21 +273,23 @@ export function MarketInsightsPanel({ assets, selectedAssetId: externalSelectedI
 
         {/* ── Technical ── */}
         <TabsContent value="technical" className="mt-0 p-3 space-y-3">
-          {selectedAsset && (
-            <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 p-2">
-              <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-5 h-5 rounded-full" />
-              <span className="text-sm font-medium">{selectedAsset.symbol}</span>
-              <span className="text-xs text-muted-foreground">${selectedAsset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+          {!selectedAsset ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <BarChart3 className="w-8 h-8 text-muted-foreground/50 mb-2" />
+              <p className="text-xs text-muted-foreground">Select an asset from the table below to run <span className="font-semibold text-foreground">Technical Analysis</span>.</p>
             </div>
-          )}
-
-          {isLoadingTechnical ? (
+          ) : isLoadingTechnical ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <p className="text-xs text-muted-foreground">Running technical analysis…</p>
             </div>
           ) : technicalData ? (
             <>
+              <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 p-2">
+                <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-5 h-5 rounded-full" />
+                <span className="text-sm font-medium">{selectedAsset.symbol}</span>
+                <span className="text-xs text-muted-foreground">${selectedAsset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+              </div>
               <TechnicalOverview data={technicalData} />
               <Button
                 className="w-full gap-2"
@@ -299,8 +301,13 @@ export function MarketInsightsPanel({ assets, selectedAssetId: externalSelectedI
             </>
           ) : (
             <>
+              <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 p-2">
+                <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-5 h-5 rounded-full" />
+                <span className="text-sm font-medium">{selectedAsset.symbol}</span>
+                <span className="text-xs text-muted-foreground">${selectedAsset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+              </div>
               <EmptyAnalysis label="Technical Analysis" icon={BarChart3} />
-              <Button className="w-full gap-2" size="sm" onClick={handleRunTechnical} disabled={!selectedAsset}>
+              <Button className="w-full gap-2" size="sm" onClick={handleRunTechnical}>
                 <Zap className="w-3.5 h-3.5" /> Run Technical Analysis
               </Button>
             </>
