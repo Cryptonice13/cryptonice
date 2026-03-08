@@ -270,8 +270,16 @@ export function useMarketPrediction() {
   const [prediction, setPrediction] = useState<MarketPrediction | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
+  const identity = { userId: user?.id, walletAddress: address };
 
   const getPrediction = useCallback(async (symbol: string) => {
+    const creditResult = await checkAndDeductCredits(3, 'Market Prediction', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
