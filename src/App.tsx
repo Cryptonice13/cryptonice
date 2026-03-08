@@ -82,6 +82,11 @@ const App = () => (
                     <AIInsights />
                   </ProtectedRoute>
                 } />
+                <Route path="/analysis/:assetId" element={
+                  <ProtectedRoute>
+                    <Analysis />
+                  </ProtectedRoute>
+                } />
                 <Route path="/chat" element={
                   <ProtectedRoute>
                     <Chat />
