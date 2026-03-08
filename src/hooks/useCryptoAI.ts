@@ -246,7 +246,7 @@ export function useMarketPrediction() {
       
       if (content) {
         try {
-          const parsed = JSON.parse(content);
+          const parsed = JSON.parse(extractJSON(content));
           setPrediction(parsed);
         } catch {
           setPrediction({
