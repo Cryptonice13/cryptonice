@@ -128,8 +128,8 @@ export default function Markets() {
             </div>
           </div>
 
-          {/* Fear & Greed Gauge */}
-          <FearGreedGauge />
+          {/* Market Insights Panel */}
+          <MarketInsightsPanel assets={assets} />
 
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Asset List */}
