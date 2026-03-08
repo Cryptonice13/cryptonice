@@ -445,26 +445,33 @@ export default function AIInsights() {
             </div>
           ) : (
             <Tabs defaultValue="predictions" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="predictions" className="text-xs gap-1.5">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="predictions" className="text-xs gap-1">
                   <BarChart3 className="w-3.5 h-3.5" />
-                  Predictions
+                  <span className="hidden sm:inline">Predictions</span>
                   {predictions.length > 0 && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-1">{predictions.length}</Badge>
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1">{predictions.length}</Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="signals" className="text-xs gap-1.5">
+                <TabsTrigger value="signals" className="text-xs gap-1">
                   <Target className="w-3.5 h-3.5" />
-                  Signals
+                  <span className="hidden sm:inline">Signals</span>
                   {signals.length > 0 && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-1">{signals.length}</Badge>
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1">{signals.length}</Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="whales" className="text-xs gap-1.5">
+                <TabsTrigger value="whales" className="text-xs gap-1">
                   <span>🐋</span>
-                  Whales
+                  <span className="hidden sm:inline">Whales</span>
                   {whaleActivities.length > 0 && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-1">{whaleActivities.length}</Badge>
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1">{whaleActivities.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="portfolio" className="text-xs gap-1">
+                  <PieChart className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Portfolio</span>
+                  {portfolioAnalyses.length > 0 && (
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1">{portfolioAnalyses.length}</Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
