@@ -19,6 +19,7 @@ import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import StrategyBuilder from "./pages/StrategyBuilder";
 import AIInsights from "./pages/AIInsights";
+import FloatingInsightsButton from "./components/FloatingInsightsButton";
 
 const queryClient = new QueryClient();
 
