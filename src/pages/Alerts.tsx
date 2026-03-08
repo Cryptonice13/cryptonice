@@ -54,6 +54,9 @@ import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
+import { supabase } from '@/integrations/supabase/client';
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
 function formatRelativeTime(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
