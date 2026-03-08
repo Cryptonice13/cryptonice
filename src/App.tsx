@@ -92,6 +92,7 @@ const App = () => (
                   </ProtectedRoute>
                 } />
               </Routes>
+              <FloatingInsightsButton />
             </BrowserRouter>
           </div>
         </TooltipProvider>
