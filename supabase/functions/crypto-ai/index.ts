@@ -6,6 +6,29 @@ const corsHeaders = {
 };
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
+const CRYPTOCOMPARE_API = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
+
+async function fetch7DaySMA(): Promise<{ sma: number; prices: number[] } | null> {
+  try {
+    const url = `${COINGECKO_API}/coins/bitcoin/market_chart?vs_currency=usd&days=7`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const prices = data.prices?.map((p: number[]) => p[1]) || [];
+    if (prices.length === 0) return null;
+    const sma = prices.reduce((sum: number, p: number) => sum + p, 0) / prices.length;
+    return { sma: Math.round(sma * 100) / 100, prices };
+  } catch { return null; }
+}
+
+async function fetchCryptoNews(): Promise<string[]> {
+  try {
+    const response = await fetch(CRYPTOCOMPARE_API);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.Data || []).slice(0, 3).map((item: any) => item.title || '');
+  } catch { return []; }
+}
 
 interface MarketData {
   id: string;
