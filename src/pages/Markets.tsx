@@ -47,6 +47,7 @@ export default function Markets() {
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address, user?.id);
+  const { savePrediction, saveSignal, saveWhaleActivity } = useAIInsights();
 
   const formatMarketCap = (cap: number) => {
     if (cap >= 1e12) return `$${(cap / 1e12).toFixed(1)}T`;
