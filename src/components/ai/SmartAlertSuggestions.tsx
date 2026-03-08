@@ -97,7 +97,9 @@ export function SmartAlertSuggestions({ watchlist, currentPrices, onApplyAlert }
 
       if (content) {
         try {
-          const parsed = JSON.parse(content);
+          // Strip markdown code fences if present
+          const cleaned = content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+          const parsed = JSON.parse(cleaned);
           const suggestionsArray = Array.isArray(parsed) ? parsed : parsed.suggestions || [];
 
           // Save each suggestion to DB
