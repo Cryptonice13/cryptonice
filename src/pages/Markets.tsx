@@ -129,7 +129,7 @@ export default function Markets() {
           </div>
 
           {/* Market Insights Panel */}
-          <MarketInsightsPanel assets={assets} />
+          <MarketInsightsPanel assets={assets} selectedAssetId={selectedAsset} />
 
           <div className="grid lg:grid-cols-3 gap-4">
             {/* Asset List */}
