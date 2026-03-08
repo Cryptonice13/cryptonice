@@ -358,10 +358,10 @@ serve(async (req) => {
     } else if (type === "portfolio_analysis" && context?.length > 0) {
       const symbols = context.map((item: any) => item.asset?.symbol || item.symbol).filter(Boolean);
       marketData = await fetchMarketData(symbols);
-    } else if ((type === "market_prediction" || type === "trading_signal" || type === "whale_analysis" || type === "strategy_builder") && context?.symbol) {
+    } else if ((type === "market_prediction" || type === "trading_signal" || type === "whale_analysis" || type === "strategy_builder" || type === "technical_analysis" || type === "fundamental_analysis") && context?.symbol) {
       const coinId = symbolMap[context.symbol.toUpperCase()] || context.symbol.toLowerCase();
       marketData = await fetchMarketData([context.symbol]);
-      if (type === "market_prediction" || type === "strategy_builder") coinDetails = await fetchCoinDetails(coinId);
+      if (type === "market_prediction" || type === "strategy_builder" || type === "technical_analysis" || type === "fundamental_analysis") coinDetails = await fetchCoinDetails(coinId);
     }
 
     const timestamp = new Date().toISOString();
