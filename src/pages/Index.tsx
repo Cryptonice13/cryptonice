@@ -222,9 +222,7 @@ const Index = () => {
             >
               {/* Central AI Brain */}
               <div className="absolute w-40 h-40 rounded-2xl glass glow-primary flex items-center justify-center animate-float">
-                <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Brain className="w-12 h-12 text-primary-foreground" />
-                </div>
+                <img src={cryptoaiLogo} alt="CryptoAI" className="w-24 h-24 rounded-xl" />
               </div>
 
               {/* Orbiting crypto icons */}
