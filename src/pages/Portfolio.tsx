@@ -520,6 +520,15 @@ export default function Portfolio() {
               amount: p.amount,
               avgBuyPrice: p.avg_buy_price,
             }))}
+            onSave={(analysis, portfolioData) => {
+              savePortfolioAnalysis(
+                analysis.healthScore,
+                analysis.riskLevel,
+                analysis.diversification,
+                portfolioData,
+                analysis,
+              );
+            }}
           />
         </div>
       </main>
