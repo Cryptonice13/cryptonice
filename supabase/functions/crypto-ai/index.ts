@@ -321,7 +321,7 @@ serve(async (req) => {
       });
     }
 
-    if (type === "chat") {
+    if (type === "chat" || type === "crypto_analyst") {
       return new Response(response.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
