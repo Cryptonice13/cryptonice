@@ -22,6 +22,7 @@ const navItems = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   { key: 'portfolio', label: 'Portfolio', path: '/portfolio' },
   { key: 'markets', label: 'Markets', path: '/markets' },
+  { key: 'insights', label: 'AI Insights', path: '/insights' },
   { key: 'strategy', label: 'Strategy', path: '/strategy' },
   { key: 'alerts', label: 'Alerts', path: '/alerts' },
 ] as const;
