@@ -204,14 +204,24 @@ export default function Analysis() {
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">Past Analyses</h3>
             <div className="space-y-2">
               {history.map((item: any) => (
-                <Card key={item.id} className="glass-card p-3 flex items-center justify-between">
+                <Card
+                  key={item.id}
+                  onClick={() => {
+                    selectHistoryItem(item);
+                    setActiveTab(item.analysis_type === 'technical' ? 'technical' : 'fundamental');
+                  }}
+                  className={`glass-card p-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-muted/50 ${selectedHistoryId === item.id ? 'ring-1 ring-primary bg-primary/5' : ''}`}
+                >
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="text-xs capitalize">{item.analysis_type}</Badge>
                     <span className="text-xs text-muted-foreground">
                       {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <span className="text-xs font-mono">${Number(item.current_price).toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono">${Number(item.current_price).toLocaleString()}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
                 </Card>
               ))}
             </div>
