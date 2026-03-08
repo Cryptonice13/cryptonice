@@ -33,6 +33,7 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
   const { address, isConnected } = useAccount();
   const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
+  const { balance } = useCredits();
 
   const handleConnect = async () => {
     if (handleMobileDeepLink()) return;
