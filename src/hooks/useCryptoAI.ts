@@ -204,6 +204,12 @@ export function usePortfolioAnalysis() {
   }, []);
 
   const analyzePortfolio = useCallback(async (portfolio: any[]) => {
+    // Deduct 3 credits for portfolio analysis
+    const creditResult = await checkAndDeductCredits(3, 'Portfolio Analysis', identity);
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
