@@ -6,6 +6,29 @@ const corsHeaders = {
 };
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
+const CRYPTOCOMPARE_API = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
+
+async function fetch7DaySMA(): Promise<{ sma: number; prices: number[] } | null> {
+  try {
+    const url = `${COINGECKO_API}/coins/bitcoin/market_chart?vs_currency=usd&days=7`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const prices = data.prices?.map((p: number[]) => p[1]) || [];
+    if (prices.length === 0) return null;
+    const sma = prices.reduce((sum: number, p: number) => sum + p, 0) / prices.length;
+    return { sma: Math.round(sma * 100) / 100, prices };
+  } catch { return null; }
+}
+
+async function fetchCryptoNews(): Promise<string[]> {
+  try {
+    const response = await fetch(CRYPTOCOMPARE_API);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.Data || []).slice(0, 3).map((item: any) => item.title || '');
+  } catch { return []; }
+}
 
 interface MarketData {
   id: string;
@@ -185,6 +208,41 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks):
 }`;
     }
 
+    case "crypto_analyst": {
+      const btcData = marketData.find(c => c.symbol === 'btc') || marketData[0];
+      const smaData = context?.smaData;
+      const newsHeadlines = context?.newsHeadlines || [];
+      return `You are the Strict Crypto Analyst — an emotionless, data-driven financial analyst whose #1 priority is CAPITAL PRESERVATION.
+
+CURRENT BTC DATA (${timestamp}):
+${btcData ? `Price: $${btcData.current_price.toLocaleString()} | 24h: ${btcData.price_change_percentage_24h?.toFixed(2)}% | 7d: ${btcData.price_change_percentage_7d_in_currency?.toFixed(2)}% | Vol: $${(btcData.total_volume / 1e9).toFixed(2)}B | MCap: $${(btcData.market_cap / 1e9).toFixed(2)}B` : 'No data available.'}
+
+7-DAY SIMPLE MOVING AVERAGE: ${smaData?.sma ? `$${smaData.sma.toLocaleString()}` : 'Unavailable'}
+
+TOP CRYPTO NEWS:
+${newsHeadlines.length > 0 ? newsHeadlines.map((h: string, i: number) => `${i + 1}. ${h}`).join('\n') : 'No headlines available.'}
+
+STRICT RULES:
+- You are emotionless. No excitement, no hype, no FOMO.
+- If current price is significantly above the 7-day SMA (>5%), recommend WAIT.
+- If data is conflicting or uncertain, DEFAULT to WAIT to preserve capital.
+- You must use ALL three data sources (price, SMA, news) in your reasoning.
+
+RESPONSE FORMAT (use markdown headers exactly):
+## Analysis
+[Technical analysis using price data and SMA comparison]
+
+## The 'Why'
+[Explain the reasoning behind your assessment using all data points]
+
+## Risk Assessment
+[Evaluate risk factors from news, volatility, and SMA deviation]
+
+## Final Decision
+**[BUY / SELL / HOLD / WAIT]**
+[One-sentence justification]`;
+    }
+
     default:
       return "You are a helpful cryptocurrency advisor with real-time market data.";
   }
@@ -207,6 +265,16 @@ serve(async (req) => {
 
     if (type === "chat" || type === "alert_suggestions") {
       marketData = (await fetchMarketData()).slice(0, 20);
+    } else if (type === "crypto_analyst") {
+      const [btcMarket, smaData, newsHeadlines] = await Promise.all([
+        fetchMarketData(["bitcoin"]),
+        fetch7DaySMA(),
+        fetchCryptoNews(),
+      ]);
+      marketData = btcMarket;
+      // Inject into context for the prompt builder
+      context.smaData = smaData;
+      context.newsHeadlines = newsHeadlines;
     } else if (type === "portfolio_analysis" && context?.length > 0) {
       const symbols = context.map((item: any) => item.asset?.symbol || item.symbol).filter(Boolean);
       marketData = await fetchMarketData(symbols);
@@ -231,7 +299,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        stream: type === "chat",
+        stream: type === "chat" || type === "crypto_analyst",
       }),
     });
 
@@ -253,7 +321,7 @@ serve(async (req) => {
       });
     }
 
-    if (type === "chat") {
+    if (type === "chat" || type === "crypto_analyst") {
       return new Response(response.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });

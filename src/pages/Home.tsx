@@ -25,6 +25,7 @@ import {
   Users,
   Lock,
 } from 'lucide-react';
+import CryptoAnalystAgent from '@/components/ai/CryptoAnalystAgent';
 
 const testimonials = [
   { name: 'Alex Chen', role: 'Crypto Trader', text: 'CryptoAI completely changed how I analyze the market. The AI insights are incredibly accurate.', avatar: 'AC' },
@@ -240,6 +241,19 @@ const Home = () => {
                 </Card>
               </motion.div>
             ))}
+          </div>
+        </section>
+
+        {/* Ask the Analyst */}
+        <section className="container mx-auto px-4 py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl lg:text-4xl font-bold text-foreground mb-3">Ask the Analyst</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              An emotionless AI agent that analyzes live BTC data, calculates the 7-day SMA, and scans crypto news — then delivers a strict verdict.
+            </p>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <CryptoAnalystAgent />
           </div>
         </section>
 
