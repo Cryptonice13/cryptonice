@@ -23,9 +23,19 @@ export default function CryptoAnalystAgent() {
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { address } = useAccount();
 
   const runAnalysis = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
+
+    // Deduct 2 credits
+    const creditResult = await checkAndDeductCredits(2, 'Crypto Analyst Query', { userId: user?.id, walletAddress: address });
+    if (!creditResult.success) {
+      setError('Insufficient credits – please purchase more.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setResponse('');
