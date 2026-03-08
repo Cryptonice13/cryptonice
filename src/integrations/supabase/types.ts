@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_alert_suggestions: {
+        Row: {
+          asset_id: string
+          asset_symbol: string
+          confidence: number | null
+          created_at: string
+          id: string
+          reasoning: string | null
+          status: string
+          suggestion_type: string
+          target_price: number
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          asset_id: string
+          asset_symbol: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          status?: string
+          suggestion_type?: string
+          target_price: number
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          asset_id?: string
+          asset_symbol?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          reasoning?: string | null
+          status?: string
+          suggestion_type?: string
+          target_price?: number
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       ai_portfolio_analysis: {
         Row: {
           analysis_data: Json
