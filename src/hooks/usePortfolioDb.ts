@@ -168,6 +168,7 @@ export function usePortfolioDb(walletAddress: string | undefined, userId?: strin
           amount,
           price_per_unit: buyPrice,
           total_value: amount * buyPrice,
+          purchase_date: purchaseDate ? purchaseDate.toISOString() : new Date().toISOString(),
         }) as any);
 
       await fetchPortfolio();
