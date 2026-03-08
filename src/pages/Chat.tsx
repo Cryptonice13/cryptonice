@@ -47,29 +47,17 @@ export default function Chat() {
     const fetchAllContext = async () => {
       if (!user?.id && !address) return;
 
-      const identifier = user?.id
-        ? { key: 'user_id', value: user.id }
-        : { key: 'wallet_address', value: address! };
+      const col = user?.id ? 'user_id' : 'wallet_address';
+      const val = user?.id || address!;
 
-      const [
-        watchlistRes,
-        strategiesRes,
-        alertHistoryRes,
-        predictionsRes,
-        signalsRes,
-        whaleRes,
-        portfolioAnalysisRes,
-        transactionsRes,
-      ] = await Promise.all([
-        supabase.from('user_watchlist').select('*').eq(identifier.key as any, identifier.value).limit(50),
-        supabase.from('strategies').select('*').eq(identifier.key as any, identifier.value).limit(20),
-        supabase.from('alert_history').select('*').eq(identifier.key as any, identifier.value).order('triggered_at', { ascending: false }).limit(20),
-        supabase.from('ai_predictions').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_signals').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_whale_activity').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_portfolio_analysis').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(5),
-        supabase.from('portfolio_transactions').select('*').eq(identifier.key as any, identifier.value).order('created_at', { ascending: false }).limit(30),
-      ]);
+      const watchlistRes = await supabase.from('user_watchlist').select('*').eq(col, val).limit(50);
+      const strategiesRes = await supabase.from('strategies').select('*').eq(col, val).limit(20);
+      const alertHistoryRes = await supabase.from('alert_history').select('*').eq(col, val).order('triggered_at', { ascending: false }).limit(20);
+      const predictionsRes = await supabase.from('ai_predictions').select('*').eq(col, val).order('created_at', { ascending: false }).limit(10);
+      const signalsRes = await supabase.from('ai_signals').select('*').eq(col, val).order('created_at', { ascending: false }).limit(10);
+      const whaleRes = await supabase.from('ai_whale_activity').select('*').eq(col, val).order('created_at', { ascending: false }).limit(10);
+      const portfolioAnalysisRes = await supabase.from('ai_portfolio_analysis').select('*').eq(col, val).order('created_at', { ascending: false }).limit(5);
+      const transactionsRes = await supabase.from('portfolio_transactions').select('*').eq(col, val).order('created_at', { ascending: false }).limit(30);
 
       setDbContext({
         portfolio: portfolio || [],
