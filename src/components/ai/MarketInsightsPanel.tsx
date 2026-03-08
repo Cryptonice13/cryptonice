@@ -316,7 +316,13 @@ export function MarketInsightsPanel({ assets, selectedAssetId: externalSelectedI
 
         {/* ── Fundamental ── */}
         <TabsContent value="fundamental" className="mt-0 p-3 space-y-3">
-          <AssetSelector assets={assets} selectedId={selectedAssetId} onSelect={setSelectedAssetId} />
+          {selectedAsset && (
+            <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 p-2">
+              <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-5 h-5 rounded-full" />
+              <span className="text-sm font-medium">{selectedAsset.symbol}</span>
+              <span className="text-xs text-muted-foreground">${selectedAsset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
 
           {isLoadingFundamental ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
