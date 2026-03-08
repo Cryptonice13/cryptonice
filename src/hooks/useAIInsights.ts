@@ -30,6 +30,16 @@ interface SavedWhaleActivity {
   created_at: string;
 }
 
+interface SavedPortfolioAnalysis {
+  id: string;
+  health_score: number;
+  risk_level: string;
+  diversification: string;
+  portfolio_snapshot: any;
+  analysis_data: any;
+  created_at: string;
+}
+
 export function useAIInsights() {
   const { user } = useAuth();
   const { address } = useAccount();
