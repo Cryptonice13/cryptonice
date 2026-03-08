@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import {
@@ -13,6 +13,10 @@ import {
   History,
   Loader2,
   X,
+  CheckCheck,
+  Eye,
+  Clock,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,13 +39,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useWatchlistDb } from '@/hooks/useWatchlistDb';
@@ -50,13 +54,28 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
 
+function formatRelativeTime(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 export default function Alerts() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const [alertPrice, setAlertPrice] = useState('');
   const [alertType, setAlertType] = useState<'above' | 'below'>('above');
-  const [historySheetOpen, setHistorySheetOpen] = useState(false);
+
+  // History filters
+  const [historyAssetFilter, setHistoryAssetFilter] = useState('all');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
 
   const { assets } = useMarketData();
   const { 
@@ -70,6 +89,7 @@ export default function Alerts() {
     clearAlert,
     checkAlerts,
     markAlertRead,
+    markAllAlertsRead,
   } = useWatchlistDb(address, user?.id);
 
   const handleAddToWatchlist = async (assetId: string) => {
@@ -82,17 +102,14 @@ export default function Alerts() {
     }
   };
 
-  // Build current prices map and check alerts
   const currentPrices = new Map(assets.map(a => [a.id, a.price]));
   
-  // Check alerts when prices update
   useEffect(() => {
     if (watchlist.length > 0 && assets.length > 0) {
       checkAlerts(currentPrices);
     }
   }, [assets]);
 
-  // Watchlist items with current prices
   const watchlistWithPrices = watchlist.map(item => {
     const currentAsset = assets.find(a => a.id === item.asset_id);
     return {
@@ -102,83 +119,51 @@ export default function Alerts() {
     };
   });
 
-  // Get triggered alerts (those that are marked as triggered)
   const triggeredAlerts = watchlistWithPrices.filter(item => item.alert_triggered);
+
+  // History analytics
+  const historyStats = useMemo(() => {
+    const total = alertHistory.length;
+    const unread = alertHistory.filter(a => !a.is_read).length;
+    const assetCounts = new Map<string, number>();
+    alertHistory.forEach(a => {
+      assetCounts.set(a.asset_symbol, (assetCounts.get(a.asset_symbol) || 0) + 1);
+    });
+    let topAsset = '—';
+    let topCount = 0;
+    assetCounts.forEach((count, symbol) => {
+      if (count > topCount) { topAsset = symbol; topCount = count; }
+    });
+    const lastTriggered = alertHistory.length > 0 ? formatRelativeTime(alertHistory[0].triggered_at) : '—';
+    return { total, unread, topAsset, topCount, lastTriggered };
+  }, [alertHistory]);
+
+  // Unique asset symbols for filter
+  const historyAssets = useMemo(() => {
+    return [...new Set(alertHistory.map(a => a.asset_symbol))];
+  }, [alertHistory]);
+
+  // Filtered history
+  const filteredHistory = useMemo(() => {
+    return alertHistory.filter(a => {
+      if (historyAssetFilter !== 'all' && a.asset_symbol !== historyAssetFilter) return false;
+      if (historyTypeFilter !== 'all' && a.alert_type !== historyTypeFilter) return false;
+      if (historyStatusFilter === 'unread' && a.is_read) return false;
+      if (historyStatusFilter === 'read' && !a.is_read) return false;
+      return true;
+    });
+  }, [alertHistory, historyAssetFilter, historyTypeFilter, historyStatusFilter]);
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader activePage="alerts" />
 
-      {/* Main Content */}
       <main className="px-3 sm:px-4 pt-14 pb-20 lg:pb-8">
         <div className="mt-4 space-y-4">
           {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Alerts & Watchlist</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">Track favorites and set price alerts</p>
-            </div>
-            <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 relative">
-                  <History className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">History</span>
-                  {unreadAlertCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                      {unreadAlertCount}
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[90%] max-w-md">
-                <SheetHeader>
-                  <SheetTitle>Alert History</SheetTitle>
-                </SheetHeader>
-                <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-                  {alertHistory.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Bell className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No alerts triggered yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {alertHistory.map((alert) => (
-                        <Card 
-                          key={alert.id} 
-                          className={`p-3 cursor-pointer transition-colors ${!alert.is_read ? 'bg-primary/5 border-primary/30' : ''}`}
-                          onClick={() => markAlertRead(alert.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                                <Bell className="w-4 h-4 text-yellow-400" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-sm flex items-center gap-1.5">
-                                  {alert.asset_symbol}
-                                  {!alert.is_read && (
-                                    <span className="w-2 h-2 bg-primary rounded-full" />
-                                  )}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {alert.alert_type} ${alert.target_price.toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-mono text-sm">${alert.triggered_price.toLocaleString()}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {new Date(alert.triggered_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </SheetContent>
-            </Sheet>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold">Alerts & Watchlist</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Track favorites and set price alerts</p>
           </div>
 
           {/* Triggered Alerts Banner */}
@@ -213,21 +198,36 @@ export default function Alerts() {
             </Card>
           ) : (
             <Tabs defaultValue="watchlist" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="watchlist" className="text-xs sm:text-sm">
-                  <Star className="w-3.5 h-3.5 mr-1.5" />
-                  Watchlist ({watchlist.length})
+                  <Star className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">Watchlist</span>
+                  <span className="sm:hidden">Watch</span>
+                  <span className="ml-1 text-[10px] opacity-70">({watchlist.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="ai" className="text-xs sm:text-sm">
-                  <Bell className="w-3.5 h-3.5 mr-1.5" />
-                  AI Alerts
+                  <Bell className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">AI Alerts</span>
+                  <span className="sm:hidden">AI</span>
+                </TabsTrigger>
+                <TabsTrigger value="history" className="text-xs sm:text-sm relative">
+                  <History className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">History</span>
+                  <span className="sm:hidden">Hist</span>
+                  {unreadAlertCount > 0 && (
+                    <span className="ml-1 min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
+                      {unreadAlertCount}
+                    </span>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="add" className="text-xs sm:text-sm">
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Add Assets
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">Add Assets</span>
+                  <span className="sm:hidden">Add</span>
                 </TabsTrigger>
               </TabsList>
 
+              {/* ===== WATCHLIST TAB ===== */}
               <TabsContent value="watchlist" className="mt-4">
                 {watchlist.length === 0 ? (
                   <Card className="glass-card p-6 text-center">
@@ -286,7 +286,6 @@ export default function Alerts() {
                             </div>
                           </div>
 
-                          {/* Alert Section */}
                           {item.alert_price ? (
                             <div className={`p-2 rounded-lg border ${
                               item.alert_triggered
@@ -296,9 +295,7 @@ export default function Alerts() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                   <Bell className={`w-3.5 h-3.5 ${
-                                    item.alert_triggered
-                                      ? 'text-yellow-400'
-                                      : 'text-muted-foreground'
+                                    item.alert_triggered ? 'text-yellow-400' : 'text-muted-foreground'
                                   }`} />
                                   <span className="text-xs">
                                     {item.alert_type} ${item.alert_price.toLocaleString()}
@@ -308,12 +305,7 @@ export default function Alerts() {
                                   {item.alert_triggered && (
                                     <Badge className="bg-yellow-500/20 text-yellow-400 text-[10px] h-5">Triggered</Badge>
                                   )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => clearAlert(item.asset_id)}
-                                  >
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => clearAlert(item.asset_id)}>
                                     <X className="w-3 h-3" />
                                   </Button>
                                 </div>
@@ -335,9 +327,7 @@ export default function Alerts() {
                                   <div className="space-y-2">
                                     <Label className="text-sm">Alert Type</Label>
                                     <Select value={alertType} onValueChange={(v) => setAlertType(v as 'above' | 'below')}>
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
+                                      <SelectTrigger><SelectValue /></SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="above">Price goes above</SelectItem>
                                         <SelectItem value="below">Price goes below</SelectItem>
@@ -352,9 +342,7 @@ export default function Alerts() {
                                       value={alertPrice}
                                       onChange={(e) => setAlertPrice(e.target.value)}
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                      Current: ${item.currentPrice.toLocaleString()}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Current: ${item.currentPrice.toLocaleString()}</p>
                                   </div>
                                   <Button
                                     onClick={async () => {
@@ -380,6 +368,7 @@ export default function Alerts() {
                 )}
               </TabsContent>
 
+              {/* ===== AI ALERTS TAB ===== */}
               <TabsContent value="ai" className="mt-4">
                 <SmartAlertSuggestions
                   watchlist={watchlist.map(w => ({
@@ -395,6 +384,197 @@ export default function Alerts() {
                 />
               </TabsContent>
 
+              {/* ===== HISTORY TAB ===== */}
+              <TabsContent value="history" className="mt-4 space-y-4">
+                {/* Analytics Summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Card className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <BarChart3 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</p>
+                        <p className="text-lg font-bold">{historyStats.total}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+                        <Eye className="w-4 h-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Unread</p>
+                        <p className="text-lg font-bold">{historyStats.unread}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center">
+                        <Star className="w-4 h-4 text-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Top Asset</p>
+                        <p className="text-lg font-bold">{historyStats.topAsset}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Last</p>
+                        <p className="text-sm font-bold truncate">{historyStats.lastTriggered}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Filters & Actions */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={historyAssetFilter} onValueChange={setHistoryAssetFilter}>
+                    <SelectTrigger className="w-[120px] h-8 text-xs">
+                      <SelectValue placeholder="Asset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Assets</SelectItem>
+                      {historyAssets.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
+                    <SelectTrigger className="w-[110px] h-8 text-xs">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="above">Above</SelectItem>
+                      <SelectItem value="below">Below</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyStatusFilter} onValueChange={setHistoryStatusFilter}>
+                    <SelectTrigger className="w-[110px] h-8 text-xs">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="unread">Unread</SelectItem>
+                      <SelectItem value="read">Read</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex-1" />
+                  {historyStats.unread > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1.5"
+                      onClick={async () => {
+                        await markAllAlertsRead();
+                        toast({ title: 'All alerts marked as read' });
+                      }}
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      Mark All Read
+                    </Button>
+                  )}
+                </div>
+
+                {/* Table */}
+                {filteredHistory.length === 0 ? (
+                  <Card className="p-6 text-center">
+                    <Bell className="w-10 h-10 mx-auto mb-2 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">
+                      {alertHistory.length === 0 ? 'No alerts triggered yet' : 'No alerts match filters'}
+                    </p>
+                  </Card>
+                ) : (
+                  <Card className="overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead className="text-xs">Asset</TableHead>
+                          <TableHead className="text-xs">Type</TableHead>
+                          <TableHead className="text-xs text-right">Target</TableHead>
+                          <TableHead className="text-xs text-right">Triggered</TableHead>
+                          <TableHead className="text-xs text-right hidden sm:table-cell">Diff</TableHead>
+                          <TableHead className="text-xs text-right hidden sm:table-cell">Time</TableHead>
+                          <TableHead className="w-10"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredHistory.map((alert) => {
+                          const diff = ((alert.triggered_price - alert.target_price) / alert.target_price) * 100;
+                          return (
+                            <TableRow
+                              key={alert.id}
+                              className={!alert.is_read ? 'bg-primary/5' : ''}
+                            >
+                              <TableCell className="p-2 text-center">
+                                {!alert.is_read && (
+                                  <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+                                )}
+                              </TableCell>
+                              <TableCell className="p-2 font-semibold text-xs">{alert.asset_symbol}</TableCell>
+                              <TableCell className="p-2">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] h-5 ${
+                                    alert.alert_type === 'above'
+                                      ? 'border-green-500/50 text-green-400'
+                                      : 'border-red-500/50 text-red-400'
+                                  }`}
+                                >
+                                  {alert.alert_type === 'above' ? (
+                                    <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
+                                  ) : (
+                                    <TrendingDown className="w-2.5 h-2.5 mr-0.5" />
+                                  )}
+                                  {alert.alert_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="p-2 text-right font-mono text-xs">
+                                ${alert.target_price.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="p-2 text-right font-mono text-xs">
+                                ${alert.triggered_price.toLocaleString()}
+                              </TableCell>
+                              <TableCell className={`p-2 text-right font-mono text-xs hidden sm:table-cell ${
+                                diff >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {diff >= 0 ? '+' : ''}{diff.toFixed(2)}%
+                              </TableCell>
+                              <TableCell className="p-2 text-right text-[10px] text-muted-foreground hidden sm:table-cell whitespace-nowrap">
+                                {formatRelativeTime(alert.triggered_at)}
+                              </TableCell>
+                              <TableCell className="p-2">
+                                {!alert.is_read && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => markAlertRead(alert.id)}
+                                    title="Mark as read"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* ===== ADD ASSETS TAB ===== */}
               <TabsContent value="add" className="mt-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {assets
