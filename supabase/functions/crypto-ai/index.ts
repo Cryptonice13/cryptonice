@@ -299,7 +299,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        stream: type === "chat",
+        stream: type === "chat" || type === "crypto_analyst",
       }),
     });
 
