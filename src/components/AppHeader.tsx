@@ -14,7 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface AppHeaderProps {
-  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy' | 'insights';
+  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy';
   rightContent?: React.ReactNode;
 }
 
