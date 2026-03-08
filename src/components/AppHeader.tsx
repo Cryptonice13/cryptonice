@@ -85,12 +85,12 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
         <div className="flex items-center gap-2">
           {rightContent}
 
-          {/* Profile Icon */}
+          {/* Profile Icon - visible on all sizes */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/profile')}
-            className="hidden sm:flex h-8 w-8"
+            className="h-8 w-8"
           >
             <User className="w-4 h-4" />
           </Button>
