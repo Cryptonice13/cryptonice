@@ -507,6 +507,44 @@ const Login = () => {
           </p>
         </motion.div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="bg-gray-900 border border-white/10 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">Reset Password</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="h-12 pl-12 bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-primary focus:ring-primary/20"
+              />
+            </div>
+            <Button
+              onClick={handleForgotPassword}
+              disabled={forgotLoading}
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl"
+            >
+              {forgotLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Sending...</span>
+                </div>
+              ) : (
+                "Send Reset Link"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
