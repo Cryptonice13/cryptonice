@@ -58,10 +58,14 @@ const Credits = () => {
     loadTransactions();
   }, [user, address, balance]);
 
-  const handlePurchase = async (planKey: 'basic' | 'pro' | 'enterprise') => {
-    setPurchasing(planKey);
-    await purchaseCredits(planKey, couponValid ? couponCode : undefined);
-    setPurchasing(null);
+  const handlePurchase = (plan: typeof PLANS[number]) => {
+    setPaymentPlan(plan);
+    setPaymentOpen(true);
+  };
+
+  const handlePaymentComplete = async (planKey: string, couponCode?: string) => {
+    const result = await purchaseCredits(planKey as 'basic' | 'pro' | 'enterprise', couponCode);
+    return !!result;
   };
 
   return (
