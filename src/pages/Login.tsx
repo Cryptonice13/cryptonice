@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,8 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -75,7 +78,7 @@ const Login = () => {
   };
 
   const handleForgotPassword = async () => {
-    if (!formData.email) {
+    if (!forgotEmail) {
       toast({
         title: "Email Required",
         description: "Please enter your email address to reset your password.",
@@ -85,8 +88,8 @@ const Login = () => {
     }
 
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+      setForgotLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
@@ -102,6 +105,7 @@ const Login = () => {
           description: "Check your email for password reset instructions."
         });
         setShowForgotPassword(false);
+        setForgotEmail("");
       }
     } catch (error) {
       toast({
@@ -110,17 +114,13 @@ const Login = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setForgotLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (showForgotPassword) {
-      handleForgotPassword();
-      return;
-    }
     
     if (isSignUp) {
       if (formData.password !== formData.confirmPassword) {
@@ -419,7 +419,7 @@ const Login = () => {
                 {!isSignUp && (
                   <button
                     type="button"
-                    onClick={() => setShowForgotPassword(!showForgotPassword)}
+                    onClick={() => setShowForgotPassword(true)}
                     className="text-sm text-primary hover:underline"
                   >
                     Forgot Password?
@@ -438,8 +438,6 @@ const Login = () => {
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Loading...</span>
                   </div>
-                ) : showForgotPassword ? (
-                  "Send Reset Email"
                 ) : isSignUp ? (
                   "Create Account"
                 ) : (
@@ -509,6 +507,44 @@ const Login = () => {
           </p>
         </motion.div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="bg-gray-900 border border-white/10 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">Reset Password</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="h-12 pl-12 bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-primary focus:ring-primary/20"
+              />
+            </div>
+            <Button
+              onClick={handleForgotPassword}
+              disabled={forgotLoading}
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl"
+            >
+              {forgotLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Sending...</span>
+                </div>
+              ) : (
+                "Send Reset Link"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -23,7 +23,7 @@ import Chat from "./pages/Chat";
 import Analysis from "./pages/Analysis";
 import Credits from "./pages/Credits";
 import FloatingChatButton from "./components/FloatingChatButton";
-
+import ResetPassword from "./pages/ResetPassword";
 const queryClient = new QueryClient();
 
 const WalletInitializer = () => {
@@ -49,6 +49,7 @@ const App = () => (
             <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
