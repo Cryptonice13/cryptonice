@@ -213,7 +213,7 @@
 /* Mobile-optimized scrolling */
 .mobile-scroll {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
 }
 
 /* Smooth marquee ticker */
