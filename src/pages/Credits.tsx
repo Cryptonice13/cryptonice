@@ -128,31 +128,6 @@ const Credits = () => {
           </CardContent>
         </Card>
 
-        {/* Coupon Code */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Tag className="w-5 h-5 text-primary" />
-              Coupon Code
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Input
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="Enter coupon code"
-                className="bg-secondary/50"
-              />
-              {couponValid && (
-                <Badge className="bg-green-500/10 text-green-400 border-green-500/20 whitespace-nowrap flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> 20% Bonus!
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Purchase Plans */}
         <div>
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
@@ -160,45 +135,42 @@ const Credits = () => {
             Buy Credits
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.map((plan) => {
-              const bonusCredits = couponValid ? Math.floor(plan.credits * 1.2) : plan.credits;
-              return (
-                <motion.div key={plan.key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className={`relative ${plan.popular ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}>
-                    {plan.popular && (
-                      <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs">
-                        Most Popular
-                      </Badge>
-                    )}
-                    <CardContent className="pt-6 text-center space-y-3">
-                      <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
-                      <div className="text-3xl font-bold text-foreground">${plan.price}</div>
-                      <div className="flex items-center justify-center gap-1 text-muted-foreground">
-                        <Zap className="w-4 h-4 text-primary" />
-                        <span className="font-semibold text-foreground">{bonusCredits}</span>
-                        <span className="text-sm">credits</span>
-                      </div>
-                      {couponValid && bonusCredits > plan.credits && (
-                        <p className="text-xs text-green-400">+{bonusCredits - plan.credits} bonus credits!</p>
-                      )}
-                      <Button
-                        onClick={() => handlePurchase(plan.key)}
-                        disabled={purchasing !== null}
-                        className="w-full"
-                        variant={plan.popular ? 'default' : 'outline'}
-                      >
-                        {purchasing === plan.key ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : null}
-                        Buy Now
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+            {PLANS.map((plan) => (
+              <motion.div key={plan.key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className={`relative ${plan.popular ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}>
+                  {plan.popular && (
+                    <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs">
+                      Most Popular
+                    </Badge>
+                  )}
+                  <CardContent className="pt-6 text-center space-y-3">
+                    <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
+                    <div className="text-3xl font-bold text-foreground">${plan.price}</div>
+                    <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-foreground">{plan.credits}</span>
+                      <span className="text-sm">credits</span>
+                    </div>
+                    <Button
+                      onClick={() => handlePurchase(plan)}
+                      className="w-full"
+                      variant={plan.popular ? 'default' : 'outline'}
+                    >
+                      Buy Now
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
         </div>
+
+        <PaymentDialog
+          open={paymentOpen}
+          onOpenChange={setPaymentOpen}
+          plan={paymentPlan}
+          onComplete={handlePaymentComplete}
+        />
 
         {/* Transaction History */}
         <Card>
