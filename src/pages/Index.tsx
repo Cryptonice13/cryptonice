@@ -548,7 +548,7 @@ const Index = () => {
               className="glass rounded-2xl p-8">
               
               <h3 className="text-2xl font-bold mb-2">Basic</h3>
-              <div className="text-4xl font-bold mb-6">/ 150 credits<span className="text-lg text-muted-foreground">/mo</span></div>
+              <div className="text-4xl font-bold mb-6">$5<span className="text-lg text-muted-foreground">/mo</span></div>
               <ul className="space-y-3 mb-8">
                 {["Basic market data", "5 AI queries/day", "Portfolio tracking", "Email alerts"].map((feature, i) =>
                 <li key={i} className="flex items-center gap-2">
@@ -574,7 +574,7 @@ const Index = () => {
                 Popular
               </div>
               <h3 className="text-2xl font-bold mb-2">Pro</h3>
-              <div className="text-4xl font-bold mb-6">$25/ 150 Credits<span className="text-lg text-muted-foreground">/mo</span></div>
+              <div className="text-4xl font-bold mb-6">$25<span className="text-lg text-muted-foreground">/mo</span></div>
               <ul className="space-y-3 mb-8">
                 {["Everything in Free", "Unlimited AI queries", "Trading signals", "Priority support", "Advanced analytics"].map((feature, i) =>
                 <li key={i} className="flex items-center gap-2">
