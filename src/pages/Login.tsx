@@ -419,7 +419,7 @@ const Login = () => {
                 {!isSignUp && (
                   <button
                     type="button"
-                    onClick={() => setShowForgotPassword(!showForgotPassword)}
+                    onClick={() => setShowForgotPassword(true)}
                     className="text-sm text-primary hover:underline"
                   >
                     Forgot Password?
