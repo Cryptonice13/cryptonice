@@ -21,6 +21,8 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
