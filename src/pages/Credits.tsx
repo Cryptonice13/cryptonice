@@ -34,11 +34,10 @@ const Credits = () => {
   const { balance, isLoading, purchaseCredits } = useCredits();
   const { user } = useAuth();
   const { address } = useAccount();
-  const [couponCode, setCouponCode] = useState('');
-  const [couponValid, setCouponValid] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingTx, setLoadingTx] = useState(true);
-  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [paymentPlan, setPaymentPlan] = useState<typeof PLANS[number] | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   useEffect(() => {
     if (couponCode.trim().toUpperCase() === 'CRYPTOAI') {
