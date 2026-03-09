@@ -11,7 +11,8 @@ const PLANS = {
 };
 
 const COUPON_CODE = 'CryptoAI';
-const COUPON_BONUS = 0.2; // 20%
+const COUPON_BONUS = 0.2; // 20% bonus credits
+const COUPON_DISCOUNT = 1.0; // 100% off payment
 
 export function useCredits() {
   const [balance, setBalance] = useState<number | null>(null);
