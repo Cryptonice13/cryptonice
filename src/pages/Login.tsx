@@ -121,10 +121,6 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (showForgotPassword) {
-      handleForgotPassword();
-      return;
-    }
     
     if (isSignUp) {
       if (formData.password !== formData.confirmPassword) {
