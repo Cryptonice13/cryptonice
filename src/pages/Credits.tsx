@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +10,8 @@ import { useAccount } from 'wagmi';
 import { supabase } from '@/integrations/supabase/client';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import { Zap, ArrowLeft, CheckCircle, Tag, History, CreditCard, Sparkles, Loader2 } from 'lucide-react';
+import { PaymentDialog } from '@/components/credits/PaymentDialog';
+import { Zap, ArrowLeft, History, CreditCard, Sparkles, Loader2 } from 'lucide-react';
 
 const CREDIT_COSTS = [
   { feature: 'AI Chat Message', cost: 1 },
