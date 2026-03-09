@@ -40,14 +40,6 @@ const Credits = () => {
   const [paymentOpen, setPaymentOpen] = useState(false);
 
   useEffect(() => {
-    if (couponCode.trim().toUpperCase() === 'CRYPTOAI') {
-      setCouponValid(true);
-    } else {
-      setCouponValid(false);
-    }
-  }, [couponCode]);
-
-  useEffect(() => {
     const loadTransactions = async () => {
       if (!user?.id && !address) { setLoadingTx(false); return; }
       
