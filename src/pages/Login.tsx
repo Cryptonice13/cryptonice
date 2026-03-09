@@ -78,7 +78,7 @@ const Login = () => {
   };
 
   const handleForgotPassword = async () => {
-    if (!formData.email) {
+    if (!forgotEmail) {
       toast({
         title: "Email Required",
         description: "Please enter your email address to reset your password.",
@@ -88,8 +88,8 @@ const Login = () => {
     }
 
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+      setForgotLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
@@ -105,6 +105,7 @@ const Login = () => {
           description: "Check your email for password reset instructions."
         });
         setShowForgotPassword(false);
+        setForgotEmail("");
       }
     } catch (error) {
       toast({
@@ -113,7 +114,7 @@ const Login = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setForgotLoading(false);
     }
   };
 
