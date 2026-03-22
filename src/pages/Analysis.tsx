@@ -16,6 +16,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useMarketData, CryptoAsset } from '@/hooks/useMarketData';
 import { useAnalysis, TechnicalAnalysis, FundamentalAnalysis } from '@/hooks/useAnalysis';
+import { formatPrice } from '@/lib/format';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   RadialBarChart, RadialBar, ReferenceLine, ComposedChart, Area, Line

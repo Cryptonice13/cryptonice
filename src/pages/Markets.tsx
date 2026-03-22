@@ -36,6 +36,7 @@ import { MarketInsightsPanel } from '@/components/ai/MarketInsightsPanel';
 import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { PriceChart } from '@/components/ai/PriceChart';
+import { formatPrice } from '@/lib/format';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { useAIInsights } from '@/hooks/useAIInsights';

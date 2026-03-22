@@ -34,6 +34,7 @@ import AppHeader from '@/components/AppHeader';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useMarketData } from '@/hooks/useMarketData';
 import { usePortfolioDb } from '@/hooks/usePortfolioDb';
+import { formatPrice } from '@/lib/format';
 
 function getGreeting() {
   const h = new Date().getHours();
