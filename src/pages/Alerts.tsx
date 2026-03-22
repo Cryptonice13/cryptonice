@@ -55,6 +55,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
 import { supabase } from '@/integrations/supabase/client';
+import { formatPrice } from '@/lib/format';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
@@ -352,7 +353,7 @@ export default function Alerts() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-mono text-lg font-semibold">
-                                ${item.currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                {formatPrice(item.currentPrice)}
                               </p>
                               <p className={`text-xs flex items-center gap-1 ${
                                 item.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'

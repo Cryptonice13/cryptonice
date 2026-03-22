@@ -40,23 +40,31 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
   const [timeRange, setTimeRange] = useState<TimeRange>('30D');
   const [selectedAsset, setSelectedAsset] = useState<string>('all');
 
-  // Unique assets from portfolio
   const assetOptions = useMemo(() => {
-    const unique = portfolio.map(p => ({
+    return portfolio.map(p => ({
       id: p.asset_id,
       symbol: p.asset_symbol,
       name: p.asset_name,
       logo: p.asset_logo,
     }));
-    return unique;
   }, [portfolio]);
 
   const { chartData, costBasis } = useMemo(() => {
-    const filteredTx = selectedAsset === 'all'
-      ? transactions
-      : transactions.filter(t => t.asset_id === selectedAsset);
+    const relevantPositions = selectedAsset === 'all'
+      ? portfolio
+      : portfolio.filter(p => p.asset_id === selectedAsset);
 
-    if (filteredTx.length === 0) return { chartData: [], costBasis: 0 };
+    if (relevantPositions.length === 0) return { chartData: [], costBasis: 0 };
+
+    // Cost basis = sum of (avg_buy_price * amount) for relevant positions
+    const totalCostBasis = relevantPositions.reduce(
+      (sum, p) => sum + p.avg_buy_price * p.amount, 0
+    );
+
+    // Current value
+    const currentValue = relevantPositions.reduce(
+      (sum, p) => sum + p.amount * (currentPrices.get(p.asset_id) || p.avg_buy_price), 0
+    );
 
     const now = new Date();
     const cutoff = timeRange === '7D'
@@ -65,108 +73,61 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
       ? new Date(now.getTime() - 30 * 86400000)
       : new Date(0);
 
-    // Sort by date ascending
-    const sorted = [...filteredTx]
+    // Get relevant transactions in time range
+    const filteredTx = (selectedAsset === 'all'
+      ? transactions
+      : transactions.filter(t => t.asset_id === selectedAsset))
+      .filter(t => new Date(t.created_at) >= cutoff)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    // Build running holdings from all transactions (not just filtered by time)
-    const holdings: Record<string, { amount: number; totalCost: number }> = {};
-    const dataPoints: { date: string; value: number; cost: number; timestamp: number }[] = [];
+    const dataPoints: { date: string; value: number; timestamp: number }[] = [];
 
-    let initialCostBasis = 0;
-    let foundFirstInRange = false;
+    // Start point: cost basis at beginning of range
+    const startLabel = timeRange === '7D' ? '7d ago' : timeRange === '30D' ? '30d ago' : 'Start';
+    dataPoints.push({
+      date: startLabel,
+      value: Math.round(totalCostBasis * 100) / 100,
+      timestamp: cutoff.getTime(),
+    });
 
-    sorted.forEach(tx => {
-      const txDate = new Date(tx.created_at);
-      const assetId = tx.asset_id;
-
-      if (!holdings[assetId]) {
-        holdings[assetId] = { amount: 0, totalCost: 0 };
-      }
-
-      if (tx.transaction_type === 'buy') {
-        holdings[assetId].amount += tx.amount;
-        holdings[assetId].totalCost += tx.amount * tx.price_per_unit;
-      } else if (tx.transaction_type === 'sell') {
-        const h = holdings[assetId];
-        const avgCost = h.amount > 0 ? h.totalCost / h.amount : 0;
-        const sellAmount = Math.min(tx.amount, h.amount);
-        h.totalCost -= sellAmount * avgCost;
-        h.amount = Math.max(0, h.amount - sellAmount);
-      }
-
-      // Calculate current portfolio value at this transaction's prices
-      let totalValue = 0;
-      let totalCost = 0;
-      const relevantAssets = selectedAsset === 'all'
-        ? Object.keys(holdings)
-        : [selectedAsset];
-
-      relevantAssets.forEach(aid => {
-        const h = holdings[aid];
-        if (!h || h.amount <= 0) return;
-        const price = aid === assetId ? tx.price_per_unit : (currentPrices.get(aid) || (h.totalCost / h.amount));
-        totalValue += h.amount * price;
-        totalCost += h.totalCost;
-      });
-
-      if (txDate >= cutoff) {
-        if (!foundFirstInRange) {
-          foundFirstInRange = true;
-          initialCostBasis = totalCost;
+    // Add intermediate points from transactions (show portfolio value changes)
+    if (filteredTx.length > 0) {
+      // Build running value adjustments from transactions
+      let runningValue = totalCostBasis;
+      filteredTx.forEach(tx => {
+        const txDate = new Date(tx.created_at);
+        if (tx.transaction_type === 'buy') {
+          runningValue += tx.amount * tx.price_per_unit;
+        } else if (tx.transaction_type === 'sell') {
+          const position = relevantPositions.find(p => p.asset_id === tx.asset_id);
+          const avgPrice = position ? position.avg_buy_price : tx.price_per_unit;
+          // Adjust by the P&L of the sell
+          const pnl = tx.amount * (tx.price_per_unit - avgPrice);
+          runningValue += pnl;
         }
         dataPoints.push({
           date: txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          value: Math.round(totalValue * 100) / 100,
-          cost: Math.round(totalCost * 100) / 100,
+          value: Math.round(runningValue * 100) / 100,
           timestamp: txDate.getTime(),
         });
-      }
-    });
-
-    // Add current value as last data point
-    let currentTotal = 0;
-    let currentCost = 0;
-    const relevantAssets = selectedAsset === 'all'
-      ? Object.keys(holdings)
-      : [selectedAsset];
-
-    relevantAssets.forEach(aid => {
-      const h = holdings[aid];
-      if (!h || h.amount <= 0) return;
-      currentTotal += h.amount * (currentPrices.get(aid) || (h.totalCost / h.amount));
-      currentCost += h.totalCost;
-    });
-
-    if (currentTotal > 0 || dataPoints.length > 0) {
-      dataPoints.push({
-        date: 'Now',
-        value: Math.round(currentTotal * 100) / 100,
-        cost: Math.round(currentCost * 100) / 100,
-        timestamp: now.getTime(),
       });
     }
 
-    // If no data points in range but we have current value, create start + end
-    if (dataPoints.length === 1 && currentTotal > 0) {
-      const basis = initialCostBasis || currentCost;
-      dataPoints.unshift({
-        date: timeRange === '7D' ? '7d ago' : timeRange === '30D' ? '30d ago' : 'Start',
-        value: Math.round(basis * 100) / 100,
-        cost: Math.round(basis * 100) / 100,
-        timestamp: cutoff.getTime(),
-      });
-    }
+    // End point: current value
+    dataPoints.push({
+      date: 'Now',
+      value: Math.round(currentValue * 100) / 100,
+      timestamp: now.getTime(),
+    });
 
     return {
       chartData: dataPoints,
-      costBasis: initialCostBasis || currentCost,
+      costBasis: totalCostBasis,
     };
   }, [transactions, currentPrices, timeRange, selectedAsset, portfolio]);
 
-  if (transactions.length === 0 || portfolio.length === 0) return null;
+  if (portfolio.length === 0) return null;
 
-  const startValue = chartData.length > 0 ? chartData[0].value : 0;
   const endValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
   const pnl = endValue - costBasis;
   const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
@@ -176,9 +137,16 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
     ? 'All Assets'
     : assetOptions.find(a => a.id === selectedAsset)?.symbol?.toUpperCase() || '';
 
+  // Y-axis domain: ±5% around the data range, never starting from 0
+  const allValues = chartData.map(d => d.value);
+  const minVal = Math.min(...allValues);
+  const maxVal = Math.max(...allValues);
+  const padding = Math.max((maxVal - minVal) * 0.1, costBasis * 0.02);
+  const yMin = Math.max(0, minVal - padding);
+  const yMax = maxVal + padding;
+
   return (
     <Card className="glass-card p-4 space-y-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isPositive ? (
@@ -203,7 +171,6 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
         </div>
       </div>
 
-      {/* P&L Summary */}
       <div className="flex items-baseline gap-3">
         <span className="text-lg font-bold text-foreground">
           ${endValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -216,7 +183,6 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
         </span>
       </div>
 
-      {/* Asset Filter Pills */}
       {assetOptions.length > 1 && (
         <ScrollArea className="w-full">
           <div className="flex gap-1.5 pb-1">
@@ -251,7 +217,6 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
         </ScrollArea>
       )}
 
-      {/* Chart */}
       <div className="h-[180px]">
         {chartData.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -275,7 +240,7 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
                 tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`}
                 width={48}
-                domain={['dataMin', 'dataMax']}
+                domain={[yMin, yMax]}
               />
               {costBasis > 0 && (
                 <ReferenceLine
@@ -299,22 +264,19 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
                   fontSize: '11px',
                   padding: '8px 12px',
                 }}
-                formatter={(value: number, name: string) => {
-                  if (name === 'value') {
-                    const itemPnl = value - costBasis;
-                    const itemPct = costBasis > 0 ? (itemPnl / costBasis) * 100 : 0;
-                    return [
-                      <div key="tip" className="space-y-0.5">
-                        <div className="text-foreground font-medium">${value.toLocaleString()}</div>
-                        <div className="text-muted-foreground text-[10px]">Cost: ${costBasis.toLocaleString()}</div>
-                        <div className={`text-[10px] font-medium ${itemPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          P&L: {itemPnl >= 0 ? '+' : ''}${itemPnl.toLocaleString()} ({itemPct.toFixed(1)}%)
-                        </div>
-                      </div>,
-                      '',
-                    ];
-                  }
-                  return [null, null];
+                formatter={(value: number) => {
+                  const itemPnl = value - costBasis;
+                  const itemPct = costBasis > 0 ? (itemPnl / costBasis) * 100 : 0;
+                  return [
+                    <div key="tip" className="space-y-0.5">
+                      <div className="text-foreground font-medium">${value.toLocaleString()}</div>
+                      <div className="text-muted-foreground text-[10px]">Cost: ${costBasis.toLocaleString()}</div>
+                      <div className={`text-[10px] font-medium ${itemPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        P&L: {itemPnl >= 0 ? '+' : ''}${itemPnl.toLocaleString()} ({itemPct.toFixed(1)}%)
+                      </div>
+                    </div>,
+                    '',
+                  ];
                 }}
                 labelFormatter={(label) => label}
               />

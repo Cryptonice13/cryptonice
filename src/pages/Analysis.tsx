@@ -16,6 +16,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useMarketData, CryptoAsset } from '@/hooks/useMarketData';
 import { useAnalysis, TechnicalAnalysis, FundamentalAnalysis } from '@/hooks/useAnalysis';
+import { formatPrice } from '@/lib/format';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   RadialBarChart, RadialBar, ReferenceLine, ComposedChart, Area, Line
@@ -84,7 +85,7 @@ export default function Analysis() {
                 <Badge variant="outline" className="text-xs">{asset.symbol}</Badge>
               </div>
               <div className="flex items-center gap-3 mt-1">
-                <span className="text-xl font-mono font-semibold">${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                <span className="text-xl font-mono font-semibold">{formatPrice(asset.price)}</span>
                 <span className={`text-sm font-medium ${asset.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {asset.priceChange24h >= 0 ? '+' : ''}{asset.priceChange24h.toFixed(2)}%
                 </span>

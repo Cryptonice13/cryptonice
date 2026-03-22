@@ -175,6 +175,13 @@ export function useCredits() {
     fetchBalance();
   }, [fetchBalance]);
 
+  // Listen for credit deductions from standalone helpers
+  useEffect(() => {
+    const handler = () => fetchBalance();
+    window.addEventListener('credits-updated', handler);
+    return () => window.removeEventListener('credits-updated', handler);
+  }, [fetchBalance]);
+
   return {
     balance,
     isLoading,

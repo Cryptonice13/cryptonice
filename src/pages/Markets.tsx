@@ -36,6 +36,7 @@ import { MarketInsightsPanel } from '@/components/ai/MarketInsightsPanel';
 import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { PriceChart } from '@/components/ai/PriceChart';
+import { formatPrice } from '@/lib/format';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { useAIInsights } from '@/hooks/useAIInsights';
@@ -169,7 +170,7 @@ export default function Markets() {
                             </div>
                           </td>
                           <td className="p-3 text-right font-mono text-sm">
-                            ${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {formatPrice(asset.price)}
                           </td>
                           <td className="p-3 text-right">
                             <span className={`text-xs font-medium ${asset.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
