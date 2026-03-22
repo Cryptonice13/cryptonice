@@ -169,7 +169,7 @@ export default function Markets() {
                             </div>
                           </td>
                           <td className="p-3 text-right font-mono text-sm">
-                            ${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {formatPrice(asset.price)}
                           </td>
                           <td className="p-3 text-right">
                             <span className={`text-xs font-medium ${asset.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>

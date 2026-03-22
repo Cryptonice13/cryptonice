@@ -52,7 +52,7 @@ function MarketTicker({ assets }: { assets: any[] }) {
           <div key={`${a.id}-${i}`} className="inline-flex items-center gap-2 px-3 border-r border-border/20 last:border-0">
             <img src={a.logo} alt={a.symbol} className="w-4 h-4 rounded-full" />
             <span className="text-xs font-medium text-foreground">{a.symbol}</span>
-            <span className="text-xs text-muted-foreground">${a.price < 1 ? a.price.toFixed(4) : a.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+            <span className="text-xs text-muted-foreground">{formatPrice(a.price)}</span>
             <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${a.priceChange24h >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {a.priceChange24h >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(a.priceChange24h).toFixed(1)}%

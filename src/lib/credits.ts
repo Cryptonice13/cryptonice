@@ -44,5 +44,6 @@ export async function checkAndDeductCredits(
   else txData.wallet_address = walletAddress;
   await (supabase.from('credit_transactions' as any) as any).insert(txData);
 
+  window.dispatchEvent(new CustomEvent('credits-updated'));
   return { success: true, newBalance };
 }
