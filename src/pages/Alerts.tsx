@@ -18,6 +18,7 @@ import {
   Clock,
   BarChart3,
   Sparkles,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -76,6 +77,7 @@ export default function Alerts() {
   const { address, isConnected } = useAccount();
   const [alertPrice, setAlertPrice] = useState('');
   const [alertType, setAlertType] = useState<'above' | 'below'>('above');
+  const [addAssetSearch, setAddAssetSearch] = useState('');
 
   // History filters
   const [historyAssetFilter, setHistoryAssetFilter] = useState('all');
@@ -673,10 +675,24 @@ export default function Alerts() {
               </TabsContent>
 
               {/* ===== ADD ASSETS TAB ===== */}
-              <TabsContent value="add" className="mt-4">
+              <TabsContent value="add" className="mt-4 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search assets..."
+                    value={addAssetSearch}
+                    onChange={(e) => setAddAssetSearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {assets
                     .filter(asset => !watchlist.some(w => w.asset_id === asset.id))
+                    .filter(asset => {
+                      if (!addAssetSearch.trim()) return true;
+                      const q = addAssetSearch.toLowerCase();
+                      return asset.symbol.toLowerCase().includes(q) || asset.name.toLowerCase().includes(q);
+                    })
                     .map((asset, i) => (
                       <motion.div
                         key={asset.id}
@@ -691,7 +707,7 @@ export default function Alerts() {
                               <p className="font-semibold text-sm">{asset.symbol}</p>
                               <p className="text-[10px] text-muted-foreground truncate w-full">{asset.name}</p>
                             </div>
-                            <p className="font-mono text-sm">${asset.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                            <p className="font-mono text-sm">{formatPrice(asset.price)}</p>
                             <Button
                               size="sm"
                               variant="outline"
