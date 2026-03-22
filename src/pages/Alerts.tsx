@@ -77,6 +77,7 @@ export default function Alerts() {
   const { address, isConnected } = useAccount();
   const [alertPrice, setAlertPrice] = useState('');
   const [alertType, setAlertType] = useState<'above' | 'below'>('above');
+  const [addAssetSearch, setAddAssetSearch] = useState('');
 
   // History filters
   const [historyAssetFilter, setHistoryAssetFilter] = useState('all');
