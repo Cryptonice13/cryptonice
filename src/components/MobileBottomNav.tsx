@@ -32,6 +32,11 @@ const MobileBottomNav = () => {
       icon: Bell,
       path: '/alerts',
     },
+    {
+      name: 'Community',
+      icon: Users,
+      path: '/community',
+    },
   ];
 
   return (

@@ -111,6 +111,11 @@ const App = () => (
                     <Credits />
                   </ProtectedRoute>
                 } />
+                <Route path="/community" element={
+                  <ProtectedRoute>
+                    <Community />
+                  </ProtectedRoute>
+                } />
               </Routes>
               <FloatingChatButton />
             </BrowserRouter>

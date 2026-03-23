@@ -26,6 +26,7 @@ const navItems = [
   { key: 'markets', label: 'Markets', path: '/markets' },
   { key: 'strategy', label: 'Strategy', path: '/strategy' },
   { key: 'alerts', label: 'Alerts', path: '/alerts' },
+  { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
 export default function AppHeader({ activePage, rightContent }: AppHeaderProps) {
