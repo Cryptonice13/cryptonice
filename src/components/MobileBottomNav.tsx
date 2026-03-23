@@ -1,4 +1,4 @@
-import { Home, LineChart, Briefcase, Bell, Bot, Cpu } from 'lucide-react';
+import { Home, LineChart, Briefcase, Bell, Bot, Cpu, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
