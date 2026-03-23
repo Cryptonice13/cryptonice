@@ -1,73 +1,66 @@
 
 
-## Plan: Fix Three Platform Issues
+## Plan: Crypto Trader Community Page
 
-### Issue 1: Low-price tokens showing $0
+### Overview
+Add a social community page where users can post strategies with images, like/comment on posts, add friends, and chat with friends.
 
-**Problem**: Price formatting uses `maximumFractionDigits: 2` everywhere, so tokens like SHIB ($0.00005) display as `$0.00`.
+### Database Changes
 
-**Fix**: Create a smart price formatter function in `src/lib/format.ts` that auto-adjusts decimal places based on price magnitude:
-- Price >= $1: 2 decimals (`$0.95`)  
-- Price >= $0.01: 4 decimals (`$0.0523`)
-- Price >= $0.0001: 6 decimals (`$0.000052`)
-- Price < $0.0001: 8 decimals (`$0.00000523`)
+**1. Storage bucket**: `community-images` (public) for post image uploads
 
-**Files to modify**:
-- `src/lib/format.ts` -- add `formatPrice(price: number)` function
-- `src/pages/Markets.tsx` -- replace `maximumFractionDigits: 2` with `formatPrice()`
-- `src/pages/Analysis.tsx` -- same fix for asset price display
-- `src/pages/Dashboard.tsx` -- same fix (already partially handles this with `a.price < 1 ? a.price.toFixed(4)` but inconsistently)
-- `src/pages/Portfolio.tsx` -- same fix
-- `src/pages/Alerts.tsx` -- same fix
+**2. New tables**:
 
-### Issue 2: Credit system not deducting properly
+| Table | Purpose | Key Columns |
+|---|---|---|
+| `community_posts` | User posts | `id`, `user_id`, `content`, `image_url`, `post_type` (strategy/general), `asset_symbol`, `signal` (BUY/SELL/HOLD), `likes_count`, `comments_count`, `created_at` |
+| `community_likes` | Post likes | `id`, `user_id`, `post_id` (FK → community_posts), unique(user_id, post_id) |
+| `community_comments` | Post comments | `id`, `user_id`, `post_id` (FK → community_posts), `content`, `created_at` |
+| `friendships` | Friend connections | `id`, `requester_id`, `addressee_id`, `status` (pending/accepted/rejected), unique(requester_id, addressee_id) |
+| `direct_messages` | Friend-to-friend chat | `id`, `sender_id`, `receiver_id`, `content`, `is_read`, `created_at` |
 
-**Problem**: The `checkAndDeductCredits()` in `src/lib/credits.ts` is standalone and doesn't sync back to the `useCredits` hook's React state. After deduction, the navbar balance stays stale until page refresh. Also, the `useCredits` hook's `deductCredits` (which does update React state) is NOT used by `useAnalysis.ts` or `useCryptoAI.ts` -- they use the standalone function instead.
+All tables have RLS policies scoped to authenticated users. Posts/comments/likes readable by all authenticated users; insert/delete own only. Friendships: both parties can view; requester can insert; addressee can update status. DMs: sender/receiver can view; sender can insert.
 
-**Root cause**: Two parallel credit deduction systems exist -- `useCredits.deductCredits()` (React-aware) and `checkAndDeductCredits()` (not React-aware). The AI hooks use the standalone one, so:
-1. The navbar credit count never updates after AI usage
-2. The hooks can't check the latest balance from React state
+**3. Storage RLS**: Authenticated users can upload to `community-images`; public read access.
 
-**Fix**: 
-- Remove `checkAndDeductCredits` from `src/lib/credits.ts` -- consolidate to one system
-- Create a credit context/event system so AI hooks can deduct and the header updates:
-  - Add a global event emitter or use a simple `window.dispatchEvent` pattern: after `checkAndDeductCredits` succeeds, fire a custom event; `useCredits` listens and refetches
-  - Alternatively, keep `checkAndDeductCredits` but have it dispatch a `credits-updated` custom event; `useCredits` listens for it and calls `fetchBalance()`
-- Update `src/hooks/useCryptoAI.ts` and `src/hooks/useAnalysis.ts` to dispatch the event after deduction
-- Update `src/hooks/useCredits.ts` to listen for `credits-updated` events
+### New Files
 
-**Files to modify**:
-- `src/lib/credits.ts` -- add custom event dispatch after successful deduction
-- `src/hooks/useCredits.ts` -- add event listener for `credits-updated` to auto-refresh balance
-- No changes needed to `useAnalysis.ts` or `useCryptoAI.ts` since the event will auto-propagate
+**`src/pages/Community.tsx`**
+- Main community page with tabs: **Feed**, **Friends**, **Messages**
+- **Feed tab**: Create post form (text + optional image upload + optional strategy tag), scrollable post feed with like/comment buttons, inline comment thread
+- **Friends tab**: Search users by email/name, send friend request, list pending/accepted friends
+- **Messages tab**: List of friend conversations, click to open chat thread with real-time messages
 
-### Issue 3: Performance chart starts from zero
+**`src/hooks/useCommunity.ts`**
+- Hook managing posts CRUD, likes toggle, comments, image upload to storage bucket
+- Functions: `createPost`, `fetchPosts`, `toggleLike`, `addComment`, `fetchComments`
 
-**Problem**: The chart builds holdings from transactions starting at 0 units. The first data point has value = first buy amount x price, and the Y-axis auto-scales from near-zero. The chart should start from the user's entry cost basis, not from zero holdings.
+**`src/hooks/useFriends.ts`**
+- Hook for friend requests: `sendRequest`, `acceptRequest`, `rejectRequest`, `fetchFriends`, `searchUsers`
 
-**Root cause**: The chart iterates through all transactions and calculates running totals. The first transaction creates holdings from nothing (0 → some value), so the chart shows a line going up from near-zero. The user expects to see performance *relative to their entry point*.
+**`src/hooks/useDirectMessages.ts`**
+- Hook for DMs: `sendMessage`, `fetchConversations`, `fetchMessages`, real-time subscription via Supabase channel
 
-**Fix**: Rewrite the chart data calculation:
-- **Start point**: Use the portfolio position's `avg_buy_price * amount` as the cost basis entry point (this is the user's entry value)
-- **End point**: Use `current_price * amount` as current value
-- **Intermediate points**: Use transactions within the time range, but offset so the first point = cost basis value, not zero
-- Use `portfolio` positions directly instead of rebuilding from transaction history -- the positions already have `avg_buy_price` and `amount`
-- For the chart line: create data points as [entry_date → cost_basis_value] ... [now → current_value]
-- The Y-axis domain should be `[min(costBasis, currentValue) * 0.95, max(costBasis, currentValue) * 1.05]` -- never starting from 0
+### Modified Files
 
-**Files to modify**:
-- `src/components/portfolio/PerformanceChart.tsx` -- rewrite `chartData` calculation to use portfolio positions as baseline, not rebuild from zero
+**`src/App.tsx`**
+- Add route `/community` → `<Community />` (protected)
 
-### Summary of Files
-| File | Change |
-|---|---|
-| `src/lib/format.ts` | Add `formatPrice()` smart formatter |
-| `src/pages/Markets.tsx` | Use `formatPrice()` |
-| `src/pages/Analysis.tsx` | Use `formatPrice()` |
-| `src/pages/Dashboard.tsx` | Use `formatPrice()` |
-| `src/pages/Portfolio.tsx` | Use `formatPrice()` |
-| `src/pages/Alerts.tsx` | Use `formatPrice()` |
-| `src/lib/credits.ts` | Dispatch `credits-updated` event after deduction |
-| `src/hooks/useCredits.ts` | Listen for `credits-updated` event to auto-refresh |
-| `src/components/portfolio/PerformanceChart.tsx` | Rewrite chart to start from cost basis, not zero |
+**`src/components/AppHeader.tsx`**
+- Add "Community" to `navItems` array with `Users` icon and path `/community`
+- Update `activePage` type to include `'community'`
+
+**`src/components/MobileBottomNav.tsx`**
+- Add Community nav item with `Users` icon
+
+### UI Design
+- Post card: avatar, name, timestamp, content, optional image, strategy badge (BUY/SELL/HOLD), like button with count, comment button with count, expandable comment section
+- Create post: textarea + image upload button + optional asset/signal selector
+- Friend list: avatar + name + status badge + accept/reject buttons for pending
+- Chat: simple message bubbles (left/right), input at bottom, auto-scroll
+
+### Migration Summary
+1. Create `community-images` storage bucket
+2. Create 5 tables with RLS policies
+3. Create storage RLS policies for upload/read
 
