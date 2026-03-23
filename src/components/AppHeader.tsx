@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCredits } from '@/hooks/useCredits';
 
 interface AppHeaderProps {
-  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy';
+  activePage?: 'dashboard' | 'portfolio' | 'markets' | 'alerts' | 'strategy' | 'community';
   rightContent?: React.ReactNode;
 }
 
