@@ -36,7 +36,8 @@ import { formatDistanceToNow } from 'date-fns';
 
 // ─── Feed Tab ───
 function FeedTab() {
-  const { posts, loading, createPost, toggleLike, fetchComments, addComment } = useCommunity();
+  const { posts, loading, createPost, toggleLike, fetchComments, addComment, deletePost, editPost } = useCommunity();
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [postType, setPostType] = useState<'general' | 'strategy'>('general');
@@ -46,6 +47,7 @@ function FeedTab() {
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommunityComment[]>>({});
   const [commentText, setCommentText] = useState('');
+  const [editingPost, setEditingPost] = useState<{ id: string; content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePost = async () => {
