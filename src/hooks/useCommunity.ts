@@ -197,5 +197,41 @@ export function useCommunity() {
     );
   };
 
-  return { posts, loading, createPost, toggleLike, fetchComments, addComment, refetch: fetchPosts };
+  const deletePost = async (postId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('community_posts')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    toast({ title: 'Post deleted' });
+  };
+
+  const editPost = async (postId: string, newContent: string) => {
+    if (!user || !newContent.trim()) return;
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ content: newContent.trim() })
+      .eq('id', postId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({ title: 'Edit failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    setPosts(prev =>
+      prev.map(p => (p.id === postId ? { ...p, content: newContent.trim() } : p))
+    );
+    toast({ title: 'Post updated' });
+  };
+
+  return { posts, loading, createPost, toggleLike, fetchComments, addComment, deletePost, editPost, refetch: fetchPosts };
 }
