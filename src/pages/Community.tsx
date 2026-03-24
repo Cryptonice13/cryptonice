@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Heart, MessageCircle, Send, Image as ImageIcon, Search,
   UserPlus, Check, X, ChevronDown, ChevronUp, TrendingUp,
-  TrendingDown, Minus, ArrowLeft
+  TrendingDown, Minus, ArrowLeft, MoreVertical, Pencil, Trash2
 } from 'lucide-react';
 import { useCommunity, CommunityComment } from '@/hooks/useCommunity';
 import { useFriends } from '@/hooks/useFriends';
