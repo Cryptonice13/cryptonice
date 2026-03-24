@@ -232,7 +232,7 @@ export function usePortfolioAnalysis() {
     }
   }, []);
 
-  return { analysis, isLoading: isLoading || !initialLoaded, error, analyzePortfolio };
+  return { analysis, isLoading, error, analyzePortfolio };
 }
 
 export function useMarketPrediction() {
