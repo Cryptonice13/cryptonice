@@ -282,6 +282,29 @@ function FeedTab() {
           </Card>
         ))
       )}
+
+      {/* Edit Post Dialog */}
+      <Dialog open={!!editingPost} onOpenChange={open => !open && setEditingPost(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={editingPost?.content || ''}
+            onChange={e => setEditingPost(prev => prev ? { ...prev, content: e.target.value } : null)}
+            className="min-h-[100px]"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPost(null)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (editingPost) {
+                await editPost(editingPost.id, editingPost.content);
+                setEditingPost(null);
+              }
+            }}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
