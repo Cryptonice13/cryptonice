@@ -1,4 +1,4 @@
-import { Home, LineChart, Briefcase, Bell, Bot, Cpu, Users } from 'lucide-react';
+import { Home, LineChart, Briefcase, Bot, Cpu, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -7,41 +7,16 @@ const MobileBottomNav = () => {
   const location = useLocation();
 
   const navItems = [
-    {
-      name: 'Home',
-      icon: Bot,
-      path: '/dashboard',
-    },
-    {
-      name: 'Markets',
-      icon: LineChart,
-      path: '/markets',
-    },
-    {
-      name: 'Portfolio',
-      icon: Briefcase,
-      path: '/portfolio',
-    },
-    {
-      name: 'Strategy',
-      icon: Cpu,
-      path: '/strategy',
-    },
-    {
-      name: 'Alerts',
-      icon: Bell,
-      path: '/alerts',
-    },
-    {
-      name: 'Community',
-      icon: Users,
-      path: '/community',
-    },
+    { icon: Bot, path: '/dashboard' },
+    { icon: LineChart, path: '/markets' },
+    { icon: Briefcase, path: '/portfolio' },
+    { icon: Cpu, path: '/strategy' },
+    { icon: Users, path: '/community' },
   ];
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
-      <nav className="flex items-center justify-around h-16">
+      <nav className="flex items-center justify-around h-14">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -51,7 +26,7 @@ const MobileBottomNav = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                "flex items-center justify-center flex-1 h-full transition-colors",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground active:text-foreground"
@@ -63,10 +38,6 @@ const MobileBottomNav = () => {
               )}>
                 <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
               </div>
-              <span className={cn(
-                "text-[10px] font-medium",
-                isActive && "text-primary"
-              )}>{item.name}</span>
             </button>
           );
         })}
