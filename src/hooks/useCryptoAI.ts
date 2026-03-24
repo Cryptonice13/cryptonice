@@ -168,43 +168,9 @@ export function usePortfolioAnalysis() {
   const [analysis, setAnalysis] = useState<PortfolioAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initialLoaded, setInitialLoaded] = useState(false);
   const { user } = useAuth();
   const { address } = useAccount();
   const identity = { userId: user?.id, walletAddress: address };
-
-  // Load latest saved analysis from DB on mount
-  useEffect(() => {
-    const loadLatest = async () => {
-      try {
-        const { data } = await supabase
-          .from('ai_portfolio_analysis')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (data && data.length > 0) {
-          const record = data[0];
-          const saved = record.analysis_data as any;
-          if (saved && typeof saved === 'object') {
-            setAnalysis({
-              healthScore: saved.healthScore ?? record.health_score ?? 0,
-              diversification: saved.diversification ?? record.diversification ?? 'unknown',
-              riskLevel: saved.riskLevel ?? record.risk_level ?? 'medium',
-              suggestions: saved.suggestions ?? [],
-              concerns: saved.concerns ?? [],
-              summary: saved.summary ?? '',
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Error loading portfolio analysis:', err);
-      } finally {
-        setInitialLoaded(true);
-      }
-    };
-    loadLatest();
-  }, []);
 
   const analyzePortfolio = useCallback(async (portfolio: any[]) => {
     // Deduct 3 credits for portfolio analysis
@@ -266,7 +232,7 @@ export function usePortfolioAnalysis() {
     }
   }, []);
 
-  return { analysis, isLoading: isLoading || !initialLoaded, error, analyzePortfolio };
+  return { analysis, isLoading, error, analyzePortfolio };
 }
 
 export function useMarketPrediction() {
