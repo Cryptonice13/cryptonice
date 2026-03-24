@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain, Zap } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell } from 'lucide-react';
 import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +25,6 @@ const navItems = [
   { key: 'portfolio', label: 'Portfolio', path: '/portfolio' },
   { key: 'markets', label: 'Markets', path: '/markets' },
   { key: 'strategy', label: 'Strategy', path: '/strategy' },
-  { key: 'alerts', label: 'Alerts', path: '/alerts' },
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
@@ -96,6 +95,16 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           >
             <Zap className="w-3.5 h-3.5 text-primary" />
             <span className="font-semibold">{balance ?? '...'}</span>
+          </Button>
+
+          {/* Alerts Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/alerts')}
+            className="h-8 w-8"
+          >
+            <Bell className="w-4 h-4" />
           </Button>
 
           {/* AI Chat Icon */}
