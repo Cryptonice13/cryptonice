@@ -12,18 +12,32 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Heart, MessageCircle, Send, Image as ImageIcon, Search,
   UserPlus, Check, X, ChevronDown, ChevronUp, TrendingUp,
-  TrendingDown, Minus, ArrowLeft
+  TrendingDown, Minus, ArrowLeft, MoreVertical, Pencil, Trash2
 } from 'lucide-react';
 import { useCommunity, CommunityComment } from '@/hooks/useCommunity';
 import { useFriends } from '@/hooks/useFriends';
 import { useDirectMessages } from '@/hooks/useDirectMessages';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 
 // ─── Feed Tab ───
 function FeedTab() {
-  const { posts, loading, createPost, toggleLike, fetchComments, addComment } = useCommunity();
+  const { posts, loading, createPost, toggleLike, fetchComments, addComment, deletePost, editPost } = useCommunity();
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [postType, setPostType] = useState<'general' | 'strategy'>('general');
@@ -33,6 +47,7 @@ function FeedTab() {
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommunityComment[]>>({});
   const [commentText, setCommentText] = useState('');
+  const [editingPost, setEditingPost] = useState<{ id: string; content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePost = async () => {
@@ -169,6 +184,28 @@ function FeedTab() {
                     {post.asset_symbol && ` · ${post.asset_symbol}`}
                   </Badge>
                 )}
+                {user?.id === post.user_id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditingPost({ id: post.id, content: post.content })}>
+                        <Pencil className="w-3.5 h-3.5 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => deletePost(post.id)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
               {/* Content */}
@@ -245,6 +282,29 @@ function FeedTab() {
           </Card>
         ))
       )}
+
+      {/* Edit Post Dialog */}
+      <Dialog open={!!editingPost} onOpenChange={open => !open && setEditingPost(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={editingPost?.content || ''}
+            onChange={e => setEditingPost(prev => prev ? { ...prev, content: e.target.value } : null)}
+            className="min-h-[100px]"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPost(null)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (editingPost) {
+                await editPost(editingPost.id, editingPost.content);
+                setEditingPost(null);
+              }
+            }}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
