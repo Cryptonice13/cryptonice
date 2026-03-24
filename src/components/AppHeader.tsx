@@ -97,6 +97,16 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
             <span className="font-semibold">{balance ?? '...'}</span>
           </Button>
 
+          {/* Alerts Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/alerts')}
+            className="h-8 w-8"
+          >
+            <Bell className="w-4 h-4" />
+          </Button>
+
           {/* AI Chat Icon */}
           <Button
             variant="ghost"
