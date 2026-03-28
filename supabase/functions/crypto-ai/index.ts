@@ -323,6 +323,59 @@ RESPONSE FORMAT (use markdown headers exactly):
 [One-sentence justification]`;
     }
 
+    case "derivatives_strategy": {
+      const dCoin = marketData[0];
+      const dDetails = coinDetails ? `\nMarket Cap Rank: #${coinDetails.market_cap_rank}\nATH: $${coinDetails.market_data?.ath?.usd?.toLocaleString()}` : '';
+      const isOptions = context?.mode === 'options';
+      return `You are an advanced AI crypto derivatives strategist with REAL-TIME market data.
+
+${context?.symbol} LIVE DATA (${timestamp}):
+${dCoin ? `Price: $${dCoin.current_price.toLocaleString()} | 24h: ${dCoin.price_change_percentage_24h?.toFixed(2)}% | 7d: ${dCoin.price_change_percentage_7d_in_currency?.toFixed(2)}% | Vol: $${(dCoin.total_volume / 1e9).toFixed(2)}B | MCap: $${(dCoin.market_cap / 1e9).toFixed(2)}B${dDetails}` : 'No data available.'}
+
+USER REQUEST:
+- Mode: ${context?.mode}
+- Risk Level: ${context?.riskLevel || 'moderate'}
+- Investment: $${context?.investmentAmount || 1000}
+${isOptions ? `- Contract: ${context?.contractType || 'call'}
+- Strike Price: ${context?.strikePrice ? '$' + context.strikePrice : 'AI suggest'}
+- Expiry: ${context?.expiry || '1M'}
+- Preset: ${context?.optionPreset || 'long_call'}
+- Premium Budget: ${context?.premiumBudget ? '$' + context.premiumBudget : 'auto'}` : `- Direction: ${context?.positionDirection || 'long'}
+- Leverage: ${context?.leverage || 10}x
+- Contract: ${context?.futuresContract || 'perpetual'}
+- Margin: ${context?.marginType || 'isolated'}`}
+
+INSTRUCTIONS:
+${isOptions ? `Generate a complete options strategy. Calculate simulated Greeks based on implied volatility estimates. For the preset "${context?.optionPreset || 'long_call'}":
+- Calculate breakeven price, max profit, max loss
+- Estimate Delta, Gamma, Theta, Vega
+- Provide optimal entry/exit timing
+- All prices relative to current price $${dCoin?.current_price?.toLocaleString() || 'unknown'}` : `Generate a complete futures strategy with ${context?.leverage || 10}x leverage.
+- Calculate liquidation price: entry * (1 ${context?.positionDirection === 'short' ? '+' : '-'} 1/${context?.leverage || 10}) for ${context?.positionDirection || 'long'}
+- Calculate margin requirements based on position size
+- Assess funding rate impact for ${context?.futuresContract || 'perpetual'} contracts
+- All prices relative to current price $${dCoin?.current_price?.toLocaleString() || 'unknown'}`}
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks):
+{
+  "strategyName": "descriptive name",
+  "signal": "BUY" | "SELL" | "HOLD",
+  "entryPrice": number,
+  "stopLoss": number,
+  "takeProfits": [number, number, number],
+  "positionSize": number,
+  "riskRewardRatio": number,
+  "winRateProbability": number (0-100),
+  "confidence": number (0-100),
+  "conditions": ["condition1", "condition2"],
+  "reasoning": "explanation",
+  "maxProfit": "string description e.g. '$5,000' or 'Unlimited'",
+  "maxLoss": "string description e.g. '$1,000 (premium paid)'",
+  "breakevenPrice": number
+  ${isOptions ? `,"greeks": {"delta": number, "gamma": number, "theta": number, "vega": number}` : `,"liquidationPrice": number, "leverage": number, "marginRequired": "string e.g. '$100'", "fundingRateImpact": "string e.g. '-$2.50/day'"`}
+}`;
+    }
+
     default:
       return "You are a helpful cryptocurrency advisor with real-time market data.";
   }
