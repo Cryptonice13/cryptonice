@@ -64,11 +64,55 @@ export interface GenerateStrategyParams {
   investmentAmount: number;
 }
 
+export interface DerivativesStrategyParams {
+  mode: 'options' | 'futures';
+  assetSymbol: string;
+  assetId: string;
+  investmentAmount: number;
+  riskLevel: string;
+  // Options
+  contractType?: 'call' | 'put';
+  strikePrice?: number;
+  expiry?: string;
+  premiumBudget?: number;
+  optionPreset?: string;
+  // Futures
+  leverage?: number;
+  futuresContract?: string;
+  positionDirection?: 'long' | 'short';
+  marginType?: 'isolated' | 'cross';
+}
+
+export interface DerivativesAIResult {
+  strategyName: string;
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  entryPrice: number;
+  stopLoss: number;
+  takeProfits: number[];
+  positionSize: number;
+  riskRewardRatio: number;
+  winRateProbability: number;
+  confidence: number;
+  conditions: string[];
+  reasoning: string;
+  maxProfit: string;
+  maxLoss: string;
+  breakevenPrice: number;
+  // Options
+  greeks?: { delta: number; gamma: number; theta: number; vega: number };
+  // Futures
+  liquidationPrice?: number;
+  leverage?: number;
+  marginRequired?: string;
+  fundingRateImpact?: string;
+}
+
 export function useStrategyBuilder() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<StrategyAIResult | null>(null);
+  const [lastDerivativesResult, setLastDerivativesResult] = useState<DerivativesAIResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { address } = useAccount();
   const { user } = useAuth();
@@ -204,16 +248,110 @@ export function useStrategyBuilder() {
     }
   }, []);
 
+  const generateDerivativesStrategy = useCallback(async (params: DerivativesStrategyParams) => {
+    setIsGenerating(true);
+    setError(null);
+    setLastDerivativesResult(null);
+
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: `Generate a ${params.mode} ${params.mode === 'options' ? params.optionPreset : params.positionDirection} strategy for ${params.assetSymbol}` }],
+          type: 'derivatives_strategy',
+          context: {
+            symbol: params.assetSymbol,
+            mode: params.mode,
+            riskLevel: params.riskLevel,
+            investmentAmount: params.investmentAmount,
+            ...(params.mode === 'options' ? {
+              contractType: params.contractType,
+              strikePrice: params.strikePrice,
+              expiry: params.expiry,
+              premiumBudget: params.premiumBudget,
+              optionPreset: params.optionPreset,
+            } : {
+              leverage: params.leverage,
+              futuresContract: params.futuresContract,
+              positionDirection: params.positionDirection,
+              marginType: params.marginType,
+            }),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate strategy');
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) throw new Error('No response from AI');
+
+      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const parsed: DerivativesAIResult = JSON.parse(cleanContent);
+      setLastDerivativesResult(parsed);
+
+      // Save to DB
+      const strategyType = params.mode === 'options' ? `options_${params.optionPreset || 'long_call'}` : `futures_${params.positionDirection || 'long'}`;
+      const insertData: any = {
+        asset_symbol: params.assetSymbol,
+        asset_id: params.assetId,
+        strategy_name: parsed.strategyName,
+        strategy_type: strategyType,
+        risk_level: params.riskLevel,
+        timeframe: params.mode === 'options' ? (params.expiry || '1M') : 'perpetual',
+        investment_amount: params.investmentAmount,
+        signal: parsed.signal,
+        entry_price: parsed.entryPrice,
+        stop_loss: parsed.stopLoss,
+        take_profits: parsed.takeProfits,
+        position_size: parsed.positionSize,
+        risk_reward: parsed.riskRewardRatio,
+        win_rate: parsed.winRateProbability,
+        confidence: parsed.confidence,
+        conditions: parsed.conditions,
+        reasoning: parsed.reasoning,
+        status: 'active',
+      };
+
+      if (user?.id) insertData.user_id = user.id;
+      else if (address) insertData.wallet_address = address;
+
+      const { error: insertError } = await supabase.from('strategies').insert(insertData);
+      if (insertError) console.error('Failed to save strategy:', insertError);
+      else await fetchStrategies();
+
+      toast({ title: 'Strategy Generated', description: `${parsed.signal} signal with ${parsed.confidence}% confidence` });
+      return parsed;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate strategy';
+      setError(msg);
+      toast({ title: 'Generation Failed', description: msg, variant: 'destructive' });
+      return null;
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [user?.id, address, fetchStrategies, toast]);
+
   return {
     strategies,
     isGenerating,
     isLoading,
     lastResult,
+    lastDerivativesResult,
     error,
     generateStrategy,
+    generateDerivativesStrategy,
     fetchStrategies,
     deleteStrategy,
     updateStrategyStatus,
     setLastResult,
+    setLastDerivativesResult,
   };
 }
