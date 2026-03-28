@@ -112,6 +112,7 @@ export function useStrategyBuilder() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<StrategyAIResult | null>(null);
+  const [lastDerivativesResult, setLastDerivativesResult] = useState<DerivativesAIResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { address } = useAccount();
   const { user } = useAuth();
