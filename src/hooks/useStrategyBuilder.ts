@@ -64,6 +64,49 @@ export interface GenerateStrategyParams {
   investmentAmount: number;
 }
 
+export interface DerivativesStrategyParams {
+  mode: 'options' | 'futures';
+  assetSymbol: string;
+  assetId: string;
+  investmentAmount: number;
+  riskLevel: string;
+  // Options
+  contractType?: 'call' | 'put';
+  strikePrice?: number;
+  expiry?: string;
+  premiumBudget?: number;
+  optionPreset?: string;
+  // Futures
+  leverage?: number;
+  futuresContract?: string;
+  positionDirection?: 'long' | 'short';
+  marginType?: 'isolated' | 'cross';
+}
+
+export interface DerivativesAIResult {
+  strategyName: string;
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  entryPrice: number;
+  stopLoss: number;
+  takeProfits: number[];
+  positionSize: number;
+  riskRewardRatio: number;
+  winRateProbability: number;
+  confidence: number;
+  conditions: string[];
+  reasoning: string;
+  maxProfit: string;
+  maxLoss: string;
+  breakevenPrice: number;
+  // Options
+  greeks?: { delta: number; gamma: number; theta: number; vega: number };
+  // Futures
+  liquidationPrice?: number;
+  leverage?: number;
+  marginRequired?: string;
+  fundingRateImpact?: string;
+}
+
 export function useStrategyBuilder() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
