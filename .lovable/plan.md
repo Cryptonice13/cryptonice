@@ -1,66 +1,58 @@
 
 
-## Plan: Crypto Trader Community Page
+## Plan: Add Options & Futures Analysis Section to Strategy Builder
 
 ### Overview
-Add a social community page where users can post strategies with images, like/comment on posts, add friends, and chat with friends.
+Add a new tabbed section to the `/strategy` page that lets users generate AI-powered Options and Futures trading strategies for crypto assets, alongside the existing spot strategy builder.
 
-### Database Changes
+### Changes
 
-**1. Storage bucket**: `community-images` (public) for post image uploads
+#### 1. Update Strategy Page with Tabs (`src/pages/StrategyBuilder.tsx`)
+- Add a `Tabs` component at the top with three tabs: **Spot**, **Options**, **Futures**
+- Spot tab contains the existing `StrategyForm` + `StrategyDetailCard` + `StrategyTable`
+- Options and Futures tabs each render a new `DerivativesStrategyForm` component with mode-specific fields
 
-**2. New tables**:
+#### 2. Create `src/components/strategy/DerivativesStrategyForm.tsx`
+- New form component accepting a `mode` prop (`options` | `futures`)
+- **Options-specific fields**: Contract type (Call/Put), Strike price (auto-suggested from current price), Expiry (1W/1M/3M/6M), Premium budget, Strategy preset (Long Call, Long Put, Covered Call, Straddle, Strangle, Iron Condor)
+- **Futures-specific fields**: Leverage (1x-125x slider), Contract type (Perpetual/Quarterly), Position direction (Long/Short), Margin type (Isolated/Cross), Funding rate awareness
+- **Shared fields**: Asset selector (reuse from existing), Investment amount, Risk tolerance slider
+- Calls `generateDerivativesStrategy` from the hook
 
-| Table | Purpose | Key Columns |
-|---|---|---|
-| `community_posts` | User posts | `id`, `user_id`, `content`, `image_url`, `post_type` (strategy/general), `asset_symbol`, `signal` (BUY/SELL/HOLD), `likes_count`, `comments_count`, `created_at` |
-| `community_likes` | Post likes | `id`, `user_id`, `post_id` (FK → community_posts), unique(user_id, post_id) |
-| `community_comments` | Post comments | `id`, `user_id`, `post_id` (FK → community_posts), `content`, `created_at` |
-| `friendships` | Friend connections | `id`, `requester_id`, `addressee_id`, `status` (pending/accepted/rejected), unique(requester_id, addressee_id) |
-| `direct_messages` | Friend-to-friend chat | `id`, `sender_id`, `receiver_id`, `content`, `is_read`, `created_at` |
+#### 3. Create `src/components/strategy/DerivativesResultCard.tsx`
+- Displays AI-generated derivatives strategy results
+- **Options view**: Max profit, max loss, breakeven price, Greeks (Delta, Gamma, Theta, Vega), payoff visualization description, optimal entry/exit timing
+- **Futures view**: Liquidation price, margin requirements, funding rate impact, leverage-adjusted P&L targets, position sizing
 
-All tables have RLS policies scoped to authenticated users. Posts/comments/likes readable by all authenticated users; insert/delete own only. Friendships: both parties can view; requester can insert; addressee can update status. DMs: sender/receiver can view; sender can insert.
+#### 4. Update `src/hooks/useStrategyBuilder.ts`
+- Add `DerivativesStrategyParams` interface with fields for options/futures config
+- Add `DerivativesAIResult` interface with options/futures-specific output fields
+- Add `generateDerivativesStrategy` function that calls the edge function with `type: 'derivatives_strategy'`
+- Add `lastDerivativesResult` state
+- Reuse existing DB save logic with `strategy_type` set to `options_*` or `futures_*`
 
-**3. Storage RLS**: Authenticated users can upload to `community-images`; public read access.
+#### 5. Update Edge Function (`supabase/functions/crypto-ai/index.ts`)
+- Add `derivatives_strategy` case in `buildSystemPrompt`
+- System prompt instructs AI to generate options or futures strategy based on mode
+- Options prompt: calculate Greeks, breakeven, max profit/loss, optimal strategy selection
+- Futures prompt: calculate liquidation price, margin requirements, leverage-adjusted targets
+- Returns structured JSON matching `DerivativesAIResult`
 
-### New Files
+### No Database Changes Needed
+The existing `strategies` table already has flexible columns (`strategy_type`, `conditions` as JSONB, `reasoning`) that can store derivatives-specific data. The `strategy_type` column will distinguish between `options_long_call`, `futures_long`, etc.
 
-**`src/pages/Community.tsx`**
-- Main community page with tabs: **Feed**, **Friends**, **Messages**
-- **Feed tab**: Create post form (text + optional image upload + optional strategy tag), scrollable post feed with like/comment buttons, inline comment thread
-- **Friends tab**: Search users by email/name, send friend request, list pending/accepted friends
-- **Messages tab**: List of friend conversations, click to open chat thread with real-time messages
+### Technical Details
+- The AI generates simulated Greeks and derivatives metrics based on current market data and volatility estimates
+- Liquidation price calculation: `entry_price * (1 - 1/leverage)` for longs, `entry_price * (1 + 1/leverage)` for shorts
+- Strategy presets for options map to specific AI prompt instructions
+- All results saved to the same `strategies` table with type-prefixed `strategy_type` values
 
-**`src/hooks/useCommunity.ts`**
-- Hook managing posts CRUD, likes toggle, comments, image upload to storage bucket
-- Functions: `createPost`, `fetchPosts`, `toggleLike`, `addComment`, `fetchComments`
-
-**`src/hooks/useFriends.ts`**
-- Hook for friend requests: `sendRequest`, `acceptRequest`, `rejectRequest`, `fetchFriends`, `searchUsers`
-
-**`src/hooks/useDirectMessages.ts`**
-- Hook for DMs: `sendMessage`, `fetchConversations`, `fetchMessages`, real-time subscription via Supabase channel
-
-### Modified Files
-
-**`src/App.tsx`**
-- Add route `/community` → `<Community />` (protected)
-
-**`src/components/AppHeader.tsx`**
-- Add "Community" to `navItems` array with `Users` icon and path `/community`
-- Update `activePage` type to include `'community'`
-
-**`src/components/MobileBottomNav.tsx`**
-- Add Community nav item with `Users` icon
-
-### UI Design
-- Post card: avatar, name, timestamp, content, optional image, strategy badge (BUY/SELL/HOLD), like button with count, comment button with count, expandable comment section
-- Create post: textarea + image upload button + optional asset/signal selector
-- Friend list: avatar + name + status badge + accept/reject buttons for pending
-- Chat: simple message bubbles (left/right), input at bottom, auto-scroll
-
-### Migration Summary
-1. Create `community-images` storage bucket
-2. Create 5 tables with RLS policies
-3. Create storage RLS policies for upload/read
+### Files
+| File | Action |
+|---|---|
+| `src/pages/StrategyBuilder.tsx` | Modify -- add tabs for Spot/Options/Futures |
+| `src/components/strategy/DerivativesStrategyForm.tsx` | Create -- form for options & futures params |
+| `src/components/strategy/DerivativesResultCard.tsx` | Create -- display derivatives AI results |
+| `src/hooks/useStrategyBuilder.ts` | Modify -- add derivatives types and generate function |
+| `supabase/functions/crypto-ai/index.ts` | Modify -- add derivatives_strategy prompt case |
 
