@@ -40,6 +40,8 @@ import { formatPrice } from '@/lib/format';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { useAIInsights } from '@/hooks/useAIInsights';
+import { OptionChain } from '@/components/markets/OptionChain';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Markets() {
   const { toast } = useToast();
