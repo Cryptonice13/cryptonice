@@ -1,58 +1,37 @@
 
 
-## Plan: Add Options & Futures Analysis Section to Strategy Builder
+## Plan: Add Spot & Options Tabs to Markets Page
 
 ### Overview
-Add a new tabbed section to the `/strategy` page that lets users generate AI-powered Options and Futures trading strategies for crypto assets, alongside the existing spot strategy builder.
+Add a top-level Tabs component on the `/markets` page with two sections: **Spot** (existing market list) and **Options** (simulated option chain display based on selected asset).
 
 ### Changes
 
-#### 1. Update Strategy Page with Tabs (`src/pages/StrategyBuilder.tsx`)
-- Add a `Tabs` component at the top with three tabs: **Spot**, **Options**, **Futures**
-- Spot tab contains the existing `StrategyForm` + `StrategyDetailCard` + `StrategyTable`
-- Options and Futures tabs each render a new `DerivativesStrategyForm` component with mode-specific fields
+#### 1. Modify `src/pages/Markets.tsx`
+- Wrap the existing market content below the header in a `Tabs` component with two tabs: **Spot** and **Options**
+- **Spot tab**: contains the existing asset table, AI analysis panel, and all current functionality (no changes)
+- **Options tab**: shows an asset selector dropdown at the top (populated from the same `useMarketData` assets), and below it renders an `OptionChain` component when an asset is selected
 
-#### 2. Create `src/components/strategy/DerivativesStrategyForm.tsx`
-- New form component accepting a `mode` prop (`options` | `futures`)
-- **Options-specific fields**: Contract type (Call/Put), Strike price (auto-suggested from current price), Expiry (1W/1M/3M/6M), Premium budget, Strategy preset (Long Call, Long Put, Covered Call, Straddle, Strangle, Iron Condor)
-- **Futures-specific fields**: Leverage (1x-125x slider), Contract type (Perpetual/Quarterly), Position direction (Long/Short), Margin type (Isolated/Cross), Funding rate awareness
-- **Shared fields**: Asset selector (reuse from existing), Investment amount, Risk tolerance slider
-- Calls `generateDerivativesStrategy` from the hook
-
-#### 3. Create `src/components/strategy/DerivativesResultCard.tsx`
-- Displays AI-generated derivatives strategy results
-- **Options view**: Max profit, max loss, breakeven price, Greeks (Delta, Gamma, Theta, Vega), payoff visualization description, optimal entry/exit timing
-- **Futures view**: Liquidation price, margin requirements, funding rate impact, leverage-adjusted P&L targets, position sizing
-
-#### 4. Update `src/hooks/useStrategyBuilder.ts`
-- Add `DerivativesStrategyParams` interface with fields for options/futures config
-- Add `DerivativesAIResult` interface with options/futures-specific output fields
-- Add `generateDerivativesStrategy` function that calls the edge function with `type: 'derivatives_strategy'`
-- Add `lastDerivativesResult` state
-- Reuse existing DB save logic with `strategy_type` set to `options_*` or `futures_*`
-
-#### 5. Update Edge Function (`supabase/functions/crypto-ai/index.ts`)
-- Add `derivatives_strategy` case in `buildSystemPrompt`
-- System prompt instructs AI to generate options or futures strategy based on mode
-- Options prompt: calculate Greeks, breakeven, max profit/loss, optimal strategy selection
-- Futures prompt: calculate liquidation price, margin requirements, leverage-adjusted targets
-- Returns structured JSON matching `DerivativesAIResult`
-
-### No Database Changes Needed
-The existing `strategies` table already has flexible columns (`strategy_type`, `conditions` as JSONB, `reasoning`) that can store derivatives-specific data. The `strategy_type` column will distinguish between `options_long_call`, `futures_long`, etc.
+#### 2. Create `src/components/markets/OptionChain.tsx`
+- Accepts `asset: CryptoAsset` prop
+- Generates a simulated option chain table with:
+  - **Header row**: Strike Price | Calls (Bid/Ask/IV/Delta) | Puts (Bid/Ask/IV/Delta)
+  - **Expiry selector**: tabs or dropdown for 1W, 2W, 1M, 3M expiry dates
+  - **Strike prices**: auto-generated around the current asset price (e.g., -20% to +20% in increments based on price magnitude)
+  - **Simulated data**: bid/ask prices, implied volatility, delta values generated algorithmically from the asset's current price and volatility (derived from 7d price change)
+- Color coding: ITM strikes highlighted with subtle background, ATM strike highlighted prominently
+- Responsive: horizontal scroll on mobile for the wide table
 
 ### Technical Details
-- The AI generates simulated Greeks and derivatives metrics based on current market data and volatility estimates
-- Liquidation price calculation: `entry_price * (1 - 1/leverage)` for longs, `entry_price * (1 + 1/leverage)` for shorts
-- Strategy presets for options map to specific AI prompt instructions
-- All results saved to the same `strategies` table with type-prefixed `strategy_type` values
+- Strike price generation: for an asset at $100, generate strikes at $80, $85, $90, $95, $100, $105, $110, $115, $120 (5% increments, adjusted for price magnitude)
+- Simulated IV: base IV derived from `abs(priceChange7d) * 5` with random variation per strike
+- Simulated Greeks: Delta calculated from strike distance to current price using simplified Black-Scholes approximation
+- Bid/Ask spread: 1-3% of premium, with premium calculated from intrinsic + time value estimates
+- Data is illustrative/educational -- clearly labeled as "Simulated Option Chain" with a disclaimer badge
 
 ### Files
 | File | Action |
 |---|---|
-| `src/pages/StrategyBuilder.tsx` | Modify -- add tabs for Spot/Options/Futures |
-| `src/components/strategy/DerivativesStrategyForm.tsx` | Create -- form for options & futures params |
-| `src/components/strategy/DerivativesResultCard.tsx` | Create -- display derivatives AI results |
-| `src/hooks/useStrategyBuilder.ts` | Modify -- add derivatives types and generate function |
-| `supabase/functions/crypto-ai/index.ts` | Modify -- add derivatives_strategy prompt case |
+| `src/pages/Markets.tsx` | Modify -- add Spot/Options tabs wrapping content |
+| `src/components/markets/OptionChain.tsx` | Create -- option chain display component |
 
