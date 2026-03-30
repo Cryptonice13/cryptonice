@@ -397,6 +397,8 @@ export default function Markets() {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
+      </main>
 
       {/* Mobile Analysis Sheet */}
       <Sheet open={analysisSheetOpen} onOpenChange={setAnalysisSheetOpen}>
