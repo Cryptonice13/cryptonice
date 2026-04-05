@@ -1,37 +1,33 @@
 
 
-## Plan: Add Spot & Options Tabs to Markets Page
-
-### Overview
-Add a top-level Tabs component on the `/markets` page with two sections: **Spot** (existing market list) and **Options** (simulated option chain display based on selected asset).
+## Plan: Coming Soon for Options/Futures + Fix Portfolio Chart
 
 ### Changes
 
-#### 1. Modify `src/pages/Markets.tsx`
-- Wrap the existing market content below the header in a `Tabs` component with two tabs: **Spot** and **Options**
-- **Spot tab**: contains the existing asset table, AI analysis panel, and all current functionality (no changes)
-- **Options tab**: shows an asset selector dropdown at the top (populated from the same `useMarketData` assets), and below it renders an `OptionChain` component when an asset is selected
+#### 1. Markets Page -- Options tab as "Coming Soon" (`src/pages/Markets.tsx`)
+- Replace the Options `TabsContent` body (asset selector + OptionChain) with a centered "Coming Soon" card showing a lock/clock icon, title, and description
+- Remove the `OptionChain` import and `optionAssetId` state since they're no longer needed
 
-#### 2. Create `src/components/markets/OptionChain.tsx`
-- Accepts `asset: CryptoAsset` prop
-- Generates a simulated option chain table with:
-  - **Header row**: Strike Price | Calls (Bid/Ask/IV/Delta) | Puts (Bid/Ask/IV/Delta)
-  - **Expiry selector**: tabs or dropdown for 1W, 2W, 1M, 3M expiry dates
-  - **Strike prices**: auto-generated around the current asset price (e.g., -20% to +20% in increments based on price magnitude)
-  - **Simulated data**: bid/ask prices, implied volatility, delta values generated algorithmically from the asset's current price and volatility (derived from 7d price change)
-- Color coding: ITM strikes highlighted with subtle background, ATM strike highlighted prominently
-- Responsive: horizontal scroll on mobile for the wide table
+#### 2. Strategy Page -- Options & Futures tabs as "Coming Soon" (`src/pages/StrategyBuilder.tsx`)
+- Replace both the Options and Futures `TabsContent` bodies with the same "Coming Soon" card
+- Remove imports for `DerivativesStrategyForm` and `DerivativesResultCard`, and related state (`derivativesAssetSymbol`, `derivativesMode`)
 
-### Technical Details
-- Strike price generation: for an asset at $100, generate strikes at $80, $85, $90, $95, $100, $105, $110, $115, $120 (5% increments, adjusted for price magnitude)
-- Simulated IV: base IV derived from `abs(priceChange7d) * 5` with random variation per strike
-- Simulated Greeks: Delta calculated from strike distance to current price using simplified Black-Scholes approximation
-- Bid/Ask spread: 1-3% of premium, with premium calculated from intrinsic + time value estimates
-- Data is illustrative/educational -- clearly labeled as "Simulated Option Chain" with a disclaimer badge
+#### 3. Fix Portfolio Performance Chart (`src/components/portfolio/PerformanceChart.tsx`)
+The current chart has issues:
+- The Tooltip `formatter` returns JSX inside an array which Recharts doesn't render properly
+- Running value calculation for transactions is flawed (buys double-count against cost basis)
+- Chart can show misleading data when there are no transactions in the time range
+
+**Fixes**:
+- Replace the custom JSX tooltip formatter with a proper Recharts `<Tooltip content={...} />` custom component that renders correctly
+- Fix the running value logic: start from cost basis, for each transaction adjust by the actual cash flow (buys add invested capital, sells realize P&L at market price at that time)
+- Add more intermediate interpolation points between transactions so the chart line isn't just straight segments between sparse points
+- Handle edge case where `costBasis` is 0 to avoid division-by-zero in P&L percentage
 
 ### Files
 | File | Action |
 |---|---|
-| `src/pages/Markets.tsx` | Modify -- add Spot/Options tabs wrapping content |
-| `src/components/markets/OptionChain.tsx` | Create -- option chain display component |
+| `src/pages/Markets.tsx` | Replace Options tab content with Coming Soon card |
+| `src/pages/StrategyBuilder.tsx` | Replace Options & Futures tab content with Coming Soon cards |
+| `src/components/portfolio/PerformanceChart.tsx` | Fix tooltip rendering, fix value calculation logic |
 
