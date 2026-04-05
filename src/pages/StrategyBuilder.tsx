@@ -4,8 +4,6 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import StrategyForm from '@/components/strategy/StrategyForm';
 import StrategyTable from '@/components/strategy/StrategyTable';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
-import DerivativesStrategyForm from '@/components/strategy/DerivativesStrategyForm';
-import DerivativesResultCard from '@/components/strategy/DerivativesResultCard';
 import { useStrategyBuilder, Strategy, StrategyAIResult } from '@/hooks/useStrategyBuilder';
 import { useMarketData } from '@/hooks/useMarketData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
