@@ -72,10 +72,10 @@ export default function StrategyBuilder() {
             <TabsTrigger value="spot" className="flex items-center gap-1.5">
               <Cpu className="w-4 h-4" /> Spot
             </TabsTrigger>
-            <TabsTrigger value="options" className="flex items-center gap-1.5" onClick={() => setDerivativesMode('options')}>
+            <TabsTrigger value="options" className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4" /> Options
             </TabsTrigger>
-            <TabsTrigger value="futures" className="flex items-center gap-1.5" onClick={() => setDerivativesMode('futures')}>
+            <TabsTrigger value="futures" className="flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4" /> Futures
             </TabsTrigger>
           </TabsList>
