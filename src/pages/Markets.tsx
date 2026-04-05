@@ -51,7 +51,6 @@ export default function Markets() {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [analysisSheetOpen, setAnalysisSheetOpen] = useState(false);
   const [marketTab, setMarketTab] = useState('spot');
-  const [optionAssetId, setOptionAssetId] = useState<string>('');
 
   const { assets, isLoading, refresh, lastUpdated } = useMarketData();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlistDb(address, user?.id);
