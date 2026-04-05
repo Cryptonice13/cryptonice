@@ -4,12 +4,12 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import StrategyForm from '@/components/strategy/StrategyForm';
 import StrategyTable from '@/components/strategy/StrategyTable';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
-import DerivativesStrategyForm from '@/components/strategy/DerivativesStrategyForm';
-import DerivativesResultCard from '@/components/strategy/DerivativesResultCard';
 import { useStrategyBuilder, Strategy, StrategyAIResult } from '@/hooks/useStrategyBuilder';
 import { useMarketData } from '@/hooks/useMarketData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Cpu, TrendingUp, BarChart3 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Cpu, TrendingUp, BarChart3, Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function StrategyBuilder() {
   const { assets } = useMarketData();
@@ -18,18 +18,13 @@ export default function StrategyBuilder() {
     isGenerating,
     isLoading,
     lastResult,
-    lastDerivativesResult,
     generateStrategy,
-    generateDerivativesStrategy,
     fetchStrategies,
     deleteStrategy,
     setLastResult,
-    setLastDerivativesResult,
   } = useStrategyBuilder();
 
   const [selectedAssetSymbol, setSelectedAssetSymbol] = useState('BTC');
-  const [derivativesAssetSymbol, setDerivativesAssetSymbol] = useState('BTC');
-  const [derivativesMode, setDerivativesMode] = useState<'options' | 'futures'>('options');
 
   useEffect(() => {
     fetchStrategies();
@@ -77,10 +72,10 @@ export default function StrategyBuilder() {
             <TabsTrigger value="spot" className="flex items-center gap-1.5">
               <Cpu className="w-4 h-4" /> Spot
             </TabsTrigger>
-            <TabsTrigger value="options" className="flex items-center gap-1.5" onClick={() => setDerivativesMode('options')}>
+            <TabsTrigger value="options" className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4" /> Options
             </TabsTrigger>
-            <TabsTrigger value="futures" className="flex items-center gap-1.5" onClick={() => setDerivativesMode('futures')}>
+            <TabsTrigger value="futures" className="flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4" /> Futures
             </TabsTrigger>
           </TabsList>
@@ -105,36 +100,30 @@ export default function StrategyBuilder() {
             />
           </TabsContent>
 
-          <TabsContent value="options" className="space-y-6 mt-4">
-            <DerivativesStrategyForm
-              mode="options"
-              assets={assets}
-              isGenerating={isGenerating}
-              onGenerate={(params) => {
-                setDerivativesAssetSymbol(params.assetSymbol);
-                setDerivativesMode('options');
-                generateDerivativesStrategy(params);
-              }}
-            />
-            {lastDerivativesResult && derivativesMode === 'options' && (
-              <DerivativesResultCard result={lastDerivativesResult} assetSymbol={derivativesAssetSymbol} mode="options" />
-            )}
+          <TabsContent value="options" className="mt-4">
+            <Card className="glass-card p-10 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Options Strategy Builder</h3>
+                <p className="text-sm text-muted-foreground mt-1">AI-powered options strategies with Greeks analysis and risk profiling.</p>
+              </div>
+              <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="futures" className="space-y-6 mt-4">
-            <DerivativesStrategyForm
-              mode="futures"
-              assets={assets}
-              isGenerating={isGenerating}
-              onGenerate={(params) => {
-                setDerivativesAssetSymbol(params.assetSymbol);
-                setDerivativesMode('futures');
-                generateDerivativesStrategy(params);
-              }}
-            />
-            {lastDerivativesResult && derivativesMode === 'futures' && (
-              <DerivativesResultCard result={lastDerivativesResult} assetSymbol={derivativesAssetSymbol} mode="futures" />
-            )}
+          <TabsContent value="futures" className="mt-4">
+            <Card className="glass-card p-10 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Futures Strategy Builder</h3>
+                <p className="text-sm text-muted-foreground mt-1">AI-driven futures strategies with leverage optimization and liquidation analysis.</p>
+              </div>
+              <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
