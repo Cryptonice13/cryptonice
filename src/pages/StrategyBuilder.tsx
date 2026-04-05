@@ -17,18 +17,13 @@ export default function StrategyBuilder() {
     isGenerating,
     isLoading,
     lastResult,
-    lastDerivativesResult,
     generateStrategy,
-    generateDerivativesStrategy,
     fetchStrategies,
     deleteStrategy,
     setLastResult,
-    setLastDerivativesResult,
   } = useStrategyBuilder();
 
   const [selectedAssetSymbol, setSelectedAssetSymbol] = useState('BTC');
-  const [derivativesAssetSymbol, setDerivativesAssetSymbol] = useState('BTC');
-  const [derivativesMode, setDerivativesMode] = useState<'options' | 'futures'>('options');
 
   useEffect(() => {
     fetchStrategies();
