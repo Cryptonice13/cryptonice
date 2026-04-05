@@ -358,41 +358,18 @@ export default function Markets() {
             </TabsContent>
 
             <TabsContent value="options" className="mt-4">
-              <div className="space-y-4">
-                {/* Asset Selector */}
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Select Asset:</label>
-                  <Select value={optionAssetId} onValueChange={setOptionAssetId}>
-                    <SelectTrigger className="w-full max-w-xs h-9">
-                      <SelectValue placeholder="Choose an asset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          <div className="flex items-center gap-2">
-                            <img src={a.logo} alt={a.name} className="w-5 h-5 rounded-full" />
-                            <span>{a.symbol}</span>
-                            <span className="text-muted-foreground text-xs">{formatPrice(a.price)}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <Card className="glass-card p-10 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+                  <Lock className="w-8 h-8 text-muted-foreground" />
                 </div>
-
-                {/* Option Chain */}
-                {optionAssetId && assets.find(a => a.id === optionAssetId) ? (
-                  <OptionChain asset={assets.find(a => a.id === optionAssetId)!} />
-                ) : (
-                  <Card className="glass-card p-8 text-center">
-                    <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                    <h3 className="font-semibold mb-1">Select an Asset</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Choose a cryptocurrency above to view its simulated option chain.
-                    </p>
-                  </Card>
-                )}
-              </div>
+                <div>
+                  <h3 className="text-lg font-bold">Options Trading</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Crypto options chain with real-time Greeks, IV surface, and strategy builder.
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

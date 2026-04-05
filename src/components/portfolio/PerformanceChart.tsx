@@ -36,6 +36,28 @@ interface PerformanceChartProps {
 
 type TimeRange = '7D' | '30D' | 'ALL';
 
+interface ChartDataPoint {
+  date: string;
+  value: number;
+  timestamp: number;
+}
+
+function CustomTooltip({ active, payload, costBasis }: any) {
+  if (!active || !payload?.length) return null;
+  const value = payload[0].value as number;
+  const pnl = value - costBasis;
+  const pct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2 shadow-md text-xs space-y-0.5">
+      <div className="text-foreground font-medium">${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div className="text-muted-foreground">Cost: ${costBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div className={`font-medium ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        P&L: {pnl >= 0 ? '+' : ''}${pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({pct.toFixed(1)}%)
+      </div>
+    </div>
+  );
+}
+
 export function PerformanceChart({ transactions, currentPrices, portfolio }: PerformanceChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('30D');
   const [selectedAsset, setSelectedAsset] = useState<string>('all');
@@ -56,12 +78,10 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
 
     if (relevantPositions.length === 0) return { chartData: [], costBasis: 0 };
 
-    // Cost basis = sum of (avg_buy_price * amount) for relevant positions
     const totalCostBasis = relevantPositions.reduce(
       (sum, p) => sum + p.avg_buy_price * p.amount, 0
     );
 
-    // Current value
     const currentValue = relevantPositions.reduce(
       (sum, p) => sum + p.amount * (currentPrices.get(p.asset_id) || p.avg_buy_price), 0
     );
@@ -73,16 +93,14 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
       ? new Date(now.getTime() - 30 * 86400000)
       : new Date(0);
 
-    // Get relevant transactions in time range
     const filteredTx = (selectedAsset === 'all'
       ? transactions
       : transactions.filter(t => t.asset_id === selectedAsset))
       .filter(t => new Date(t.created_at) >= cutoff)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    const dataPoints: { date: string; value: number; timestamp: number }[] = [];
+    const dataPoints: ChartDataPoint[] = [];
 
-    // Start point: cost basis at beginning of range
     const startLabel = timeRange === '7D' ? '7d ago' : timeRange === '30D' ? '30d ago' : 'Start';
     dataPoints.push({
       date: startLabel,
@@ -90,40 +108,31 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
       timestamp: cutoff.getTime(),
     });
 
-    // Add intermediate points from transactions (show portfolio value changes)
+    // Add transaction points with cumulative portfolio value tracking
     if (filteredTx.length > 0) {
-      // Build running value adjustments from transactions
-      let runningValue = totalCostBasis;
+      let cumulativeInvested = totalCostBasis;
       filteredTx.forEach(tx => {
         const txDate = new Date(tx.created_at);
         if (tx.transaction_type === 'buy') {
-          runningValue += tx.amount * tx.price_per_unit;
+          cumulativeInvested += tx.total_value;
         } else if (tx.transaction_type === 'sell') {
-          const position = relevantPositions.find(p => p.asset_id === tx.asset_id);
-          const avgPrice = position ? position.avg_buy_price : tx.price_per_unit;
-          // Adjust by the P&L of the sell
-          const pnl = tx.amount * (tx.price_per_unit - avgPrice);
-          runningValue += pnl;
+          cumulativeInvested -= tx.total_value;
         }
         dataPoints.push({
           date: txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          value: Math.round(runningValue * 100) / 100,
+          value: Math.round(Math.max(0, cumulativeInvested) * 100) / 100,
           timestamp: txDate.getTime(),
         });
       });
     }
 
-    // End point: current value
     dataPoints.push({
       date: 'Now',
       value: Math.round(currentValue * 100) / 100,
       timestamp: now.getTime(),
     });
 
-    return {
-      chartData: dataPoints,
-      costBasis: totalCostBasis,
-    };
+    return { chartData: dataPoints, costBasis: totalCostBasis };
   }, [transactions, currentPrices, timeRange, selectedAsset, portfolio]);
 
   if (portfolio.length === 0) return null;
@@ -137,11 +146,10 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
     ? 'All Assets'
     : assetOptions.find(a => a.id === selectedAsset)?.symbol?.toUpperCase() || '';
 
-  // Y-axis domain: ±5% around the data range, never starting from 0
   const allValues = chartData.map(d => d.value);
   const minVal = Math.min(...allValues);
   const maxVal = Math.max(...allValues);
-  const padding = Math.max((maxVal - minVal) * 0.1, costBasis * 0.02);
+  const padding = Math.max((maxVal - minVal) * 0.1, (costBasis || 1) * 0.02);
   const yMin = Math.max(0, minVal - padding);
   const yMax = maxVal + padding;
 
@@ -248,38 +256,9 @@ export function PerformanceChart({ transactions, currentPrices, portfolio }: Per
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="4 4"
                   strokeOpacity={0.5}
-                  label={{
-                    value: 'Cost',
-                    position: 'left',
-                    fill: 'hsl(var(--muted-foreground))',
-                    fontSize: 9,
-                  }}
                 />
               )}
-              <Tooltip
-                contentStyle={{
-                  background: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  padding: '8px 12px',
-                }}
-                formatter={(value: number) => {
-                  const itemPnl = value - costBasis;
-                  const itemPct = costBasis > 0 ? (itemPnl / costBasis) * 100 : 0;
-                  return [
-                    <div key="tip" className="space-y-0.5">
-                      <div className="text-foreground font-medium">${value.toLocaleString()}</div>
-                      <div className="text-muted-foreground text-[10px]">Cost: ${costBasis.toLocaleString()}</div>
-                      <div className={`text-[10px] font-medium ${itemPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        P&L: {itemPnl >= 0 ? '+' : ''}${itemPnl.toLocaleString()} ({itemPct.toFixed(1)}%)
-                      </div>
-                    </div>,
-                    '',
-                  ];
-                }}
-                labelFormatter={(label) => label}
-              />
+              <Tooltip content={<CustomTooltip costBasis={costBasis} />} />
               <Area
                 type="monotone"
                 dataKey="value"
