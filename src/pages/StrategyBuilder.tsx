@@ -7,6 +7,7 @@ import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
 import { useStrategyBuilder, Strategy, StrategyAIResult } from '@/hooks/useStrategyBuilder';
 import { useMarketData } from '@/hooks/useMarketData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { Cpu, TrendingUp, BarChart3, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
