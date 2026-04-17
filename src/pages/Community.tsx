@@ -166,13 +166,13 @@ function FeedTab({ onOpenProfile }: { onOpenProfile: (userId: string) => void })
           <Card key={post.id} className="border-border/50">
             <CardContent className="p-4 space-y-3">
               {/* Header */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <button
                   type="button"
                   onClick={() => onOpenProfile(post.user_id)}
                   className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity text-left"
                 >
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-8 h-8 shrink-0">
                     <AvatarFallback className="text-xs bg-primary/20 text-primary">
                       {post.user_name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -184,35 +184,42 @@ function FeedTab({ onOpenProfile }: { onOpenProfile: (userId: string) => void })
                     </p>
                   </div>
                 </button>
-                {post.post_type === 'strategy' && post.signal && (
-                  <Badge variant="outline" className={cn('text-[10px] gap-1', signalColor(post.signal))}>
-                    {signalIcon(post.signal)}
-                    {post.signal}
-                    {post.asset_symbol && ` · ${post.asset_symbol}`}
-                  </Badge>
-                )}
-                {user?.id === post.user_id && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingPost({ id: post.id, content: post.content })}>
-                        <Pencil className="w-3.5 h-3.5 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => deletePost(post.id)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {post.post_type === 'strategy' && post.signal && (
+                    <Badge variant="outline" className={cn('text-[10px] gap-1', signalColor(post.signal))}>
+                      {signalIcon(post.signal)}
+                      {post.signal}
+                      {post.asset_symbol && ` · ${post.asset_symbol}`}
+                    </Badge>
+                  )}
+                  {user?.id === post.user_id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                          aria-label="Post options"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-50 bg-popover">
+                        <DropdownMenuItem onClick={() => setEditingPost({ id: post.id, content: post.content })}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => deletePost(post.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
 
               {/* Content */}
