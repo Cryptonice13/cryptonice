@@ -530,42 +530,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flexes: {
-        Row: {
-          caption: string
-          cid: string
-          created_at: string
-          flex_type: string
-          hashtags: string[] | null
-          id: string
-          image_cid: string | null
-          show_portfolio_value: boolean | null
-          wallet_address: string
-        }
-        Insert: {
-          caption: string
-          cid: string
-          created_at?: string
-          flex_type?: string
-          hashtags?: string[] | null
-          id?: string
-          image_cid?: string | null
-          show_portfolio_value?: boolean | null
-          wallet_address: string
-        }
-        Update: {
-          caption?: string
-          cid?: string
-          created_at?: string
-          flex_type?: string
-          hashtags?: string[] | null
-          id?: string
-          image_cid?: string | null
-          show_portfolio_value?: boolean | null
-          wallet_address?: string
-        }
-        Relationships: []
-      }
       friendships: {
         Row: {
           addressee_id: string
