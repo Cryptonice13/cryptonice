@@ -19,6 +19,7 @@ import { useFriends } from '@/hooks/useFriends';
 import { useDirectMessages } from '@/hooks/useDirectMessages';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { UserProfileSheet } from '@/components/community/UserProfileSheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 
 // ─── Feed Tab ───
-function FeedTab() {
+function FeedTab({ onOpenProfile }: { onOpenProfile: (userId: string) => void }) {
   const { posts, loading, createPost, toggleLike, fetchComments, addComment, deletePost, editPost } = useCommunity();
   const { user } = useAuth();
   const [content, setContent] = useState('');
@@ -166,17 +167,23 @@ function FeedTab() {
             <CardContent className="p-4 space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                    {post.user_name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{post.user_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpenProfile(post.user_id)}
+                  className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity text-left"
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                      {post.user_name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate hover:underline">{post.user_name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </button>
                 {post.post_type === 'strategy' && post.signal && (
                   <Badge variant="outline" className={cn('text-[10px] gap-1', signalColor(post.signal))}>
                     {signalIcon(post.signal)}
@@ -428,13 +435,21 @@ function FriendsTab() {
 }
 
 // ─── Messages Tab ───
-function MessagesTab() {
+function MessagesTab({ initialFriend, onConsumeInitial }: { initialFriend: { id: string; name: string } | null; onConsumeInitial: () => void }) {
   const { friends } = useFriends();
   const { user } = useAuth();
   const [activeFriend, setActiveFriend] = useState<{ id: string; name: string } | null>(null);
   const { conversations, messages, loading, fetchConversations, sendMessage } = useDirectMessages(activeFriend?.id);
   const [msgText, setMsgText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Open chat when an initial friend is provided
+  useEffect(() => {
+    if (initialFriend) {
+      setActiveFriend(initialFriend);
+      onConsumeInitial();
+    }
+  }, [initialFriend, onConsumeInitial]);
 
   useEffect(() => {
     if (friends.length > 0 && user) {
@@ -556,6 +571,22 @@ function MessagesTab() {
 
 // ─── Main Community Page ───
 export default function Community() {
+  const [tab, setTab] = useState<string>('feed');
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [pendingChatFriend, setPendingChatFriend] = useState<{ id: string; name: string } | null>(null);
+
+  const handleOpenProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setProfileOpen(true);
+  };
+
+  const handleMessageFromProfile = (friendId: string, name: string) => {
+    setPendingChatFriend({ id: friendId, name });
+    setTab('messages');
+    setProfileOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader activePage="community" />
@@ -565,7 +596,7 @@ export default function Community() {
           <p className="text-sm text-muted-foreground">Share strategies, connect with traders</p>
         </div>
 
-        <Tabs defaultValue="feed" className="w-full">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
           <TabsList className="w-full grid grid-cols-3 mb-4">
             <TabsTrigger value="feed">Feed</TabsTrigger>
             <TabsTrigger value="friends">Friends</TabsTrigger>
@@ -573,17 +604,27 @@ export default function Community() {
           </TabsList>
 
           <TabsContent value="feed">
-            <FeedTab />
+            <FeedTab onOpenProfile={handleOpenProfile} />
           </TabsContent>
           <TabsContent value="friends">
             <FriendsTab />
           </TabsContent>
           <TabsContent value="messages">
-            <MessagesTab />
+            <MessagesTab
+              initialFriend={pendingChatFriend}
+              onConsumeInitial={() => setPendingChatFriend(null)}
+            />
           </TabsContent>
         </Tabs>
       </main>
       <MobileBottomNav />
+
+      <UserProfileSheet
+        userId={profileUserId}
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onMessage={handleMessageFromProfile}
+      />
     </div>
   );
 }
