@@ -19,6 +19,7 @@ import { useFriends } from '@/hooks/useFriends';
 import { useDirectMessages } from '@/hooks/useDirectMessages';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { UserProfileSheet } from '@/components/community/UserProfileSheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
