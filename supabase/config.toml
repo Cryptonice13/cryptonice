@@ -2,3 +2,15 @@ project_id = "ttqhdfxzrajwgpbkkhjj"
 
 [functions.crypto-ai]
 verify_jwt = false
+
+[functions.portfolio-brief]
+verify_jwt = false
+
+[functions.verify-signals]
+verify_jwt = false
+
+[functions.parse-conditional-alert]
+verify_jwt = false
+
+[functions.evaluate-conditional-alerts]
+verify_jwt = false
