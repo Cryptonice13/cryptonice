@@ -437,6 +437,60 @@ export type Database = {
         }
         Relationships: []
       }
+      conditional_alerts: {
+        Row: {
+          assets_involved: string[]
+          conditions: Json
+          created_at: string
+          id: string
+          last_evaluated_at: string | null
+          logic: string
+          name: string
+          natural_language: string
+          notify_via: Json
+          status: string
+          triggered_at: string | null
+          triggered_data: Json | null
+          updated_at: string
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          assets_involved?: string[]
+          conditions?: Json
+          created_at?: string
+          id?: string
+          last_evaluated_at?: string | null
+          logic?: string
+          name: string
+          natural_language: string
+          notify_via?: Json
+          status?: string
+          triggered_at?: string | null
+          triggered_data?: Json | null
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          assets_involved?: string[]
+          conditions?: Json
+          created_at?: string
+          id?: string
+          last_evaluated_at?: string | null
+          logic?: string
+          name?: string
+          natural_language?: string
+          notify_via?: Json
+          status?: string
+          triggered_at?: string | null
+          triggered_data?: Json | null
+          updated_at?: string
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       credit_purchases: {
         Row: {
           amount_usd: number
@@ -554,6 +608,42 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_briefs: {
+        Row: {
+          brief_data: Json
+          brief_date: string
+          created_at: string
+          day_change_pct: number
+          id: string
+          portfolio_snapshot: Json
+          total_value: number
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          brief_data?: Json
+          brief_date?: string
+          created_at?: string
+          day_change_pct?: number
+          id?: string
+          portfolio_snapshot?: Json
+          total_value?: number
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          brief_data?: Json
+          brief_date?: string
+          created_at?: string
+          day_change_pct?: number
+          id?: string
+          portfolio_snapshot?: Json
+          total_value?: number
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       portfolio_transactions: {
         Row: {
           amount: number
@@ -626,6 +716,93 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      published_signals: {
+        Row: {
+          asset_id: string
+          asset_logo: string | null
+          asset_name: string | null
+          asset_symbol: string
+          closed_at: string | null
+          closed_price: number | null
+          entry_price: number
+          id: string
+          last_checked_at: string | null
+          outcome: string | null
+          pnl_pct: number | null
+          published_at: string
+          publisher_user_id: string
+          reasoning: string
+          signal: string
+          status: string
+          stop_loss: number
+          take_profits: Json
+          timeframe: string
+        }
+        Insert: {
+          asset_id: string
+          asset_logo?: string | null
+          asset_name?: string | null
+          asset_symbol: string
+          closed_at?: string | null
+          closed_price?: number | null
+          entry_price: number
+          id?: string
+          last_checked_at?: string | null
+          outcome?: string | null
+          pnl_pct?: number | null
+          published_at?: string
+          publisher_user_id: string
+          reasoning: string
+          signal: string
+          status?: string
+          stop_loss: number
+          take_profits?: Json
+          timeframe?: string
+        }
+        Update: {
+          asset_id?: string
+          asset_logo?: string | null
+          asset_name?: string | null
+          asset_symbol?: string
+          closed_at?: string | null
+          closed_price?: number | null
+          entry_price?: number
+          id?: string
+          last_checked_at?: string | null
+          outcome?: string | null
+          pnl_pct?: number | null
+          published_at?: string
+          publisher_user_id?: string
+          reasoning?: string
+          signal?: string
+          status?: string
+          stop_loss?: number
+          take_profits?: Json
+          timeframe?: string
+        }
+        Relationships: []
+      }
+      signal_followers: {
+        Row: {
+          created_at: string
+          follower_user_id: string
+          id: string
+          publisher_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_user_id: string
+          id?: string
+          publisher_user_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_user_id?: string
+          id?: string
+          publisher_user_id?: string
         }
         Relationships: []
       }
@@ -826,7 +1003,23 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      publisher_stats: {
+        Row: {
+          active_signals: number | null
+          avg_pnl_pct: number | null
+          follower_count: number | null
+          last_signal_at: string | null
+          losses: number | null
+          publisher_avatar: string | null
+          publisher_name: string | null
+          publisher_user_id: string | null
+          total_pnl_pct: number | null
+          total_signals: number | null
+          win_rate: number | null
+          wins: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_flexes_with_urls: {
