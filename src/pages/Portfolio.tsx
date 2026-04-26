@@ -55,6 +55,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppHeader from '@/components/AppHeader';
 import { PerformanceChart } from '@/components/portfolio/PerformanceChart';
+import { DailyBrief } from '@/components/portfolio/DailyBrief';
 import { cn } from '@/lib/utils';
 
 export default function Portfolio() {
@@ -279,6 +280,14 @@ export default function Portfolio() {
           </div>
 
           <PerformanceChart transactions={transactions} currentPrices={currentPrices} portfolio={portfolio} />
+
+          <DailyBrief portfolio={portfolio.map(p => ({
+            symbol: p.asset_symbol,
+            asset_id: p.asset_id,
+            name: p.asset_name,
+            amount: p.amount,
+            avg_buy_price: p.avg_buy_price,
+          }))} />
 
           <div className="space-y-4">
             {/* Wallet Holdings */}

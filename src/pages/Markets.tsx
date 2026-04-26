@@ -40,7 +40,9 @@ import { formatPrice } from '@/lib/format';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { useAIInsights } from '@/hooks/useAIInsights';
-import { Lock } from 'lucide-react';
+import { Lock, Trophy } from 'lucide-react';
+import { SignalMarketplace } from '@/components/markets/SignalMarketplace';
+import { PublishSignalDialog } from '@/components/markets/PublishSignalDialog';
 
 export default function Markets() {
   const { toast } = useToast();
@@ -137,13 +139,20 @@ export default function Markets() {
           {/* Spot / Options Tabs */}
           <Tabs value={marketTab} onValueChange={setMarketTab}>
             <TabsList className="h-9">
-              <TabsTrigger value="spot" className="text-xs gap-1.5 px-4">
+              <TabsTrigger value="spot" className="text-xs gap-1.5 px-3">
                 <Activity className="w-3.5 h-3.5" /> Spot
               </TabsTrigger>
-              <TabsTrigger value="options" className="text-xs gap-1.5 px-4">
+              <TabsTrigger value="signals" className="text-xs gap-1.5 px-3">
+                <Trophy className="w-3.5 h-3.5" /> Signals
+              </TabsTrigger>
+              <TabsTrigger value="options" className="text-xs gap-1.5 px-3">
                 <BarChart3 className="w-3.5 h-3.5" /> Options
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="signals" className="mt-4">
+              <SignalMarketplace />
+            </TabsContent>
 
             <TabsContent value="spot" className="mt-4">
               <div className="grid lg:grid-cols-3 gap-4">
