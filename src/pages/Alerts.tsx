@@ -490,6 +490,11 @@ export default function Alerts() {
                 />
               </TabsContent>
 
+              {/* ===== CONDITIONAL ALERTS TAB ===== */}
+              <TabsContent value="conditional" className="mt-4">
+                <ConditionalAlertBuilder />
+              </TabsContent>
+
               {/* ===== HISTORY TAB ===== */}
               <TabsContent value="history" className="mt-4 space-y-4">
                 {/* Analytics Summary */}
