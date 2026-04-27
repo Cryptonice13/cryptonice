@@ -275,6 +275,21 @@ export default function Markets() {
                             logo={selectedAssetData.logo}
                             onSave={saveSignal}
                           />
+                          <PublishSignalDialog
+                            asset={{
+                              id: selectedAssetData.id,
+                              symbol: selectedAssetData.symbol,
+                              name: selectedAssetData.name,
+                              logo: selectedAssetData.logo,
+                            }}
+                            prefill={{
+                              signal: 'BUY',
+                              entry: selectedAssetData.price,
+                              stopLoss: 0,
+                              takeProfits: [],
+                              reasoning: '',
+                            }}
+                          />
                           <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => navigate('/insights')}>
                             View History <ArrowRight className="w-3 h-3" />
                           </Button>
@@ -439,6 +454,21 @@ export default function Markets() {
                     price={selectedAssetData.price}
                     logo={selectedAssetData.logo}
                     onSave={saveSignal}
+                  />
+                  <PublishSignalDialog
+                    asset={{
+                      id: selectedAssetData.id,
+                      symbol: selectedAssetData.symbol,
+                      name: selectedAssetData.name,
+                      logo: selectedAssetData.logo,
+                    }}
+                    prefill={{
+                      signal: 'BUY',
+                      entry: selectedAssetData.price,
+                      stopLoss: 0,
+                      takeProfits: [],
+                      reasoning: '',
+                    }}
                   />
                   <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1.5" onClick={() => { setAnalysisSheetOpen(false); navigate('/insights'); }}>
                     View History <ArrowRight className="w-3 h-3" />

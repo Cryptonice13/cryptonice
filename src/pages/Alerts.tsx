@@ -55,6 +55,7 @@ import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import AppHeader from '@/components/AppHeader';
 import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
+import { ConditionalAlertBuilder } from '@/components/alerts/ConditionalAlertBuilder';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice } from '@/lib/format';
 
@@ -282,7 +283,7 @@ export default function Alerts() {
             </Card>
           ) : (
             <Tabs defaultValue="watchlist" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="watchlist" className="text-xs sm:text-sm">
                   <Star className="w-3.5 h-3.5 mr-1" />
                   <span className="hidden sm:inline">Watchlist</span>
@@ -293,6 +294,11 @@ export default function Alerts() {
                   <Bell className="w-3.5 h-3.5 mr-1" />
                   <span className="hidden sm:inline">AI Alerts</span>
                   <span className="sm:hidden">AI</span>
+                </TabsTrigger>
+                <TabsTrigger value="conditional" className="text-xs sm:text-sm">
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">Conditional</span>
+                  <span className="sm:hidden">Cond</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="text-xs sm:text-sm relative">
                   <History className="w-3.5 h-3.5 mr-1" />
@@ -482,6 +488,11 @@ export default function Alerts() {
                     await setAlert(assetId, price, type);
                   }}
                 />
+              </TabsContent>
+
+              {/* ===== CONDITIONAL ALERTS TAB ===== */}
+              <TabsContent value="conditional" className="mt-4">
+                <ConditionalAlertBuilder />
               </TabsContent>
 
               {/* ===== HISTORY TAB ===== */}
