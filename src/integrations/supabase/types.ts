@@ -785,6 +785,63 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_scans: {
+        Row: {
+          ai_verdict: string | null
+          chain: string
+          contract_address: string
+          created_at: string
+          dex_data: Json | null
+          factors: Json
+          goplus_data: Json | null
+          id: string
+          recommendation: string | null
+          risk_level: string
+          risk_score: number
+          token_logo: string | null
+          token_name: string | null
+          token_symbol: string | null
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          ai_verdict?: string | null
+          chain?: string
+          contract_address: string
+          created_at?: string
+          dex_data?: Json | null
+          factors?: Json
+          goplus_data?: Json | null
+          id?: string
+          recommendation?: string | null
+          risk_level?: string
+          risk_score?: number
+          token_logo?: string | null
+          token_name?: string | null
+          token_symbol?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          ai_verdict?: string | null
+          chain?: string
+          contract_address?: string
+          created_at?: string
+          dex_data?: Json | null
+          factors?: Json
+          goplus_data?: Json | null
+          id?: string
+          recommendation?: string | null
+          risk_level?: string
+          risk_score?: number
+          token_logo?: string | null
+          token_name?: string | null
+          token_symbol?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       signal_followers: {
         Row: {
           created_at: string
