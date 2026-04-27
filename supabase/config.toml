@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.evaluate-conditional-alerts]
 verify_jwt = false
+
+[functions.token-safety-scan]
+verify_jwt = false

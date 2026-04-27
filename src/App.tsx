@@ -25,6 +25,7 @@ import Credits from "./pages/Credits";
 import FloatingChatButton from "./components/FloatingChatButton";
 import ResetPassword from "./pages/ResetPassword";
 import Community from "./pages/Community";
+import Safety from "./pages/Safety";
 const queryClient = new QueryClient();
 
 const WalletInitializer = () => {
@@ -114,6 +115,11 @@ const App = () => (
                 <Route path="/community" element={
                   <ProtectedRoute>
                     <Community />
+                  </ProtectedRoute>
+                } />
+                <Route path="/safety" element={
+                  <ProtectedRoute>
+                    <Safety />
                   </ProtectedRoute>
                 } />
               </Routes>
