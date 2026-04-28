@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Search, Loader2, Sparkles, Zap, Clock, History, ExternalLink, Trash2 } from 'lucide-react';
+import { Shield, Search, Loader2, Sparkles, Zap, Clock, History, ExternalLink, Trash2, FileDown, Share2 } from 'lucide-react';
+import { downloadSafetyReportPdf } from '@/lib/safetyReportPdf';
+import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from '@/components/ui/button';
@@ -41,6 +43,30 @@ export default function Safety() {
   const [chain, setChain] = useState('ethereum');
   const { scanning, scan, runScan, history, refreshHistory, loadScanById, SCAN_COST } = useSafetyScan();
   const { balance } = useCredits();
+  const { toast } = useToast();
+
+  const handleDownloadPdf = () => {
+    if (!scan) return;
+    try {
+      downloadSafetyReportPdf(scan);
+      toast({ title: 'Report downloaded', description: 'Your safety report PDF is ready to share.' });
+    } catch (e: any) {
+      toast({ title: 'PDF generation failed', description: e?.message || 'Try again.', variant: 'destructive' });
+    }
+  };
+
+  const handleShare = async () => {
+    if (!scan) return;
+    const text = `Token Safety Scan — ${scan.token_name || scan.contract_address}\nRisk: ${scan.risk_score}/100 (${scan.risk_level.toUpperCase()}) → ${scan.recommendation}\n${scan.ai_verdict || ''}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Token Safety Report', text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast({ title: 'Copied to clipboard', description: 'Share the summary anywhere.' });
+      }
+    } catch {/* user cancelled */}
+  };
 
   const handleScan = () => {
     runScan(contract, chain);
@@ -181,6 +207,25 @@ export default function Safety() {
                         {scan.contract_address.slice(0, 10)}...{scan.contract_address.slice(-8)}
                         <ExternalLink className="w-3 h-3" />
                       </a>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleShare}
+                        className="h-8 px-2.5"
+                      >
+                        <Share2 className="w-3.5 h-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline text-xs">Share</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleDownloadPdf}
+                        className="h-8 px-2.5 button-gradient"
+                      >
+                        <FileDown className="w-3.5 h-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline text-xs">PDF Report</span>
+                      </Button>
                     </div>
                   </div>
 
