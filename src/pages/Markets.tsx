@@ -43,6 +43,8 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 import { Lock, Trophy } from 'lucide-react';
 import { SignalMarketplace } from '@/components/markets/SignalMarketplace';
 import { PublishSignalDialog } from '@/components/markets/PublishSignalDialog';
+import { RealtimePanel } from '@/components/markets/realtime/RealtimePanel';
+import { Radio } from 'lucide-react';
 
 export default function Markets() {
   const { toast } = useToast();
@@ -138,9 +140,12 @@ export default function Markets() {
 
           {/* Spot / Options Tabs */}
           <Tabs value={marketTab} onValueChange={setMarketTab}>
-            <TabsList className="h-9">
+            <TabsList className="h-9 flex-wrap">
               <TabsTrigger value="spot" className="text-xs gap-1.5 px-3">
                 <Activity className="w-3.5 h-3.5" /> Spot
+              </TabsTrigger>
+              <TabsTrigger value="realtime" className="text-xs gap-1.5 px-3">
+                <Radio className="w-3.5 h-3.5" /> Realtime
               </TabsTrigger>
               <TabsTrigger value="signals" className="text-xs gap-1.5 px-3">
                 <Trophy className="w-3.5 h-3.5" /> Signals
@@ -149,6 +154,10 @@ export default function Markets() {
                 <BarChart3 className="w-3.5 h-3.5" /> Options
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="realtime" className="mt-4">
+              <RealtimePanel assets={assets} initialAssetId={selectedAsset} />
+            </TabsContent>
 
             <TabsContent value="signals" className="mt-4">
               <SignalMarketplace />

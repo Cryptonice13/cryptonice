@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.token-safety-scan]
 verify_jwt = false
+
+[functions.market-data-ccxt]
+verify_jwt = false
