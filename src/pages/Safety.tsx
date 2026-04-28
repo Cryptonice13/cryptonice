@@ -208,6 +208,25 @@ export default function Safety() {
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleShare}
+                        className="h-8 px-2.5"
+                      >
+                        <Share2 className="w-3.5 h-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline text-xs">Share</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleDownloadPdf}
+                        className="h-8 px-2.5 button-gradient"
+                      >
+                        <FileDown className="w-3.5 h-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline text-xs">PDF Report</span>
+                      </Button>
+                    </div>
                   </div>
 
                   {scan.ai_verdict && (
