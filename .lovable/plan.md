@@ -1,144 +1,124 @@
-## Plan: Three Premium Features (Gaps 3, 4, 5)
 
-Build three full working modules with backend (DB + edge functions), wired into existing pages and credit system.
+## Goal
 
----
+Upgrade Markets from a single CoinGecko snapshot (60s polling, top 50 coins, no depth) to a **multi-exchange real-time market data layer** powered by **CCXT**, exposing:
 
-### GAP 3 — Daily Portfolio Brief (`/portfolio`)
+- Live tickers across exchanges (Binance, Coinbase, Kraken, Bybit, OKX)
+- Live **order book** (bids/asks depth)
+- Live **recent trades** tape
+- **OHLCV candlestick** chart (1m / 5m / 1h / 1d)
+- **Funding rates** for perpetual futures
+- **Cross-exchange price comparison** (arbitrage spotter)
 
-**Problem solved**: Users don't understand *why* their portfolio moved.
+## Why CCXT (not browser-direct)
 
-**New DB table** `portfolio_briefs`
-- `id, user_id, wallet_address, brief_date (date), portfolio_snapshot (jsonb), total_value, day_change_pct, brief_data (jsonb {summary, top_movers, why_explanations[], news_drivers[], outlook}), created_at`
-- RLS: own rows by user_id OR wallet_address (same pattern as other tables)
-- Unique index on `(user_id, brief_date)` and `(wallet_address, brief_date)` to enforce 1 brief per day
+CCXT is a Node/Python/PHP library — it cannot run in the browser due to CORS on exchange APIs. It must run server-side. We will run it inside a **Supabase Edge Function** (Deno) using the `npm:ccxt` import that Deno supports.
 
-**Edge function** `portfolio-brief` (new)
-- Input: `{portfolio: [{symbol, amount, avg_buy_price}]}` + auth identity
-- Fetches live CoinGecko market data **and 24h news** for held assets
-- Calls Lovable AI (`google/gemini-3-flash-preview`) with structured tool-call output
-- Returns JSON: `{summary, top_movers:[{symbol, change_pct, contribution_usd}], why_explanations:[{symbol, reason}], news_drivers:[{title, url, impact}], outlook}`
-- Saves to `portfolio_briefs` table
-- Cost: **3 credits** (deducted via existing `checkAndDeductCredits`)
+For true streaming (WebSockets) we will use **short-poll + edge function** (every 2–5s) rather than ccxt.pro (paid). This is realistic for retail UX and avoids paid tier.
 
-**New component** `src/components/portfolio/DailyBrief.tsx`
-- Card placed under `<PerformanceChart>` in `Portfolio.tsx`
-- "Generate Today's Brief" button (disabled if today's brief exists → shows existing one)
-- Renders: hero summary, top movers list with green/red chips, "Why" explanations per asset, news headlines as links, outlook badge
-- History dropdown to view past 7 days
+## Architecture
 
-**Hook** `src/hooks/usePortfolioBrief.ts` — `generateBrief(portfolio)`, `getTodayBrief()`, `getBriefHistory()`
+```text
+Browser (React)
+   │  fetch every 2-5s (or on-demand)
+   ▼
+Edge Function: market-data-ccxt   ──►  Binance / Coinbase / Kraken / OKX / Bybit
+   │  (uses npm:ccxt in Deno)
+   ▼
+Returns: ticker | orderbook | trades | ohlcv | funding | compare
+```
 
----
+Single edge function, multiple `action` modes — keeps cold-start cost low.
 
-### GAP 4 — Verified Signal Marketplace (`/markets` Signal tab)
+## What gets built
 
-**Problem solved**: Influencer signals are noise / paid shilling. Need verified track records.
+### 1. Edge function: `supabase/functions/market-data-ccxt/index.ts`
+Accepts `{ action, exchange, symbol, timeframe?, limit? }`:
+- `ticker` — last price, 24h vol, change, bid/ask
+- `orderbook` — top 20 bids/asks
+- `trades` — last 50 trades
+- `ohlcv` — candles for chart
+- `funding` — perp funding rate (Binance/Bybit/OKX)
+- `compare` — same symbol across 5 exchanges → spread %
 
-**New DB tables**:
-1. `published_signals` — when a user "publishes" a trading signal generated on Markets page
-   - `id, publisher_user_id, asset_id, asset_symbol, signal (BUY/SELL/HOLD), entry_price, stop_loss, take_profits (jsonb), timeframe, reasoning, published_at, status (active/closed/expired), closed_price, closed_at, outcome (win/loss/breakeven/pending), pnl_pct`
-   - Public SELECT (anyone can browse), INSERT only own (auth required), UPDATE own
-2. `signal_followers` — track who follows which publisher
-   - `id, follower_user_id, publisher_user_id, created_at` — unique pair
-3. View / function `publisher_stats` — computed stats: `total_signals, win_rate, avg_pnl, avg_rr, max_drawdown, last_30d_pnl, follower_count`
+Public (no auth required, no credit cost — exchange APIs are free/public).
+In-memory 2s cache per (action,exchange,symbol) to absorb burst polls.
 
-**Edge function** `verify-signals` (new, scheduled hourly via pg_cron)
-- For each `active` signal in `published_signals`, fetch current CoinGecko price
-- If price hits `stop_loss` → mark `loss`, record pnl
-- If price hits any `take_profits` level → mark `win` proportionally
-- If `published_at` > 7 days and timeframe expired → mark `expired`
-- Updates `closed_price, closed_at, outcome, pnl_pct`
+### 2. New hook: `src/hooks/useRealtimeMarket.ts`
+- `useTicker(exchange, symbol, intervalMs=3000)`
+- `useOrderBook(exchange, symbol, intervalMs=2000)`
+- `useTrades(exchange, symbol, intervalMs=3000)`
+- `useOHLCV(exchange, symbol, timeframe)` — 30s refresh
+- `useFunding(symbol)` — 60s refresh
+- `useArbitrage(symbol)` — 10s refresh, cross-exchange spread
 
-**New components**:
-- `src/components/markets/SignalMarketplace.tsx` — leaderboard table: rank, publisher name, win rate %, total signals, avg P&L, follower count, "Follow" button. Filter by timeframe (7d/30d/all). Sort by win rate / pnl.
-- `src/components/markets/PublisherDetailSheet.tsx` — opens on click: publisher's full signal history with outcomes, performance chart, recent active signals
-- `src/components/markets/PublishSignalDialog.tsx` — added to existing `TradingSignalCard` as "Publish to Marketplace" button (after AI generates a signal). Pre-fills entry/SL/TP from the AI signal, requires reasoning text.
+All use `setInterval` + cleanup, expose `{ data, isLoading, error, lastUpdated }`.
 
-**Markets.tsx changes**:
-- Add a 3rd tab "Signal Marketplace" alongside Spot/Options
-- Inside the Signal tab on the right panel (`<TradingSignalCard>`) add "Publish" button that opens `PublishSignalDialog`
+### 3. New components under `src/components/markets/realtime/`
+- `ExchangeSelector.tsx` — pill switcher (Binance / Coinbase / Kraken / Bybit / OKX)
+- `LiveTickerBar.tsx` — price, 24h%, bid/ask, vol, blinking on tick
+- `OrderBookPanel.tsx` — bids (green) / asks (red) with depth bars + spread
+- `TradeTape.tsx` — scrolling list of recent trades, color-coded buy/sell
+- `CandlestickChart.tsx` — lightweight-charts (already candidate) or recharts candle approximation; 1m/5m/15m/1h/4h/1d toggles
+- `FundingRateBadge.tsx` — current funding + countdown to next funding
+- `ArbitrageStrip.tsx` — same coin, 5 exchanges, highlight best bid / best ask / max spread
 
-**Hook** `src/hooks/useSignalMarketplace.ts` — `publishSignal()`, `followPublisher()`, `unfollowPublisher()`, `getLeaderboard()`, `getPublisherSignals(id)`, `getMyPublishedSignals()`
-
-**Cron**: SQL via `cron.schedule` to call `verify-signals` every hour.
-
----
-
-### GAP 5 — AI Conditional Alerts (`/alerts`)
-
-**Problem solved**: Users miss moves while sleeping; simple price alerts can't express "BTC < 90k AND volume > 2x avg".
-
-**New DB table** `conditional_alerts`
-- `id, user_id, wallet_address, name (user-given), natural_language (original prompt), conditions (jsonb — parsed structured rules), assets_involved (text[]), notify_via (jsonb: {email:bool, push:bool}), status (active/paused/triggered), triggered_at, triggered_data (jsonb), created_at`
-- RLS: own rows pattern
-
-**Edge function** `parse-conditional-alert` (new)
-- Input: `{prompt: "Alert me when BTC drops below 90k AND volume spikes 2x"}`
-- Calls Lovable AI with **tool-call** to extract structured conditions:
-  ```json
-  {
-    "name": "BTC dump alert",
-    "conditions": [
-      {"asset_id":"bitcoin","metric":"price","operator":"lt","value":90000},
-      {"asset_id":"bitcoin","metric":"volume_ratio_24h","operator":"gt","value":2}
-    ],
-    "logic": "AND"
-  }
+### 4. Markets page integration (`src/pages/Markets.tsx`)
+- New tab **"Realtime"** added to existing `Tabs` (Spot / Signals / Options / **Realtime**)
+- Layout:
+  ```text
+  [ ExchangeSelector ]   [ Symbol search ]
+  [ LiveTickerBar ]
+  ┌────────────────────┬───────────────┐
+  │  CandlestickChart  │  OrderBook    │
+  │                    │               │
+  ├────────────────────┤  TradeTape    │
+  │  ArbitrageStrip    │               │
+  │  FundingRateBadge  │               │
+  └────────────────────┴───────────────┘
   ```
-- Supported metrics: `price, price_change_24h_pct, price_change_7d_pct, volume_ratio_24h (vs 7d avg), market_cap_change_24h_pct, rsi_14`
-- Operators: `gt, lt, gte, lte, eq, crosses_above, crosses_below`
-- Cost: **2 credits** to create
+- Mobile: stacked, OrderBook + TradeTape collapsed inside `Sheet`/accordion.
 
-**Edge function** `evaluate-conditional-alerts` (new, scheduled every 5 min via pg_cron)
-- Loads all `active` conditional alerts
-- Fetches CoinGecko data for all `assets_involved`
-- For each alert evaluates conditions tree (AND/OR)
-- If satisfied: marks `triggered`, inserts `alert_history` row, optionally calls Resend for email (if user opted in)
+### 5. Symbol mapping
+Add `src/lib/exchangeSymbols.ts` mapping CoinGecko id → exchange symbol (e.g. `bitcoin` → `BTC/USDT`). Covers top 30 assets; rest fall back to `${SYMBOL}/USDT`.
 
-**New components**:
-- New tab in `/alerts`: "AI Conditional" (5th tab)
-- `src/components/alerts/ConditionalAlertBuilder.tsx` — large textarea with example prompts ("Alert me when ETH gas drops below 20 gwei", "BTC breaks 100k with volume confirmation"), parsed-result preview card showing the structured conditions before save, save button
-- `src/components/alerts/ConditionalAlertList.tsx` — list of user's conditional alerts with status badges, pause/resume toggle, delete, last-evaluation timestamp
+## What stays the same
+- `useMarketData` (CoinGecko) keeps powering the existing Spot table, Markets list, Watchlist, Portfolio valuations — it's the canonical "universe of coins". CCXT layer is additive, not a replacement.
+- No DB schema changes (this is read-only public data).
+- No credit cost — public exchange data is free.
 
-**Hook** `src/hooks/useConditionalAlerts.ts` — `parseAndCreate(prompt)`, `togglePauseAlert(id)`, `deleteAlert(id)`, `getMyAlerts()`
+## Technical details
 
-**Cron SQL** to invoke `evaluate-conditional-alerts` every 5 minutes.
+**Edge function dependency**: `import ccxt from "npm:ccxt";` works in Deno (Supabase Edge runtime supports npm specifiers). Bundle is large (~3 MB) but cold start is acceptable for this pattern.
 
----
+**Rate limits**: CCXT has a built-in `enableRateLimit: true`. We respect each exchange's limits. The 2s in-memory cache + per-symbol throttling keeps us well under free-tier limits.
 
-### Cross-cutting
+**Error handling**: If one exchange fails (geo-blocked, downtime), `compare`/`arbitrage` skips it gracefully. Per-exchange failures shown as muted badge in `ArbitrageStrip`.
 
-- All three features deduct credits via existing `checkAndDeductCredits` (Brief: 3, Publish signal: 2, Create conditional alert: 2)
-- All edge functions follow existing CORS + Lovable AI gateway pattern (used in `crypto-ai/index.ts`)
-- All new tables use the same dual `user_id + wallet_address` RLS pattern as the rest of the project
-- `pg_cron` + `pg_net` extensions enabled for scheduled jobs
+**Charts**: Use `recharts` (already in project) `ComposedChart` with custom candle renderer — avoids new heavy dep. If user later wants pro charts, swap to `lightweight-charts`.
 
-### Files
+**No WebSocket for v1**: Polling at 2–3s feels real-time and avoids the complexity of long-lived edge connections (Supabase functions are request/response). A future v2 could add a Supabase Realtime channel fed by a cron-driven edge function if needed.
 
-| File | Action |
-|---|---|
-| `supabase/migrations/...` | Create 4 tables, 1 view, 2 cron jobs, RLS policies |
-| `supabase/functions/portfolio-brief/index.ts` | New edge function |
-| `supabase/functions/verify-signals/index.ts` | New edge function (cron) |
-| `supabase/functions/parse-conditional-alert/index.ts` | New edge function |
-| `supabase/functions/evaluate-conditional-alerts/index.ts` | New edge function (cron) |
-| `src/hooks/usePortfolioBrief.ts` | New hook |
-| `src/hooks/useSignalMarketplace.ts` | New hook |
-| `src/hooks/useConditionalAlerts.ts` | New hook |
-| `src/components/portfolio/DailyBrief.tsx` | New component |
-| `src/components/markets/SignalMarketplace.tsx` | New component |
-| `src/components/markets/PublisherDetailSheet.tsx` | New component |
-| `src/components/markets/PublishSignalDialog.tsx` | New component |
-| `src/components/alerts/ConditionalAlertBuilder.tsx` | New component |
-| `src/components/alerts/ConditionalAlertList.tsx` | New component |
-| `src/pages/Portfolio.tsx` | Add `<DailyBrief>` under PerformanceChart |
-| `src/pages/Markets.tsx` | Add 3rd tab "Signals" + Publish button on TradingSignalCard area |
-| `src/pages/Alerts.tsx` | Add 5th tab "AI Conditional" |
-| `src/lib/credits.ts` | (no change — reuse existing) |
+## Files
 
-### Notes
+**Created**
+- `supabase/functions/market-data-ccxt/index.ts`
+- `src/hooks/useRealtimeMarket.ts`
+- `src/lib/exchangeSymbols.ts`
+- `src/components/markets/realtime/ExchangeSelector.tsx`
+- `src/components/markets/realtime/LiveTickerBar.tsx`
+- `src/components/markets/realtime/OrderBookPanel.tsx`
+- `src/components/markets/realtime/TradeTape.tsx`
+- `src/components/markets/realtime/CandlestickChart.tsx`
+- `src/components/markets/realtime/FundingRateBadge.tsx`
+- `src/components/markets/realtime/ArbitrageStrip.tsx`
+- `src/components/markets/realtime/RealtimePanel.tsx` (composition)
 
-- Resend email integration is **optional** for the conditional alerts notification — if you want email/push delivery, I'll need a Resend connection (handled via standard connector). Otherwise, alerts surface in the existing in-app `alert_history` feed (which already works).
-- Marketplace verification cron requires `pg_cron`/`pg_net` to be enabled; I'll enable them in the migration.
-- Publishing signals creates real-time accountability — wins/losses are auto-tracked, no way to fake stats.
+**Modified**
+- `src/pages/Markets.tsx` — add "Realtime" tab
+- `supabase/config.toml` — register new function (verify_jwt = false; public)
+
+## Out of scope (ask if you want them)
+- Placing real trades via CCXT (requires per-user API keys + secure key storage)
+- ccxt.pro WebSocket streaming (paid)
+- Derivatives orderbook beyond perp funding
