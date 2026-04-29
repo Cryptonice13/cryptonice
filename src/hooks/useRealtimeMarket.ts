@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExchangeId, Timeframe } from "@/lib/exchangeSymbols";
+import {
+  fetchTickerDirect,
+  fetchOrderBookDirect,
+  fetchTradesDirect,
+  fetchOHLCVDirect,
+} from "@/lib/exchangeRest";
 
 type Action = "ticker" | "orderbook" | "trades" | "ohlcv" | "funding" | "compare";
 
@@ -24,12 +30,16 @@ interface UsePollOpts {
   enabled?: boolean;
 }
 
+// Generic polling hook with:
+//  - tab-visibility pause
+//  - soft errors (keep last data, don't show error until N consecutive failures)
 function usePoll<T>(fetcher: () => Promise<T>, deps: unknown[], opts: UsePollOpts) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const cancelled = useRef(false);
+  const failures = useRef(0);
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
 
@@ -38,11 +48,16 @@ function usePoll<T>(fetcher: () => Promise<T>, deps: unknown[], opts: UsePollOpt
       const r = await fetcherRef.current();
       if (cancelled.current) return;
       setData(r);
+      failures.current = 0;
       setError(null);
       setLastUpdated(new Date());
     } catch (e) {
       if (cancelled.current) return;
-      setError(e instanceof Error ? e.message : "fetch error");
+      failures.current += 1;
+      // Only surface error after 3 consecutive failures.
+      if (failures.current >= 3) {
+        setError(e instanceof Error ? e.message : "fetch error");
+      }
     } finally {
       if (!cancelled.current) setIsLoading(false);
     }
@@ -50,22 +65,33 @@ function usePoll<T>(fetcher: () => Promise<T>, deps: unknown[], opts: UsePollOpt
 
   useEffect(() => {
     cancelled.current = false;
+    failures.current = 0;
     if (opts.enabled === false) {
       setIsLoading(false);
       return () => { cancelled.current = true; };
     }
     setIsLoading(true);
     run();
-    const id = setInterval(run, opts.intervalMs);
+    let id = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      run();
+    }, opts.intervalMs);
+    const onVis = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled.current = true;
       clearInterval(id);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVis);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, opts.intervalMs, opts.enabled]);
 
   return { data, isLoading, error, lastUpdated, refresh: run };
 }
+
+// ---------- Types (re-exported from old version) ----------
 
 export interface Ticker {
   symbol: string;
@@ -127,39 +153,67 @@ export interface CompareResult {
   spreadPct: number;
 }
 
-export function useTicker(exchange: ExchangeId, symbol: string, intervalMs = 3000) {
+// ---------- Direct-first fetcher with edge function fallback ----------
+
+async function withFallback<T>(
+  direct: () => Promise<T>,
+  fallback: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await direct();
+  } catch (e) {
+    // Network / CORS / unsupported pair — fall back to edge function.
+    return await fallback();
+  }
+}
+
+// ---------- Public hooks ----------
+
+export function useTicker(exchange: ExchangeId, symbol: string, intervalMs = 5000) {
   return usePoll<Ticker>(
-    () => invokeMarket<Ticker>({ action: "ticker", exchange, symbol }),
+    () => withFallback(
+      () => fetchTickerDirect(exchange, symbol),
+      () => invokeMarket<Ticker>({ action: "ticker", exchange, symbol }),
+    ),
     [exchange, symbol],
     { intervalMs },
   );
 }
 
-export function useOrderBook(exchange: ExchangeId, symbol: string, intervalMs = 2000) {
+export function useOrderBook(exchange: ExchangeId, symbol: string, intervalMs = 4000) {
   return usePoll<OrderBook>(
-    () => invokeMarket<OrderBook>({ action: "orderbook", exchange, symbol, limit: 20 }),
+    () => withFallback(
+      () => fetchOrderBookDirect(exchange, symbol, 20),
+      () => invokeMarket<OrderBook>({ action: "orderbook", exchange, symbol, limit: 20 }),
+    ),
     [exchange, symbol],
     { intervalMs },
   );
 }
 
-export function useTrades(exchange: ExchangeId, symbol: string, intervalMs = 3000) {
+export function useTrades(exchange: ExchangeId, symbol: string, intervalMs = 6000) {
   return usePoll<Trade[]>(
-    () => invokeMarket<Trade[]>({ action: "trades", exchange, symbol, limit: 50 }),
+    () => withFallback(
+      () => fetchTradesDirect(exchange, symbol, 50),
+      () => invokeMarket<Trade[]>({ action: "trades", exchange, symbol, limit: 50 }),
+    ),
     [exchange, symbol],
     { intervalMs },
   );
 }
 
-export function useOHLCV(exchange: ExchangeId, symbol: string, timeframe: Timeframe, intervalMs = 30000) {
+export function useOHLCV(exchange: ExchangeId, symbol: string, timeframe: Timeframe, intervalMs = 60000) {
   return usePoll<Candle[]>(
-    () => invokeMarket<Candle[]>({ action: "ohlcv", exchange, symbol, timeframe, limit: 100 }),
+    () => withFallback(
+      () => fetchOHLCVDirect(exchange, symbol, timeframe, 100),
+      () => invokeMarket<Candle[]>({ action: "ohlcv", exchange, symbol, timeframe, limit: 100 }),
+    ),
     [exchange, symbol, timeframe],
     { intervalMs },
   );
 }
 
-export function useFunding(symbol: string, intervalMs = 60000) {
+export function useFunding(symbol: string, intervalMs = 120000) {
   return usePoll<Funding>(
     () => invokeMarket<Funding>({ action: "funding", symbol }),
     [symbol],
@@ -167,7 +221,7 @@ export function useFunding(symbol: string, intervalMs = 60000) {
   );
 }
 
-export function useArbitrage(symbol: string, intervalMs = 10000) {
+export function useArbitrage(symbol: string, intervalMs = 20000) {
   return usePoll<CompareResult>(
     () => invokeMarket<CompareResult>({ action: "compare", symbol }),
     [symbol],
