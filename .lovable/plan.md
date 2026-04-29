@@ -1,124 +1,80 @@
+# Fix Realtime Market Data Errors on /markets
 
-## Goal
+## Root cause
 
-Upgrade Markets from a single CoinGecko snapshot (60s polling, top 50 coins, no depth) to a **multi-exchange real-time market data layer** powered by **CCXT**, exposing:
+The edge function logs show the real problem (not a generic timeout):
 
-- Live tickers across exchanges (Binance, Coinbase, Kraken, Bybit, OKX)
-- Live **order book** (bids/asks depth)
-- Live **recent trades** tape
-- **OHLCV candlestick** chart (1m / 5m / 1h / 1d)
-- **Funding rates** for perpetual futures
-- **Cross-exchange price comparison** (arbitrage spotter)
+> `binance 418 I'm a teapot — Way too many requests; IP(...) banned until ...`
 
-## Why CCXT (not browser-direct)
+The Supabase edge function runs on a small pool of shared AWS IPs. Binance's public REST endpoints aggressively rate-limit and **ban the entire IP for ~1 hour** when traffic exceeds their weight budget. Because every user of this app proxies through the same few edge function IPs, Binance bans them within seconds — and CCXT's `fetchTicker` / `fetchOrderBook` first call `loadMarkets()` (a heavy `/exchangeInfo` request), which is what's actually getting banned.
 
-CCXT is a Node/Python/PHP library — it cannot run in the browser due to CORS on exchange APIs. It must run server-side. We will run it inside a **Supabase Edge Function** (Deno) using the `npm:ccxt` import that Deno supports.
+Symptoms in the UI:
+- "Ticker error: Edge Function returned a non-2xx status code"
+- "Orderbook error: …"
+- "Trades error: …"
+- Intermittent — works briefly when the function cold-starts on a fresh IP, then fails again.
 
-For true streaming (WebSockets) we will use **short-poll + edge function** (every 2–5s) rather than ccxt.pro (paid). This is realistic for retail UX and avoids paid tier.
+Coinbase, Kraken, Bybit, OKX are mostly fine; **Binance is the offender** but it's the default exchange and the default for `compare`/`funding`.
 
-## Architecture
+## Strategy
+
+Three coordinated fixes:
+
+1. **Bypass the edge function for the heavy public endpoints when possible.** Binance, Coinbase, Kraken, Bybit and OKX all support CORS on their public REST APIs, so the browser can call them directly — that distributes load across user IPs instead of concentrating on Supabase's IPs. The edge function stays as a fallback for symbol-format quirks and for `funding` / `compare`.
+2. **Make the edge function resilient.** Skip `loadMarkets()` (use `fetchTicker`/`fetchOrderBook` with manual market hint), add per-exchange failover for ticker/orderbook/trades, return the last cached value on error instead of 5xx, and lengthen cache TTLs.
+3. **Reduce client request volume.** Bump polling intervals, pause polling when tab is hidden, and stop showing red error cards on the very first failure (show stale data with a subtle "reconnecting" indicator instead).
+
+## What changes
+
+### 1. New browser-direct data layer — `src/lib/exchangeRest.ts`
+
+A small fetcher that hits each exchange's public REST API directly from the browser:
+
+- Binance: `https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT`, `/depth`, `/trades`, `/klines`
+- Coinbase: `https://api.exchange.coinbase.com/products/BTC-USD/ticker` etc.
+- Kraken: `https://api.kraken.com/0/public/Ticker?pair=XBTUSD` etc.
+- Bybit: `https://api.bybit.com/v5/market/tickers`, `/orderbook`, `/recent-trade`, `/kline`
+- OKX: `https://www.okx.com/api/v5/market/ticker` etc.
+
+Normalises every response into the same `Ticker` / `OrderBook` / `Trade` / `Candle` shapes already defined in `useRealtimeMarket.ts`.
+
+### 2. Hook update — `src/hooks/useRealtimeMarket.ts`
+
+- Each hook (`useTicker`, `useOrderBook`, `useTrades`, `useOHLCV`) tries the **direct** REST call first; only falls back to the `market-data-ccxt` edge function if direct fetch throws (e.g. rare CORS issues or unknown symbol).
+- Polling intervals raised to safer defaults: ticker 5s (from 3s), orderbook 4s (from 2s), trades 6s (from 3s), ohlcv 60s (from 30s).
+- Add `document.visibilityState === 'hidden'` pause: hooks stop polling when the tab is in the background, resume on focus.
+- Track a `consecutiveFailures` counter; only surface `error` to the UI after 3 consecutive failures, and keep returning the last good `data` in the meantime.
+- `useArbitrage` and `useFunding` stay on the edge function (multi-exchange aggregation needs the server) but with longer intervals: arbitrage 20s (from 10s), funding 120s (from 60s).
+
+### 3. Edge function hardening — `supabase/functions/market-data-ccxt/index.ts`
+
+- **Drop Binance from the default `compare` set when it's currently banned**: track per-exchange "cooldown until" timestamps in memory; if Binance returned a 418/429 in the last 10 minutes, skip it for `compare` and route `funding` to Bybit/OKX first.
+- **Stale-while-error**: on any handler failure, return the last cached value (even if expired) with `cached: true, stale: true` instead of a 500. UI keeps showing last good data.
+- **Longer TTLs**: ticker 5s, orderbook 4s, trades 5s, ohlcv 60s, compare 15s, funding 120s.
+- **Use `options.defaultType` and skip `loadMarkets`** where possible — for ticker/orderbook on known major pairs, set `markets` directly to avoid the heavy `/exchangeInfo` call that's triggering most bans.
+- Add `Cache-Control: public, max-age=3` response header so any intermediate caches help too.
+
+### 4. UI polish — `LiveTickerBar`, `OrderBookPanel`, `TradeTape`
+
+- Replace the bright red error cards with a subtle inline "Reconnecting…" indicator next to the live dot when the hook is in a soft-error state (data still present from last poll).
+- Only show the full-width destructive error card when there is **no data at all** AND we've failed 3+ times in a row.
+
+## Files touched
 
 ```text
-Browser (React)
-   │  fetch every 2-5s (or on-demand)
-   ▼
-Edge Function: market-data-ccxt   ──►  Binance / Coinbase / Kraken / OKX / Bybit
-   │  (uses npm:ccxt in Deno)
-   ▼
-Returns: ticker | orderbook | trades | ohlcv | funding | compare
+src/lib/exchangeRest.ts                                    (new)
+src/hooks/useRealtimeMarket.ts                             (update)
+src/components/markets/realtime/LiveTickerBar.tsx          (update)
+src/components/markets/realtime/OrderBookPanel.tsx         (update)
+src/components/markets/realtime/TradeTape.tsx              (update)
+src/components/markets/realtime/CandlestickChart.tsx       (update)
+supabase/functions/market-data-ccxt/index.ts               (update)
 ```
 
-Single edge function, multiple `action` modes — keeps cold-start cost low.
+No DB changes, no new secrets, no new dependencies.
 
-## What gets built
+## Expected result
 
-### 1. Edge function: `supabase/functions/market-data-ccxt/index.ts`
-Accepts `{ action, exchange, symbol, timeframe?, limit? }`:
-- `ticker` — last price, 24h vol, change, bid/ask
-- `orderbook` — top 20 bids/asks
-- `trades` — last 50 trades
-- `ohlcv` — candles for chart
-- `funding` — perp funding rate (Binance/Bybit/OKX)
-- `compare` — same symbol across 5 exchanges → spread %
-
-Public (no auth required, no credit cost — exchange APIs are free/public).
-In-memory 2s cache per (action,exchange,symbol) to absorb burst polls.
-
-### 2. New hook: `src/hooks/useRealtimeMarket.ts`
-- `useTicker(exchange, symbol, intervalMs=3000)`
-- `useOrderBook(exchange, symbol, intervalMs=2000)`
-- `useTrades(exchange, symbol, intervalMs=3000)`
-- `useOHLCV(exchange, symbol, timeframe)` — 30s refresh
-- `useFunding(symbol)` — 60s refresh
-- `useArbitrage(symbol)` — 10s refresh, cross-exchange spread
-
-All use `setInterval` + cleanup, expose `{ data, isLoading, error, lastUpdated }`.
-
-### 3. New components under `src/components/markets/realtime/`
-- `ExchangeSelector.tsx` — pill switcher (Binance / Coinbase / Kraken / Bybit / OKX)
-- `LiveTickerBar.tsx` — price, 24h%, bid/ask, vol, blinking on tick
-- `OrderBookPanel.tsx` — bids (green) / asks (red) with depth bars + spread
-- `TradeTape.tsx` — scrolling list of recent trades, color-coded buy/sell
-- `CandlestickChart.tsx` — lightweight-charts (already candidate) or recharts candle approximation; 1m/5m/15m/1h/4h/1d toggles
-- `FundingRateBadge.tsx` — current funding + countdown to next funding
-- `ArbitrageStrip.tsx` — same coin, 5 exchanges, highlight best bid / best ask / max spread
-
-### 4. Markets page integration (`src/pages/Markets.tsx`)
-- New tab **"Realtime"** added to existing `Tabs` (Spot / Signals / Options / **Realtime**)
-- Layout:
-  ```text
-  [ ExchangeSelector ]   [ Symbol search ]
-  [ LiveTickerBar ]
-  ┌────────────────────┬───────────────┐
-  │  CandlestickChart  │  OrderBook    │
-  │                    │               │
-  ├────────────────────┤  TradeTape    │
-  │  ArbitrageStrip    │               │
-  │  FundingRateBadge  │               │
-  └────────────────────┴───────────────┘
-  ```
-- Mobile: stacked, OrderBook + TradeTape collapsed inside `Sheet`/accordion.
-
-### 5. Symbol mapping
-Add `src/lib/exchangeSymbols.ts` mapping CoinGecko id → exchange symbol (e.g. `bitcoin` → `BTC/USDT`). Covers top 30 assets; rest fall back to `${SYMBOL}/USDT`.
-
-## What stays the same
-- `useMarketData` (CoinGecko) keeps powering the existing Spot table, Markets list, Watchlist, Portfolio valuations — it's the canonical "universe of coins". CCXT layer is additive, not a replacement.
-- No DB schema changes (this is read-only public data).
-- No credit cost — public exchange data is free.
-
-## Technical details
-
-**Edge function dependency**: `import ccxt from "npm:ccxt";` works in Deno (Supabase Edge runtime supports npm specifiers). Bundle is large (~3 MB) but cold start is acceptable for this pattern.
-
-**Rate limits**: CCXT has a built-in `enableRateLimit: true`. We respect each exchange's limits. The 2s in-memory cache + per-symbol throttling keeps us well under free-tier limits.
-
-**Error handling**: If one exchange fails (geo-blocked, downtime), `compare`/`arbitrage` skips it gracefully. Per-exchange failures shown as muted badge in `ArbitrageStrip`.
-
-**Charts**: Use `recharts` (already in project) `ComposedChart` with custom candle renderer — avoids new heavy dep. If user later wants pro charts, swap to `lightweight-charts`.
-
-**No WebSocket for v1**: Polling at 2–3s feels real-time and avoids the complexity of long-lived edge connections (Supabase functions are request/response). A future v2 could add a Supabase Realtime channel fed by a cron-driven edge function if needed.
-
-## Files
-
-**Created**
-- `supabase/functions/market-data-ccxt/index.ts`
-- `src/hooks/useRealtimeMarket.ts`
-- `src/lib/exchangeSymbols.ts`
-- `src/components/markets/realtime/ExchangeSelector.tsx`
-- `src/components/markets/realtime/LiveTickerBar.tsx`
-- `src/components/markets/realtime/OrderBookPanel.tsx`
-- `src/components/markets/realtime/TradeTape.tsx`
-- `src/components/markets/realtime/CandlestickChart.tsx`
-- `src/components/markets/realtime/FundingRateBadge.tsx`
-- `src/components/markets/realtime/ArbitrageStrip.tsx`
-- `src/components/markets/realtime/RealtimePanel.tsx` (composition)
-
-**Modified**
-- `src/pages/Markets.tsx` — add "Realtime" tab
-- `supabase/config.toml` — register new function (verify_jwt = false; public)
-
-## Out of scope (ask if you want them)
-- Placing real trades via CCXT (requires per-user API keys + secure key storage)
-- ccxt.pro WebSocket streaming (paid)
-- Derivatives orderbook beyond perp funding
+- The ticker, order book, trades and candles refresh smoothly even when Binance bans Supabase's IPs, because the browser fetches Binance directly from the user's own IP.
+- The edge function becomes a thin fallback, rarely hit — eliminating the cascading 418 failures in logs.
+- Errors only appear in the UI on genuine prolonged outages, not on transient single-request failures.

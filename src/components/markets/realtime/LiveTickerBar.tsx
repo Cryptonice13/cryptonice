@@ -27,10 +27,11 @@ export function LiveTickerBar({ exchange, symbol }: Props) {
     prevPrice.current = data.last;
   }, [data?.last]);
 
-  if (error) {
+  // Only show full error card when we have NO data at all.
+  if (error && !data) {
     return (
       <Card className="glass-card p-3 border-destructive/30">
-        <p className="text-xs text-destructive">Ticker error: {error}</p>
+        <p className="text-xs text-destructive">Ticker unavailable: {error}</p>
       </Card>
     );
   }
@@ -73,8 +74,12 @@ export function LiveTickerBar({ exchange, symbol }: Props) {
         </div>
 
         <div className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          {isLoading && !data ? "loading…" : lastUpdated ? `updated ${secondsAgo(lastUpdated)}s ago` : ""}
+          <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", error ? "bg-amber-500" : "bg-green-500")} />
+          {isLoading && !data
+            ? "loading…"
+            : error
+              ? "reconnecting…"
+              : lastUpdated ? `updated ${secondsAgo(lastUpdated)}s ago` : ""}
         </div>
       </div>
     </Card>

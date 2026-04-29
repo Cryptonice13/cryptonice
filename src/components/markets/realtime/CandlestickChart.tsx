@@ -56,7 +56,7 @@ export function CandlestickChart({ exchange, symbol }: Props) {
         </div>
       </div>
       <div className="h-[280px] sm:h-[320px] p-2">
-        {error ? (
+        {error && rows.length === 0 ? (
           <div className="h-full flex items-center justify-center text-xs text-destructive">{error}</div>
         ) : isLoading && rows.length === 0 ? (
           <div className="h-full flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>

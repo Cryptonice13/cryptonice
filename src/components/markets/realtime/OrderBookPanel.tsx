@@ -12,10 +12,10 @@ interface Props {
 export function OrderBookPanel({ exchange, symbol }: Props) {
   const { data, isLoading, error } = useOrderBook(exchange, symbol, 2000);
 
-  if (error) {
+  if (error && !data) {
     return (
       <Card className="glass-card p-3">
-        <p className="text-xs text-destructive">Orderbook error: {error}</p>
+        <p className="text-xs text-destructive">Orderbook unavailable: {error}</p>
       </Card>
     );
   }

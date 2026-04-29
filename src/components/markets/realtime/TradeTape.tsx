@@ -12,10 +12,10 @@ interface Props {
 export function TradeTape({ exchange, symbol }: Props) {
   const { data, isLoading, error } = useTrades(exchange, symbol, 3000);
 
-  if (error) {
+  if (error && !data) {
     return (
       <Card className="glass-card p-3">
-        <p className="text-xs text-destructive">Trades error: {error}</p>
+        <p className="text-xs text-destructive">Trades unavailable: {error}</p>
       </Card>
     );
   }
