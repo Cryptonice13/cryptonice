@@ -139,6 +139,26 @@ function PublisherDetailSheet({ publisher, open, onOpenChange }: {
                         </p>
                       )}
                       <p className="text-[10px] text-muted-foreground mt-1.5 line-clamp-2">{s.reasoning}</p>
+                      {user?.id === s.publisher_user_id && (
+                        <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] gap-1"
+                            onClick={() => setEditing(s)}
+                          >
+                            <Pencil className="w-3 h-3" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => setDeleting(s)}
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </Button>
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
@@ -147,6 +167,38 @@ function PublisherDetailSheet({ publisher, open, onOpenChange }: {
           </div>
         </div>
       </SheetContent>
+
+      <EditSignalDialog
+        signal={editing}
+        open={!!editing}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        onSaved={reload}
+      />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this signal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove your published {deleting?.asset_symbol} signal and its tracked P&L from the marketplace. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-500 hover:bg-red-600"
+              onClick={async () => {
+                if (deleting) {
+                  const ok = await deleteSignal(deleting.id);
+                  if (ok) { setDeleting(null); reload(); }
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
