@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, TrendingDown, Users, CheckCircle2, XCircle, Clock, Loader2, Award, BarChart3 } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Users, CheckCircle2, XCircle, Clock, Loader2, Award, BarChart3, Pencil, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,29 +9,36 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSignalMarketplace, type PublishedSignal, type PublisherStats } from '@/hooks/useSignalMarketplace';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/format';
+import { EditSignalDialog } from './EditSignalDialog';
 
 function PublisherDetailSheet({ publisher, open, onOpenChange }: {
   publisher: PublisherStats | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const { getPublisherSignals, followingIds, followPublisher } = useSignalMarketplace();
+  const { getPublisherSignals, followingIds, followPublisher, deleteSignal } = useSignalMarketplace();
   const { user } = useAuth();
   const [signals, setSignals] = useState<PublishedSignal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<PublishedSignal | null>(null);
+  const [deleting, setDeleting] = useState<PublishedSignal | null>(null);
+
+  const reload = useCallback(() => {
+    if (!publisher) return;
+    setLoading(true);
+    getPublisherSignals(publisher.publisher_user_id).then(s => {
+      setSignals(s);
+      setLoading(false);
+    });
+  }, [publisher, getPublisherSignals]);
 
   useEffect(() => {
-    if (publisher && open) {
-      setLoading(true);
-      getPublisherSignals(publisher.publisher_user_id).then(s => {
-        setSignals(s);
-        setLoading(false);
-      });
-    }
-  }, [publisher, open, getPublisherSignals]);
+    if (publisher && open) reload();
+  }, [publisher, open, reload]);
 
   if (!publisher) return null;
   const isFollowing = followingIds.has(publisher.publisher_user_id);
@@ -132,6 +139,26 @@ function PublisherDetailSheet({ publisher, open, onOpenChange }: {
                         </p>
                       )}
                       <p className="text-[10px] text-muted-foreground mt-1.5 line-clamp-2">{s.reasoning}</p>
+                      {user?.id === s.publisher_user_id && (
+                        <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] gap-1"
+                            onClick={() => setEditing(s)}
+                          >
+                            <Pencil className="w-3 h-3" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => setDeleting(s)}
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </Button>
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
@@ -140,6 +167,38 @@ function PublisherDetailSheet({ publisher, open, onOpenChange }: {
           </div>
         </div>
       </SheetContent>
+
+      <EditSignalDialog
+        signal={editing}
+        open={!!editing}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        onSaved={reload}
+      />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this signal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove your published {deleting?.asset_symbol} signal and its tracked P&L from the marketplace. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-500 hover:bg-red-600"
+              onClick={async () => {
+                if (deleting) {
+                  const ok = await deleteSignal(deleting.id);
+                  if (ok) { setDeleting(null); reload(); }
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

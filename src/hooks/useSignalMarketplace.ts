@@ -143,10 +143,36 @@ export function useSignalMarketplace() {
   }, [user?.id]);
 
   const deleteSignal = useCallback(async (id: string) => {
-    if (!user?.id) return;
-    await (supabase.from('published_signals' as any) as any).delete().eq('id', id);
+    if (!user?.id) return false;
+    const { error } = await (supabase.from('published_signals' as any) as any)
+      .delete()
+      .eq('id', id)
+      .eq('publisher_user_id', user.id);
+    if (error) {
+      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+      return false;
+    }
     toast({ title: 'Signal deleted' });
     await loadLeaderboard();
+    return true;
+  }, [user?.id, toast, loadLeaderboard]);
+
+  const updateSignal = useCallback(async (
+    id: string,
+    updates: Partial<Pick<PublishedSignal, 'signal' | 'entry_price' | 'stop_loss' | 'take_profits' | 'timeframe' | 'reasoning'>>
+  ) => {
+    if (!user?.id) return false;
+    const { error } = await (supabase.from('published_signals' as any) as any)
+      .update(updates)
+      .eq('id', id)
+      .eq('publisher_user_id', user.id);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: 'Signal updated' });
+    await loadLeaderboard();
+    return true;
   }, [user?.id, toast, loadLeaderboard]);
 
   return {
@@ -158,6 +184,7 @@ export function useSignalMarketplace() {
     getPublisherSignals,
     getMyPublishedSignals,
     deleteSignal,
+    updateSignal,
     reload: loadLeaderboard,
   };
 }
