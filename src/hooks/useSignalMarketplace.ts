@@ -184,6 +184,7 @@ export function useSignalMarketplace() {
     getPublisherSignals,
     getMyPublishedSignals,
     deleteSignal,
+    updateSignal,
     reload: loadLeaderboard,
   };
 }
