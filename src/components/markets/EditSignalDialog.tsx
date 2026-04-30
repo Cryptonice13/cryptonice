@@ -27,9 +27,17 @@ export function EditSignalDialog({ signal: sig, open, onOpenChange, onSaved }: P
   const [timeframe, setTimeframe] = useState(sig?.timeframe || '1W');
   const [reasoning, setReasoning] = useState(sig?.reasoning || '');
 
-  // Re-sync when signal changes
-  const sigId = sig?.id;
-  useState(() => sigId);
+  useEffect(() => {
+    if (!sig) return;
+    setSignal(sig.signal);
+    setEntry(sig.entry_price?.toString() || '');
+    setSl(sig.stop_loss?.toString() || '');
+    setTp1(sig.take_profits?.[0]?.toString() || '');
+    setTp2(sig.take_profits?.[1]?.toString() || '');
+    setTp3(sig.take_profits?.[2]?.toString() || '');
+    setTimeframe(sig.timeframe || '1W');
+    setReasoning(sig.reasoning || '');
+  }, [sig?.id]);
 
   const valid = entry && sl && tp1 && reasoning.trim().length >= 20;
 
