@@ -20,20 +20,25 @@ function PublisherDetailSheet({ publisher, open, onOpenChange }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const { getPublisherSignals, followingIds, followPublisher } = useSignalMarketplace();
+  const { getPublisherSignals, followingIds, followPublisher, deleteSignal } = useSignalMarketplace();
   const { user } = useAuth();
   const [signals, setSignals] = useState<PublishedSignal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<PublishedSignal | null>(null);
+  const [deleting, setDeleting] = useState<PublishedSignal | null>(null);
+
+  const reload = useCallback(() => {
+    if (!publisher) return;
+    setLoading(true);
+    getPublisherSignals(publisher.publisher_user_id).then(s => {
+      setSignals(s);
+      setLoading(false);
+    });
+  }, [publisher, getPublisherSignals]);
 
   useEffect(() => {
-    if (publisher && open) {
-      setLoading(true);
-      getPublisherSignals(publisher.publisher_user_id).then(s => {
-        setSignals(s);
-        setLoading(false);
-      });
-    }
-  }, [publisher, open, getPublisherSignals]);
+    if (publisher && open) reload();
+  }, [publisher, open, reload]);
 
   if (!publisher) return null;
   const isFollowing = followingIds.has(publisher.publisher_user_id);
