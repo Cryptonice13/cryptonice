@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, TrendingDown, Users, CheckCircle2, XCircle, Clock, Loader2, Award, BarChart3, Pencil, Trash2 } from 'lucide-react';
