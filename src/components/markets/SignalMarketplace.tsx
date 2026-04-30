@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, TrendingDown, Users, CheckCircle2, XCircle, Clock, Loader2, Award, BarChart3 } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Users, CheckCircle2, XCircle, Clock, Loader2, Award, BarChart3, Pencil, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSignalMarketplace, type PublishedSignal, type PublisherStats } from '@/hooks/useSignalMarketplace';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/format';
+import { EditSignalDialog } from './EditSignalDialog';
 
 function PublisherDetailSheet({ publisher, open, onOpenChange }: {
   publisher: PublisherStats | null;
