@@ -474,6 +474,53 @@ serve(async (req) => {
 
     console.log(`Processing ${type} request...`);
 
+    // ---- Server-authoritative credit deduction ----
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      try {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY);
+        const { data } = await userClient.auth.getUser(token);
+        if (data?.user) userId = data.user.id;
+      } catch (_) { /* ignore */ }
+    }
+
+    const walletAddress = typeof body.walletAddress === "string"
+      ? body.walletAddress.replace(/[^A-Za-z0-9]/g, "").slice(0, 64)
+      : null;
+
+    if (!userId && !walletAddress) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const cost = CREDIT_COSTS[type] ?? 1;
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const { data: deductData, error: deductErr } = await admin.rpc("deduct_credits_atomic", {
+      _user_id: userId,
+      _wallet: userId ? null : walletAddress,
+      _amount: cost,
+      _description: `AI ${type} (${cost} credits)`,
+    });
+
+    if (deductErr) {
+      console.error("Credit deduction error:", deductErr);
+      return new Response(JSON.stringify({ error: "Credit check failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (typeof deductData === "number" && deductData < 0) {
+      return new Response(JSON.stringify({ error: "Insufficient credits", required: cost }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let marketData: MarketData[] = [];
     let coinDetails: any = null;
 
