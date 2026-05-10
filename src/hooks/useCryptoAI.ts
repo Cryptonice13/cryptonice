@@ -273,31 +273,20 @@ export function useTradingSignal() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const getSignal = useCallback(async (symbol: string, price?: number) => {
-    const creditResult = await checkAndDeductCredits(2, 'Trading Signal', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Trading signal for ${symbol}` }],
-          type: 'trading_signal',
-          context: { symbol, price },
-        }),
+      const response = await invokeCryptoAI({
+        type: 'trading_signal',
+        messages: [{ role: 'user', content: `Trading signal for ${symbol}` }],
+        context: { symbol, price },
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get signal');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
