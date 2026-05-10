@@ -1,9 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Server-authoritative credit cost per request type
+const CREDIT_COSTS: Record<string, number> = {
+  chat: 1,
+  crypto_analyst: 1,
+  alert_suggestions: 2,
+  portfolio_analysis: 3,
+  market_prediction: 2,
+  trading_signal: 2,
+  whale_analysis: 2,
+  strategy_builder: 3,
+  technical_analysis: 2,
+  fundamental_analysis: 2,
+  derivatives_strategy: 5,
+};
+
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
 const CRYPTOCOMPARE_API = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
