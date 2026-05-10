@@ -8,9 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
-import { checkAndDeductCredits } from '@/lib/credits';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
 const quickPrompts = [
   "Should I buy BTC?",
