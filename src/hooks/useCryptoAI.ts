@@ -68,13 +68,6 @@ export function useCryptoAI() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const sendMessage = useCallback(async (input: string, portfolioContext?: any) => {
-    // Deduct 1 credit for chat
-    const result = await checkAndDeductCredits(1, 'AI Chat message', identity);
-    if (!result.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
-
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
@@ -83,22 +76,16 @@ export function useCryptoAI() {
     let assistantContent = '';
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          type: 'chat',
-          context: portfolioContext,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'chat',
+        messages: [...messages, userMsg],
+        context: portfolioContext,
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const reader = response.body?.getReader();
