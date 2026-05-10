@@ -1079,6 +1079,33 @@ export type Database = {
       }
     }
     Functions: {
+      add_credits: {
+        Args: {
+          _amount: number
+          _description: string
+          _type: string
+          _user_id: string
+          _wallet: string
+        }
+        Returns: number
+      }
+      claim_daily_bonus: {
+        Args: { _user_id: string; _wallet: string }
+        Returns: number
+      }
+      deduct_credits_atomic: {
+        Args: {
+          _amount: number
+          _description: string
+          _user_id: string
+          _wallet: string
+        }
+        Returns: number
+      }
+      ensure_credits_account: {
+        Args: { _user_id: string; _wallet: string }
+        Returns: number
+      }
       get_flexes_with_urls: {
         Args: {
           limit_count?: number
