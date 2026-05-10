@@ -160,32 +160,20 @@ export function usePortfolioAnalysis() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const analyzePortfolio = useCallback(async (portfolio: any[]) => {
-    // Deduct 3 credits for portfolio analysis
-    const creditResult = await checkAndDeductCredits(3, 'Portfolio Analysis', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'Analyze my portfolio' }],
-          type: 'portfolio_analysis',
-          context: portfolio,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'portfolio_analysis',
+        messages: [{ role: 'user', content: 'Analyze my portfolio' }],
+        context: portfolio,
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze portfolio');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
