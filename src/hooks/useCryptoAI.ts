@@ -219,31 +219,20 @@ export function useMarketPrediction() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const getPrediction = useCallback(async (symbol: string) => {
-    const creditResult = await checkAndDeductCredits(3, 'Market Prediction', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Predict ${symbol}` }],
-          type: 'market_prediction',
-          context: { symbol },
-        }),
+      const response = await invokeCryptoAI({
+        type: 'market_prediction',
+        messages: [{ role: 'user', content: `Predict ${symbol}` }],
+        context: { symbol },
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get prediction');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
