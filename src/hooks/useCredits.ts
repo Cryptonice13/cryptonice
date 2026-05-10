@@ -12,7 +12,6 @@ const PLANS = {
 
 const COUPON_CODE = 'CryptoAI';
 const COUPON_BONUS = 0.2; // 20% bonus credits
-const COUPON_DISCOUNT = 1.0; // 100% off payment
 
 export function useCredits() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -28,34 +27,36 @@ export function useCredits() {
     if (!userId && !walletAddr) { setBalance(null); setIsLoading(false); return; }
 
     try {
-      let query = supabase.from('user_credits' as any).select('*').limit(1);
-      if (userId) query = query.eq('user_id', userId);
-      else query = query.eq('wallet_address', walletAddr);
-
-      const { data } = await query;
-      const rows = data as any[];
-
-      if (!rows || rows.length === 0) {
-        // First time - create with signup bonus
-        const insertData: any = { balance: 100 };
-        if (userId) insertData.user_id = userId;
-        else insertData.wallet_address = walletAddr;
-
-        await (supabase.from('user_credits' as any) as any).insert(insertData);
-
-        // Log signup bonus transaction
-        const txData: any = { amount: 100, transaction_type: 'signup_bonus', description: 'Welcome bonus - 100 free credits' };
-        if (userId) txData.user_id = userId;
-        else txData.wallet_address = walletAddr;
-        await (supabase.from('credit_transactions' as any) as any).insert(txData);
-
-        setBalance(100);
-      } else {
-        setBalance(rows[0].balance);
+      // Ensure account exists (idempotent) and get the current balance
+      const { data: ensured, error: ensureErr } = await (supabase as any).rpc('ensure_credits_account', {
+        _user_id: userId ?? null,
+        _wallet: userId ? null : walletAddr,
+      });
+      if (ensureErr) {
+        console.error('ensure_credits_account error:', ensureErr);
       }
 
-      // Check daily login bonus
-      await checkDailyBonus();
+      // Try daily login bonus (RPC is idempotent per UTC day)
+      const { data: claimed } = await (supabase as any).rpc('claim_daily_bonus', {
+        _user_id: userId ?? null,
+        _wallet: userId ? null : walletAddr,
+      });
+
+      const finalBalance = typeof claimed === 'number' && claimed >= 0
+        ? claimed
+        : (typeof ensured === 'number' ? ensured : null);
+
+      if (finalBalance !== null) {
+        setBalance(finalBalance);
+      } else {
+        // Fallback: read directly (SELECT still allowed by RLS)
+        let q = supabase.from('user_credits' as any).select('balance').limit(1);
+        if (userId) q = q.eq('user_id', userId);
+        else q = q.eq('wallet_address', walletAddr);
+        const { data } = await q;
+        const rows = data as any[];
+        setBalance(rows?.[0]?.balance ?? 0);
+      }
     } catch (err) {
       console.error('Error fetching credits:', err);
     } finally {
@@ -63,82 +64,40 @@ export function useCredits() {
     }
   }, [userId, walletAddr]);
 
-  const checkDailyBonus = useCallback(async () => {
-    if (!userId && !walletAddr) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let query = supabase.from('credit_transactions' as any)
-      .select('id')
-      .eq('transaction_type', 'daily_login')
-      .gte('created_at', today.toISOString())
-      .limit(1);
-
-    if (userId) query = query.eq('user_id', userId);
-    else query = query.eq('wallet_address', walletAddr);
-
-    const { data } = await query;
-    if (data && (data as any[]).length === 0) {
-      // Grant daily bonus
-      await addCreditsInternal(10, 'daily_login', 'Daily login bonus - 10 credits');
-    }
-  }, [userId, walletAddr]);
-
-  const addCreditsInternal = useCallback(async (amount: number, type: string, description: string) => {
-    if (!userId && !walletAddr) return;
-
-    // Update balance
-    let query = supabase.from('user_credits' as any).select('balance').limit(1);
-    if (userId) query = query.eq('user_id', userId);
-    else query = query.eq('wallet_address', walletAddr);
-
-    const { data } = await query;
-    const rows = data as any[];
-    if (!rows || rows.length === 0) return;
-
-    const newBalance = rows[0].balance + amount;
-    let updateQuery = (supabase.from('user_credits' as any) as any).update({ balance: newBalance });
-    if (userId) updateQuery = updateQuery.eq('user_id', userId);
-    else updateQuery = updateQuery.eq('wallet_address', walletAddr);
-    await updateQuery;
-
-    // Log transaction
-    const txData: any = { amount, transaction_type: type, description };
-    if (userId) txData.user_id = userId;
-    else txData.wallet_address = walletAddr;
-    await (supabase.from('credit_transactions' as any) as any).insert(txData);
-
-    setBalance(newBalance);
-  }, [userId, walletAddr]);
-
   const deductCredits = useCallback(async (amount: number, description: string): Promise<boolean> => {
-    if (balance === null || balance < amount) {
+    if (!userId && !walletAddr) return false;
+
+    const { data, error } = await (supabase as any).rpc('deduct_credits_atomic', {
+      _user_id: userId ?? null,
+      _wallet: userId ? null : walletAddr,
+      _amount: amount,
+      _description: description,
+    });
+
+    if (error) {
+      console.error('deduct_credits_atomic error:', error);
       toast({
-        title: 'Insufficient Credits',
-        description: 'You don\'t have enough credits. Please purchase more.',
+        title: 'Credit deduction failed',
+        description: 'Please try again.',
         variant: 'destructive',
       });
       return false;
     }
-
-    const newBalance = balance - amount;
-
-    let updateQuery = (supabase.from('user_credits' as any) as any).update({ balance: newBalance });
-    if (userId) updateQuery = updateQuery.eq('user_id', userId);
-    else updateQuery = updateQuery.eq('wallet_address', walletAddr);
-    await updateQuery;
-
-    const txData: any = { amount: -amount, transaction_type: 'usage', description };
-    if (userId) txData.user_id = userId;
-    else txData.wallet_address = walletAddr;
-    await (supabase.from('credit_transactions' as any) as any).insert(txData);
-
+    const newBalance = typeof data === 'number' ? data : -1;
+    if (newBalance < 0) {
+      toast({
+        title: 'Insufficient Credits',
+        description: "You don't have enough credits. Please purchase more.",
+        variant: 'destructive',
+      });
+      return false;
+    }
     setBalance(newBalance);
     return true;
-  }, [balance, userId, walletAddr, toast]);
+  }, [userId, walletAddr, toast]);
 
   const purchaseCredits = useCallback(async (plan: keyof typeof PLANS, couponCode?: string) => {
+    if (!userId && !walletAddr) return false;
     const planDetails = PLANS[plan];
     if (!planDetails) return false;
 
@@ -148,7 +107,7 @@ export function useCredits() {
       credits = Math.floor(credits * (1 + COUPON_BONUS));
     }
 
-    // Record purchase
+    // Record purchase intent (will be replaced by a real Stripe webhook flow)
     const purchaseData: any = {
       plan,
       credits,
@@ -160,8 +119,20 @@ export function useCredits() {
     else purchaseData.wallet_address = walletAddr;
     await (supabase.from('credit_purchases' as any) as any).insert(purchaseData);
 
-    // Add credits
-    await addCreditsInternal(credits, 'purchase', `Purchased ${plan} plan - ${credits} credits`);
+    const { data, error } = await (supabase as any).rpc('add_credits', {
+      _user_id: userId ?? null,
+      _wallet: userId ? null : walletAddr,
+      _amount: credits,
+      _type: 'purchase',
+      _description: `Purchased ${plan} plan - ${credits} credits`,
+    });
+
+    if (error) {
+      console.error('add_credits error:', error);
+      toast({ title: 'Purchase failed', description: 'Please try again.', variant: 'destructive' });
+      return false;
+    }
+    if (typeof data === 'number') setBalance(data);
 
     toast({
       title: 'Credits Purchased!',
@@ -169,7 +140,7 @@ export function useCredits() {
     });
 
     return true;
-  }, [userId, walletAddr, addCreditsInternal, toast]);
+  }, [userId, walletAddr, toast]);
 
   useEffect(() => {
     fetchBalance();

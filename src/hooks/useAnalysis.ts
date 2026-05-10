@@ -2,9 +2,8 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
-import { checkAndDeductCredits } from '@/lib/credits';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
 function extractJSON(raw: string): string {
   let str = raw.trim();
@@ -59,35 +58,22 @@ export function useAnalysis() {
     currentPrice: number,
     assetId: string
   ) => {
-    // Deduct 5 credits for analysis
-    const creditResult = await checkAndDeductCredits(5, `${type === 'technical_analysis' ? 'Technical' : 'Fundamental'} Analysis - ${symbol}`, { userId: user?.id, walletAddress: address });
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
-
     const setLoading = type === 'technical_analysis' ? setIsLoadingTechnical : setIsLoadingFundamental;
     setLoading(true);
     setError(null);
     setSelectedHistoryId(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `${type === 'technical_analysis' ? 'Technical' : 'Fundamental'} analysis for ${symbol}` }],
-          type,
-          context: { symbol },
-        }),
+      const response = await invokeCryptoAI({
+        type,
+        messages: [{ role: 'user', content: `${type === 'technical_analysis' ? 'Technical' : 'Fundamental'} analysis for ${symbol}` }],
+        context: { symbol },
+        walletAddress: address,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get analysis');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();

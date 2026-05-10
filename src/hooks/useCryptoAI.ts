@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
-import { checkAndDeductCredits } from '@/lib/credits';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -68,13 +68,6 @@ export function useCryptoAI() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const sendMessage = useCallback(async (input: string, portfolioContext?: any) => {
-    // Deduct 1 credit for chat
-    const result = await checkAndDeductCredits(1, 'AI Chat message', identity);
-    if (!result.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
-
     const userMsg: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
@@ -83,22 +76,16 @@ export function useCryptoAI() {
     let assistantContent = '';
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          type: 'chat',
-          context: portfolioContext,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'chat',
+        messages: [...messages, userMsg],
+        context: portfolioContext,
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const reader = response.body?.getReader();
@@ -173,32 +160,20 @@ export function usePortfolioAnalysis() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const analyzePortfolio = useCallback(async (portfolio: any[]) => {
-    // Deduct 3 credits for portfolio analysis
-    const creditResult = await checkAndDeductCredits(3, 'Portfolio Analysis', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'Analyze my portfolio' }],
-          type: 'portfolio_analysis',
-          context: portfolio,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'portfolio_analysis',
+        messages: [{ role: 'user', content: 'Analyze my portfolio' }],
+        context: portfolio,
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze portfolio');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
@@ -244,31 +219,20 @@ export function useMarketPrediction() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const getPrediction = useCallback(async (symbol: string) => {
-    const creditResult = await checkAndDeductCredits(3, 'Market Prediction', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Predict ${symbol}` }],
-          type: 'market_prediction',
-          context: { symbol },
-        }),
+      const response = await invokeCryptoAI({
+        type: 'market_prediction',
+        messages: [{ role: 'user', content: `Predict ${symbol}` }],
+        context: { symbol },
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get prediction');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
@@ -309,31 +273,20 @@ export function useTradingSignal() {
   const identity = { userId: user?.id, walletAddress: address };
 
   const getSignal = useCallback(async (symbol: string, price?: number) => {
-    const creditResult = await checkAndDeductCredits(2, 'Trading Signal', identity);
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Trading signal for ${symbol}` }],
-          type: 'trading_signal',
-          context: { symbol, price },
-        }),
+      const response = await invokeCryptoAI({
+        type: 'trading_signal',
+        messages: [{ role: 'user', content: `Trading signal for ${symbol}` }],
+        context: { symbol, price },
+        walletAddress: identity.walletAddress,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get signal');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();

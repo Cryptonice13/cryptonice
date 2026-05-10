@@ -1,9 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Server-authoritative credit cost per request type
+const CREDIT_COSTS: Record<string, number> = {
+  chat: 1,
+  crypto_analyst: 1,
+  alert_suggestions: 2,
+  portfolio_analysis: 3,
+  market_prediction: 2,
+  trading_signal: 2,
+  whale_analysis: 2,
+  strategy_builder: 3,
+  technical_analysis: 2,
+  fundamental_analysis: 2,
+  derivatives_strategy: 5,
+};
+
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
 const CRYPTOCOMPARE_API = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
@@ -456,6 +473,53 @@ serve(async (req) => {
     })).filter((m: any) => m.content);
 
     console.log(`Processing ${type} request...`);
+
+    // ---- Server-authoritative credit deduction ----
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      try {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY);
+        const { data } = await userClient.auth.getUser(token);
+        if (data?.user) userId = data.user.id;
+      } catch (_) { /* ignore */ }
+    }
+
+    const walletAddress = typeof body.walletAddress === "string"
+      ? body.walletAddress.replace(/[^A-Za-z0-9]/g, "").slice(0, 64)
+      : null;
+
+    if (!userId && !walletAddress) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const cost = CREDIT_COSTS[type] ?? 1;
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const { data: deductData, error: deductErr } = await admin.rpc("deduct_credits_atomic", {
+      _user_id: userId,
+      _wallet: userId ? null : walletAddress,
+      _amount: cost,
+      _description: `AI ${type} (${cost} credits)`,
+    });
+
+    if (deductErr) {
+      console.error("Credit deduction error:", deductErr);
+      return new Response(JSON.stringify({ error: "Credit check failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (typeof deductData === "number" && deductData < 0) {
+      return new Response(JSON.stringify({ error: "Insufficient credits", required: cost }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let marketData: MarketData[] = [];
     let coinDetails: any = null;

@@ -8,9 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
-import { checkAndDeductCredits } from '@/lib/credits';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
 
 const quickPrompts = [
   "Should I buy BTC?",
@@ -29,34 +28,21 @@ export default function CryptoAnalystAgent() {
   const runAnalysis = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
 
-    // Deduct 2 credits
-    const creditResult = await checkAndDeductCredits(2, 'Crypto Analyst Query', { userId: user?.id, walletAddress: address });
-    if (!creditResult.success) {
-      setError('Insufficient credits – please purchase more.');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setResponse('');
 
     try {
-      const res = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: input }],
-          type: 'crypto_analyst',
-          context: {},
-        }),
+      const res = await invokeCryptoAI({
+        type: 'crypto_analyst',
+        messages: [{ role: 'user', content: input }],
+        context: {},
+        walletAddress: address,
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Analysis failed');
+        const msg = await readCryptoAIError(res);
+        throw new Error(msg);
       }
 
       const reader = res.body?.getReader();
