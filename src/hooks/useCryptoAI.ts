@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
-import { checkAndDeductCredits } from '@/lib/credits';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
