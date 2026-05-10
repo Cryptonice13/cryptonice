@@ -387,9 +387,73 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, type, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Service unavailable" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---- Input validation / sanitization (mitigate prompt injection) ----
+    const ALLOWED_TYPES = new Set([
+      "chat", "crypto_analyst", "alert_suggestions", "portfolio_analysis",
+      "market_prediction", "trading_signal", "whale_analysis", "strategy_builder",
+      "technical_analysis", "fundamental_analysis", "derivatives_strategy",
+    ]);
+    const type = typeof body.type === "string" && ALLOWED_TYPES.has(body.type) ? body.type : null;
+    if (!type) {
+      return new Response(JSON.stringify({ error: "Invalid type" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const sanitizeStr = (v: unknown, max = 64, pattern = /[^A-Za-z0-9_\-./ ]/g) =>
+      typeof v === "string" ? v.replace(pattern, "").slice(0, max) : undefined;
+    const sanitizeNum = (v: unknown, min = 0, max = 1e12) => {
+      const n = typeof v === "number" ? v : Number(v);
+      return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : undefined;
+    };
+
+    let context: any = body.context;
+    if (Array.isArray(context)) {
+      // portfolio_analysis: array of holdings — keep as-is but cap length
+      context = context.slice(0, 50);
+    } else if (context && typeof context === "object") {
+      context = {
+        ...context,
+        symbol: sanitizeStr(context.symbol, 16, /[^A-Za-z0-9]/g),
+        strategyType: sanitizeStr(context.strategyType, 32),
+        riskLevel: sanitizeStr(context.riskLevel, 16, /[^A-Za-z]/g),
+        mode: sanitizeStr(context.mode, 32),
+        positionDirection: sanitizeStr(context.positionDirection, 8, /[^A-Za-z]/g),
+        futuresContract: sanitizeStr(context.futuresContract, 16),
+        marginType: sanitizeStr(context.marginType, 16, /[^A-Za-z]/g),
+        contractType: sanitizeStr(context.contractType, 8, /[^A-Za-z]/g),
+        optionPreset: sanitizeStr(context.optionPreset, 32),
+        expiry: sanitizeStr(context.expiry, 8),
+        timeframe: sanitizeStr(context.timeframe, 8),
+        investmentAmount: sanitizeNum(context.investmentAmount, 0, 1e9),
+        leverage: sanitizeNum(context.leverage, 1, 125),
+        strikePrice: sanitizeNum(context.strikePrice, 0, 1e9),
+        premiumBudget: sanitizeNum(context.premiumBudget, 0, 1e9),
+      };
+    } else {
+      context = {};
+    }
+
+    let messages = Array.isArray(body.messages) ? body.messages : [];
+    messages = messages.slice(-20).map((m: any) => ({
+      role: m?.role === "assistant" || m?.role === "system" ? m.role : "user",
+      content: typeof m?.content === "string" ? m.content.slice(0, 4000) : "",
+    })).filter((m: any) => m.content);
 
     console.log(`Processing ${type} request...`);
 
@@ -466,7 +530,7 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Crypto AI error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
