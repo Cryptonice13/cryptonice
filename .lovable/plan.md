@@ -1,80 +1,82 @@
-# Fix Realtime Market Data Errors on /markets
 
-## Root cause
+# Super AI Agent Consolidation
 
-The edge function logs show the real problem (not a generic timeout):
+Turn `/chat` into the platform's single command surface — an AI agent that acts as analyst, assistant, and market researcher — and absorb the Markets and Strategy Builder feature sets. Hide Dashboard, Portfolio and Safety pages from navigation.
 
-> `binance 418 I'm a teapot — Way too many requests; IP(...) banned until ...`
+## 1. New `/chat` Super Agent layout
 
-The Supabase edge function runs on a small pool of shared AWS IPs. Binance's public REST endpoints aggressively rate-limit and **ban the entire IP for ~1 hour** when traffic exceeds their weight budget. Because every user of this app proxies through the same few edge function IPs, Binance bans them within seconds — and CCXT's `fetchTicker` / `fetchOrderBook` first call `loadMarkets()` (a heavy `/exchangeInfo` request), which is what's actually getting banned.
-
-Symptoms in the UI:
-- "Ticker error: Edge Function returned a non-2xx status code"
-- "Orderbook error: …"
-- "Trades error: …"
-- Intermittent — works briefly when the function cold-starts on a fresh IP, then fails again.
-
-Coinbase, Kraken, Bybit, OKX are mostly fine; **Binance is the offender** but it's the default exchange and the default for `compare`/`funding`.
-
-## Strategy
-
-Three coordinated fixes:
-
-1. **Bypass the edge function for the heavy public endpoints when possible.** Binance, Coinbase, Kraken, Bybit and OKX all support CORS on their public REST APIs, so the browser can call them directly — that distributes load across user IPs instead of concentrating on Supabase's IPs. The edge function stays as a fallback for symbol-format quirks and for `funding` / `compare`.
-2. **Make the edge function resilient.** Skip `loadMarkets()` (use `fetchTicker`/`fetchOrderBook` with manual market hint), add per-exchange failover for ticker/orderbook/trades, return the last cached value on error instead of 5xx, and lengthen cache TTLs.
-3. **Reduce client request volume.** Bump polling intervals, pause polling when tab is hidden, and stop showing red error cards on the very first failure (show stale data with a subtle "reconnecting" indicator instead).
-
-## What changes
-
-### 1. New browser-direct data layer — `src/lib/exchangeRest.ts`
-
-A small fetcher that hits each exchange's public REST API directly from the browser:
-
-- Binance: `https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT`, `/depth`, `/trades`, `/klines`
-- Coinbase: `https://api.exchange.coinbase.com/products/BTC-USD/ticker` etc.
-- Kraken: `https://api.kraken.com/0/public/Ticker?pair=XBTUSD` etc.
-- Bybit: `https://api.bybit.com/v5/market/tickers`, `/orderbook`, `/recent-trade`, `/kline`
-- OKX: `https://www.okx.com/api/v5/market/ticker` etc.
-
-Normalises every response into the same `Ticker` / `OrderBook` / `Trade` / `Candle` shapes already defined in `useRealtimeMarket.ts`.
-
-### 2. Hook update — `src/hooks/useRealtimeMarket.ts`
-
-- Each hook (`useTicker`, `useOrderBook`, `useTrades`, `useOHLCV`) tries the **direct** REST call first; only falls back to the `market-data-ccxt` edge function if direct fetch throws (e.g. rare CORS issues or unknown symbol).
-- Polling intervals raised to safer defaults: ticker 5s (from 3s), orderbook 4s (from 2s), trades 6s (from 3s), ohlcv 60s (from 30s).
-- Add `document.visibilityState === 'hidden'` pause: hooks stop polling when the tab is in the background, resume on focus.
-- Track a `consecutiveFailures` counter; only surface `error` to the UI after 3 consecutive failures, and keep returning the last good `data` in the meantime.
-- `useArbitrage` and `useFunding` stay on the edge function (multi-exchange aggregation needs the server) but with longer intervals: arbitrage 20s (from 10s), funding 120s (from 60s).
-
-### 3. Edge function hardening — `supabase/functions/market-data-ccxt/index.ts`
-
-- **Drop Binance from the default `compare` set when it's currently banned**: track per-exchange "cooldown until" timestamps in memory; if Binance returned a 418/429 in the last 10 minutes, skip it for `compare` and route `funding` to Bybit/OKX first.
-- **Stale-while-error**: on any handler failure, return the last cached value (even if expired) with `cached: true, stale: true` instead of a 500. UI keeps showing last good data.
-- **Longer TTLs**: ticker 5s, orderbook 4s, trades 5s, ohlcv 60s, compare 15s, funding 120s.
-- **Use `options.defaultType` and skip `loadMarkets`** where possible — for ticker/orderbook on known major pairs, set `markets` directly to avoid the heavy `/exchangeInfo` call that's triggering most bans.
-- Add `Cache-Control: public, max-age=3` response header so any intermediate caches help too.
-
-### 4. UI polish — `LiveTickerBar`, `OrderBookPanel`, `TradeTape`
-
-- Replace the bright red error cards with a subtle inline "Reconnecting…" indicator next to the live dot when the hook is in a soft-error state (data still present from last poll).
-- Only show the full-width destructive error card when there is **no data at all** AND we've failed 3+ times in a row.
-
-## Files touched
+A 3-pane workspace (collapsible on mobile):
 
 ```text
-src/lib/exchangeRest.ts                                    (new)
-src/hooks/useRealtimeMarket.ts                             (update)
-src/components/markets/realtime/LiveTickerBar.tsx          (update)
-src/components/markets/realtime/OrderBookPanel.tsx         (update)
-src/components/markets/realtime/TradeTape.tsx              (update)
-src/components/markets/realtime/CandlestickChart.tsx       (update)
-supabase/functions/market-data-ccxt/index.ts               (update)
+┌──────────────┬──────────────────────────┬───────────────┐
+│ Conversations│   AI Agent Chat (center) │ Context Panel │
+│  + sessions  │   - streamed answers     │ (right rail)  │
+│              │   - tool/result cards    │  tabs:        │
+│              │   - quick prompt chips   │  • Markets    │
+│              │                          │  • Strategy   │
+│              │                          │  • Signals    │
+│              │                          │  • Realtime   │
+└──────────────┴──────────────────────────┴───────────────┘
 ```
 
-No DB changes, no new secrets, no new dependencies.
+- **Left**: existing `ChatSidebar` (conversations, new chat) — unchanged behavior.
+- **Center**: existing `ChatInterface`, upgraded to render rich "tool result" cards inside assistant messages (price chart, strategy card, signal card, prediction). Quick prompt chips: *Analyze BTC*, *Build me a strategy*, *Top signals today*, *Scan this token*, *Realtime BTC/USDT*.
+- **Right rail (Context Panel)** — tabbed, drives both the chat context and the visible workspace:
+  - **Markets**: searchable asset list (`useMarketData`), Market Insights panel, mini sparkline. Selecting an asset injects it as the agent's active context (chip shown above composer: "Context: BTC").
+  - **Strategy**: `StrategyForm` + last result + saved strategies table. "Generate" runs the existing strategy AI; result also gets posted as an assistant message in the chat thread.
+  - **Signals**: `SignalMarketplace` (publish/edit/delete/P&L flow already in place).
+  - **Realtime**: `RealtimePanel` (order book, trade tape, candlestick) bound to the active asset.
+  - **Safety** (kept here as a tool, not a page): token safety scan triggered by the agent or via right-rail input.
 
-## Expected result
+Mobile (<1024px): right rail becomes a bottom Sheet opened by an icon group in the chat header (Markets / Strategy / Signals / Realtime). Conversations Sheet stays on the left as today.
 
-- The ticker, order book, trades and candles refresh smoothly even when Binance bans Supabase's IPs, because the browser fetches Binance directly from the user's own IP.
-- The edge function becomes a thin fallback, rarely hit — eliminating the cascading 418 failures in logs.
-- Errors only appear in the UI on genuine prolonged outages, not on transient single-request failures.
+## 2. Agent behavior
+
+The `crypto-ai` edge function already receives `context`. Extend the client to pass:
+- `activeAsset` (symbol/id from right-rail selection)
+- `marketSnapshot` (top 20 assets)
+- `portfolio`, `watchlist`, `strategies`, `signals` (already gathered in `Chat.tsx` via `dbContext`)
+- `intent` hint when the user clicks a prompt chip (e.g., `build_strategy`, `scan_token`, `realtime_view`).
+
+System prompt update (server-side) so the agent introduces itself as a single super-agent that can:
+1. Analyze any asset (TA + FA + on-chain context).
+2. Build/refine trading strategies (calls strategy generator path with the same `crypto-ai` `derivatives_strategy`/spot strategy types — no new backend).
+3. Research signals and explain marketplace entries.
+4. Trigger token safety scan and summarize verdict.
+5. Reference the user's portfolio when relevant.
+
+No new edge function. Reuse `crypto-ai`, `token-safety-scan`, `market-data-ccxt`, `verify-signals`.
+
+## 3. Hide Dashboard, Portfolio, Safety
+
+- Remove from `AppHeader` desktop nav and from `MobileBottomNav`.
+- Replace bottom-nav slots with: Chat (Bot), Markets→Chat (LineChart shortcut to `/chat?tab=markets`), Strategy→Chat (`/chat?tab=strategy`), Community, Profile.
+- Keep the route definitions in `App.tsx` so existing deep links don't 404, but redirect `/dashboard`, `/portfolio`, `/safety` → `/chat` (with appropriate `?tab=` where useful). Page files stay on disk for now (easy to restore).
+- Remove the Safety shield icon from `AppHeader`. Portfolio analysis stays accessible by asking the agent ("Analyze my portfolio").
+- `/markets` and `/strategy` also redirect to `/chat` with the matching tab, since their functionality now lives inside the super agent.
+
+## 4. Files affected
+
+- **Edited**
+  - `src/pages/Chat.tsx` — new 3-pane layout, right-rail tabs, URL `?tab=` sync.
+  - `src/components/ai/ChatInterface.tsx` — context chip, prompt chips, optional tool-result rendering hook.
+  - `src/components/AppHeader.tsx` — drop Dashboard/Portfolio/Safety nav + Safety icon; nav set becomes Chat / Markets / Strategy / Community.
+  - `src/components/MobileBottomNav.tsx` — new icon set centered on `/chat`.
+  - `src/App.tsx` — add redirects for `/dashboard`, `/portfolio`, `/safety`, `/markets`, `/strategy` → `/chat`.
+- **New**
+  - `src/components/agent/AgentWorkspace.tsx` — the right-rail tab container.
+  - `src/components/agent/tabs/{MarketsTab,StrategyTab,SignalsTab,RealtimeTab}.tsx` — thin wrappers reusing existing components (`MarketInsightsPanel`, `MiniSparkline`, `StrategyForm`, `StrategyTable`, `StrategyDetailCard`, `SignalMarketplace`, `RealtimePanel`).
+- **Untouched**: existing hooks, edge functions, DB schema, credit system.
+
+## 5. Acceptance
+
+- `/chat` shows conversations + chat + workspace side-by-side on desktop; mobile uses Sheets.
+- Selecting an asset in the Markets tab shows a "Context" chip in the composer and is sent to the agent on the next message.
+- Generating a strategy from the Strategy tab posts the result as an assistant message into the active conversation.
+- `/dashboard`, `/portfolio`, `/safety`, `/markets`, `/strategy` all redirect to `/chat` (with appropriate tab where applicable); they no longer appear in any nav.
+- Bottom nav and header reflect only the new surface.
+
+## Out of scope
+- Restyling Strategy/Signals internals.
+- Backend changes beyond a small system-prompt update.
+- Deleting the hidden pages from the codebase.
