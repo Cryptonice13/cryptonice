@@ -21,10 +21,10 @@ interface AppHeaderProps {
 }
 
 const navItems = [
-  { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-  { key: 'portfolio', label: 'Portfolio', path: '/portfolio' },
-  { key: 'markets', label: 'Markets', path: '/markets' },
-  { key: 'strategy', label: 'Strategy', path: '/strategy' },
+  { key: 'chat', label: 'AI Agent', path: '/chat' },
+  { key: 'markets', label: 'Markets', path: '/chat?tab=markets' },
+  { key: 'strategy', label: 'Strategy', path: '/chat?tab=strategy' },
+  { key: 'signals', label: 'Signals', path: '/chat?tab=signals' },
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
