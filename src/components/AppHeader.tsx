@@ -97,17 +97,6 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
             <span className="font-semibold">{balance ?? '...'}</span>
           </Button>
 
-          {/* Safety Scanner Icon */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/safety')}
-            className="h-8 w-8"
-            title="Token Safety Scanner"
-          >
-            <Shield className="w-4 h-4 text-emerald-500" />
-          </Button>
-
           {/* Alerts Icon */}
           <Button
             variant="ghost"
