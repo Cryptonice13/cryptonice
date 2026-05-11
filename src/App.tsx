@@ -63,11 +63,7 @@ const App = () => (
                     <Alerts />
                   </ProtectedRoute>
                 } />
-                <Route path="/strategy" element={
-                  <ProtectedRoute>
-                    <StrategyBuilder />
-                  </ProtectedRoute>
-                } />
+                
                 <Route path="/insights" element={
                   <ProtectedRoute>
                     <AIInsights />
@@ -103,11 +99,7 @@ const App = () => (
                     <Community />
                   </ProtectedRoute>
                 } />
-                <Route path="/safety" element={
-                  <ProtectedRoute>
-                    <Safety />
-                  </ProtectedRoute>
-                } />
+                
               </Routes>
               <FloatingChatButton />
             </BrowserRouter>
