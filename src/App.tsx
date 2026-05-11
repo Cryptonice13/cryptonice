@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { WagmiProvider } from 'wagmi';
@@ -52,36 +52,18 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/home" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/portfolio" element={
-                  <ProtectedRoute>
-                    <Portfolio />
-                  </ProtectedRoute>
-                } />
-                <Route path="/markets" element={
-                  <ProtectedRoute>
-                    <Markets />
-                  </ProtectedRoute>
-                } />
+                <Route path="/dashboard" element={<Navigate to="/chat" replace />} />
+                <Route path="/home" element={<Navigate to="/chat" replace />} />
+                <Route path="/portfolio" element={<Navigate to="/chat" replace />} />
+                <Route path="/safety" element={<Navigate to="/chat?tab=markets" replace />} />
+                <Route path="/markets" element={<Navigate to="/chat?tab=markets" replace />} />
+                <Route path="/strategy" element={<Navigate to="/chat?tab=strategy" replace />} />
                 <Route path="/alerts" element={
                   <ProtectedRoute>
                     <Alerts />
                   </ProtectedRoute>
                 } />
-                <Route path="/strategy" element={
-                  <ProtectedRoute>
-                    <StrategyBuilder />
-                  </ProtectedRoute>
-                } />
+                
                 <Route path="/insights" element={
                   <ProtectedRoute>
                     <AIInsights />
@@ -117,11 +99,7 @@ const App = () => (
                     <Community />
                   </ProtectedRoute>
                 } />
-                <Route path="/safety" element={
-                  <ProtectedRoute>
-                    <Safety />
-                  </ProtectedRoute>
-                } />
+                
               </Routes>
               <FloatingChatButton />
             </BrowserRouter>

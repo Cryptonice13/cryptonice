@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell, Shield } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell } from 'lucide-react';
 import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,10 +21,10 @@ interface AppHeaderProps {
 }
 
 const navItems = [
-  { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-  { key: 'portfolio', label: 'Portfolio', path: '/portfolio' },
-  { key: 'markets', label: 'Markets', path: '/markets' },
-  { key: 'strategy', label: 'Strategy', path: '/strategy' },
+  { key: 'chat', label: 'AI Agent', path: '/chat' },
+  { key: 'markets', label: 'Markets', path: '/chat?tab=markets' },
+  { key: 'strategy', label: 'Strategy', path: '/chat?tab=strategy' },
+  { key: 'signals', label: 'Signals', path: '/chat?tab=signals' },
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
@@ -95,17 +95,6 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           >
             <Zap className="w-3.5 h-3.5 text-primary" />
             <span className="font-semibold">{balance ?? '...'}</span>
-          </Button>
-
-          {/* Safety Scanner Icon */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/safety')}
-            className="h-8 w-8"
-            title="Token Safety Scanner"
-          >
-            <Shield className="w-4 h-4 text-emerald-500" />
           </Button>
 
           {/* Alerts Icon */}
