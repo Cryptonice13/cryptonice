@@ -276,32 +276,22 @@ export default function Alerts() {
             </Card>
           ) : (
             <Tabs defaultValue="watchlist" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="watchlist" className="text-xs sm:text-sm">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="watchlist" className="text-xs sm:text-sm relative">
                   <Star className="w-3.5 h-3.5 mr-1" />
                   <span className="hidden sm:inline">Watchlist</span>
                   <span className="sm:hidden">Watch</span>
                   <span className="ml-1 text-[10px] opacity-70">({watchlist.length})</span>
-                </TabsTrigger>
-                <TabsTrigger value="ai" className="text-xs sm:text-sm">
-                  <Bell className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">AI Alerts</span>
-                  <span className="sm:hidden">AI</span>
-                </TabsTrigger>
-                <TabsTrigger value="conditional" className="text-xs sm:text-sm">
-                  <Sparkles className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">Conditional</span>
-                  <span className="sm:hidden">Cond</span>
-                </TabsTrigger>
-                <TabsTrigger value="history" className="text-xs sm:text-sm relative">
-                  <History className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">History</span>
-                  <span className="sm:hidden">Hist</span>
                   {unreadAlertCount > 0 && (
                     <span className="ml-1 min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
                       {unreadAlertCount}
                     </span>
                   )}
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs sm:text-sm">
+                  <Bell className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">AI Alerts</span>
+                  <span className="sm:hidden">AI</span>
                 </TabsTrigger>
                 <TabsTrigger value="add" className="text-xs sm:text-sm">
                   <Plus className="w-3.5 h-3.5 mr-1" />
@@ -309,6 +299,7 @@ export default function Alerts() {
                   <span className="sm:hidden">Add</span>
                 </TabsTrigger>
               </TabsList>
+
 
               {/* ===== WATCHLIST TAB ===== */}
               <TabsContent value="watchlist" className="mt-4">
