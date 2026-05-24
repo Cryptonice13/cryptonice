@@ -663,10 +663,46 @@ export default function Alerts() {
                     </Table>
                   </Card>
                 )}
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              {/* ===== AI ALERTS TAB (with nested Conditional) ===== */}
+              <TabsContent value="ai" className="mt-4">
+                <Tabs defaultValue="suggestions" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="suggestions" className="text-xs sm:text-sm">
+                      <Bell className="w-3.5 h-3.5 mr-1" />
+                      Suggestions
+                    </TabsTrigger>
+                    <TabsTrigger value="conditional" className="text-xs sm:text-sm">
+                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                      Conditional
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="suggestions">
+                    <SmartAlertSuggestions
+                      watchlist={watchlist.map(w => ({
+                        asset_id: w.asset_id,
+                        asset_symbol: w.asset_symbol,
+                        asset_name: w.asset_name,
+                        asset_logo: w.asset_logo,
+                      }))}
+                      currentPrices={currentPrices}
+                      onApplyAlert={async (assetId, price, type) => {
+                        await setAlert(assetId, price, type);
+                      }}
+                    />
+                  </TabsContent>
+                  <TabsContent value="conditional">
+                    <ConditionalAlertBuilder />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* ===== ADD ASSETS TAB ===== */}
               <TabsContent value="add" className="mt-4 space-y-3">
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
