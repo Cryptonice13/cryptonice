@@ -303,6 +303,24 @@ export default function Alerts() {
 
               {/* ===== WATCHLIST TAB ===== */}
               <TabsContent value="watchlist" className="mt-4">
+                <Tabs defaultValue="list" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="list" className="text-xs sm:text-sm">
+                      <Star className="w-3.5 h-3.5 mr-1" />
+                      List
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="text-xs sm:text-sm relative">
+                      <History className="w-3.5 h-3.5 mr-1" />
+                      History
+                      {unreadAlertCount > 0 && (
+                        <span className="ml-1 min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
+                          {unreadAlertCount}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="list">
+
                 {watchlist.length === 0 ? (
                   <Card className="glass-card p-6 text-center">
                     <Star className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
