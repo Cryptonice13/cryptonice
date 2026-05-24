@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
 interface SmartAlertSuggestionsProps {
   watchlist: {
