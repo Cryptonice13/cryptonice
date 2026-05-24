@@ -127,20 +127,14 @@ export default function Alerts() {
     setAiDialogOpen(true);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Suggest price alerts for ${assetSymbol}` }],
-          type: 'alert_suggestions',
-          context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice }],
-        }),
+      const response = await invokeCryptoAI({
+        type: 'alert_suggestions',
+        messages: [{ role: 'user', content: `Suggest price alerts for ${assetSymbol}` }],
+        context: [{ symbol: assetSymbol, asset_id: assetId, currentPrice }],
+        walletAddress: address,
       });
 
-      if (!response.ok) throw new Error('Failed');
+      if (!response.ok) throw new Error(await readCryptoAIError(response));
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content;
 
