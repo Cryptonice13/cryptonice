@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Star } from 'lucide-react';
+import { Search, Star, BarChart3, Target, Waves } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMarketData, type CryptoAsset } from '@/hooks/useMarketData';
 import { useWatchlistDb } from '@/hooks/useWatchlistDb';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { MarketInsightsPanel } from '@/components/ai/MarketInsightsPanel';
+import { MarketPredictionCard } from '@/components/ai/MarketPredictionCard';
+import { TradingSignalCard } from '@/components/ai/TradingSignalCard';
+import { WhaleActivityCard } from '@/components/ai/WhaleActivityCard';
+import { useAIInsights } from '@/hooks/useAIInsights';
 import { formatPrice } from '@/lib/format';
 
 interface Props {
