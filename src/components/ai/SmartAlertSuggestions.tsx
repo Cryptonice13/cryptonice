@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccount } from 'wagmi';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
 interface SmartAlertSuggestionsProps {
   watchlist: {
@@ -77,20 +78,14 @@ export function SmartAlertSuggestions({ watchlist, currentPrices, onApplyAlert }
         currentPrice: currentPrices.get(w.asset_id) || 0,
       }));
 
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'Suggest alerts for my watchlist' }],
-          type: 'alert_suggestions',
-          context,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'alert_suggestions',
+        messages: [{ role: 'user', content: 'Suggest alerts for my watchlist' }],
+        context,
+        walletAddress: address,
       });
 
-      if (!response.ok) throw new Error('Failed to get suggestions');
+      if (!response.ok) throw new Error(await readCryptoAIError(response));
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content;
