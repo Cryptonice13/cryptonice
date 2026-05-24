@@ -22,9 +22,6 @@ interface AppHeaderProps {
 
 const navItems = [
   { key: 'chat', label: 'AI Agent', path: '/chat' },
-  { key: 'markets', label: 'Markets', path: '/chat?tab=markets' },
-  { key: 'strategy', label: 'Strategy', path: '/chat?tab=strategy' },
-  { key: 'signals', label: 'Signals', path: '/chat?tab=signals' },
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
