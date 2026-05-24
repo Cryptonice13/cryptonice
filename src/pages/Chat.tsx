@@ -62,6 +62,14 @@ export default function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceTab]);
 
+  // Allow mobile bottom nav (or any global control) to open the workspace sheet
+  useEffect(() => {
+    const handler = () => setMobileWorkspaceOpen(true);
+    window.addEventListener('open-agent-workspace', handler);
+    return () => window.removeEventListener('open-agent-workspace', handler);
+  }, []);
+
+
   // Build rich context from all DB tables for accurate AI analysis
   const [dbContext, setDbContext] = useState<any>(null);
 

@@ -276,32 +276,22 @@ export default function Alerts() {
             </Card>
           ) : (
             <Tabs defaultValue="watchlist" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="watchlist" className="text-xs sm:text-sm">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="watchlist" className="text-xs sm:text-sm relative">
                   <Star className="w-3.5 h-3.5 mr-1" />
                   <span className="hidden sm:inline">Watchlist</span>
                   <span className="sm:hidden">Watch</span>
                   <span className="ml-1 text-[10px] opacity-70">({watchlist.length})</span>
-                </TabsTrigger>
-                <TabsTrigger value="ai" className="text-xs sm:text-sm">
-                  <Bell className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">AI Alerts</span>
-                  <span className="sm:hidden">AI</span>
-                </TabsTrigger>
-                <TabsTrigger value="conditional" className="text-xs sm:text-sm">
-                  <Sparkles className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">Conditional</span>
-                  <span className="sm:hidden">Cond</span>
-                </TabsTrigger>
-                <TabsTrigger value="history" className="text-xs sm:text-sm relative">
-                  <History className="w-3.5 h-3.5 mr-1" />
-                  <span className="hidden sm:inline">History</span>
-                  <span className="sm:hidden">Hist</span>
                   {unreadAlertCount > 0 && (
                     <span className="ml-1 min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
                       {unreadAlertCount}
                     </span>
                   )}
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs sm:text-sm">
+                  <Bell className="w-3.5 h-3.5 mr-1" />
+                  <span className="hidden sm:inline">AI Alerts</span>
+                  <span className="sm:hidden">AI</span>
                 </TabsTrigger>
                 <TabsTrigger value="add" className="text-xs sm:text-sm">
                   <Plus className="w-3.5 h-3.5 mr-1" />
@@ -310,8 +300,27 @@ export default function Alerts() {
                 </TabsTrigger>
               </TabsList>
 
+
               {/* ===== WATCHLIST TAB ===== */}
               <TabsContent value="watchlist" className="mt-4">
+                <Tabs defaultValue="list" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="list" className="text-xs sm:text-sm">
+                      <Star className="w-3.5 h-3.5 mr-1" />
+                      List
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="text-xs sm:text-sm relative">
+                      <History className="w-3.5 h-3.5 mr-1" />
+                      History
+                      {unreadAlertCount > 0 && (
+                        <span className="ml-1 min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
+                          {unreadAlertCount}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="list">
+
                 {watchlist.length === 0 ? (
                   <Card className="glass-card p-6 text-center">
                     <Star className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
@@ -465,31 +474,9 @@ export default function Alerts() {
                     ))}
                   </div>
                 )}
-              </TabsContent>
+                  </TabsContent>
+                  <TabsContent value="history" className="space-y-4">
 
-              {/* ===== AI ALERTS TAB ===== */}
-              <TabsContent value="ai" className="mt-4">
-                <SmartAlertSuggestions
-                  watchlist={watchlist.map(w => ({
-                    asset_id: w.asset_id,
-                    asset_symbol: w.asset_symbol,
-                    asset_name: w.asset_name,
-                    asset_logo: w.asset_logo,
-                  }))}
-                  currentPrices={currentPrices}
-                  onApplyAlert={async (assetId, price, type) => {
-                    await setAlert(assetId, price, type);
-                  }}
-                />
-              </TabsContent>
-
-              {/* ===== CONDITIONAL ALERTS TAB ===== */}
-              <TabsContent value="conditional" className="mt-4">
-                <ConditionalAlertBuilder />
-              </TabsContent>
-
-              {/* ===== HISTORY TAB ===== */}
-              <TabsContent value="history" className="mt-4 space-y-4">
                 {/* Analytics Summary */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <Card className="p-3">
@@ -676,10 +663,46 @@ export default function Alerts() {
                     </Table>
                   </Card>
                 )}
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              {/* ===== AI ALERTS TAB (with nested Conditional) ===== */}
+              <TabsContent value="ai" className="mt-4">
+                <Tabs defaultValue="suggestions" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="suggestions" className="text-xs sm:text-sm">
+                      <Bell className="w-3.5 h-3.5 mr-1" />
+                      Suggestions
+                    </TabsTrigger>
+                    <TabsTrigger value="conditional" className="text-xs sm:text-sm">
+                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                      Conditional
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="suggestions">
+                    <SmartAlertSuggestions
+                      watchlist={watchlist.map(w => ({
+                        asset_id: w.asset_id,
+                        asset_symbol: w.asset_symbol,
+                        asset_name: w.asset_name,
+                        asset_logo: w.asset_logo,
+                      }))}
+                      currentPrices={currentPrices}
+                      onApplyAlert={async (assetId, price, type) => {
+                        await setAlert(assetId, price, type);
+                      }}
+                    />
+                  </TabsContent>
+                  <TabsContent value="conditional">
+                    <ConditionalAlertBuilder />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* ===== ADD ASSETS TAB ===== */}
               <TabsContent value="add" className="mt-4 space-y-3">
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
