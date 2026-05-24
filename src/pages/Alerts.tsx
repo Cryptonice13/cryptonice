@@ -58,8 +58,7 @@ import { SmartAlertSuggestions } from '@/components/ai/SmartAlertSuggestions';
 import { ConditionalAlertBuilder } from '@/components/alerts/ConditionalAlertBuilder';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice } from '@/lib/format';
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
 function formatRelativeTime(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
