@@ -474,31 +474,9 @@ export default function Alerts() {
                     ))}
                   </div>
                 )}
-              </TabsContent>
+                  </TabsContent>
+                  <TabsContent value="history" className="space-y-4">
 
-              {/* ===== AI ALERTS TAB ===== */}
-              <TabsContent value="ai" className="mt-4">
-                <SmartAlertSuggestions
-                  watchlist={watchlist.map(w => ({
-                    asset_id: w.asset_id,
-                    asset_symbol: w.asset_symbol,
-                    asset_name: w.asset_name,
-                    asset_logo: w.asset_logo,
-                  }))}
-                  currentPrices={currentPrices}
-                  onApplyAlert={async (assetId, price, type) => {
-                    await setAlert(assetId, price, type);
-                  }}
-                />
-              </TabsContent>
-
-              {/* ===== CONDITIONAL ALERTS TAB ===== */}
-              <TabsContent value="conditional" className="mt-4">
-                <ConditionalAlertBuilder />
-              </TabsContent>
-
-              {/* ===== HISTORY TAB ===== */}
-              <TabsContent value="history" className="mt-4 space-y-4">
                 {/* Analytics Summary */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <Card className="p-3">
