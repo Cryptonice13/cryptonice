@@ -147,12 +147,8 @@ export default function Chat() {
 
   const headerRight = (
     <>
+      {/* Mobile history sheet (opened from ChatInterface header) */}
       <Sheet open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
-            <History className="w-4 h-4" />
-          </Button>
-        </SheetTrigger>
         <SheetContent side="left" className="w-[85%] max-w-sm p-0">
           <SheetHeader className="p-4 border-b border-border/50">
             <SheetTitle>Chat History</SheetTitle>
@@ -190,12 +186,8 @@ export default function Chat() {
         </SheetContent>
       </Sheet>
 
+      {/* Mobile workspace sheet (opened from bottom nav center button) */}
       <Sheet open={mobileWorkspaceOpen} onOpenChange={setMobileWorkspaceOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
-            <PanelRight className="w-4 h-4" />
-          </Button>
-        </SheetTrigger>
         <SheetContent side="right" className="w-[95%] sm:w-[480px] p-0 flex flex-col">
           <SheetHeader className="p-4 border-b border-border/50">
             <SheetTitle>Agent Workspace</SheetTitle>
@@ -212,6 +204,7 @@ export default function Chat() {
         </SheetContent>
       </Sheet>
 
+      {/* Desktop workspace toggle */}
       <Button
         variant="ghost"
         size="icon"
@@ -223,6 +216,7 @@ export default function Chat() {
       </Button>
     </>
   );
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
