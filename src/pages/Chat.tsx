@@ -261,6 +261,8 @@ export default function Chat() {
               setMessages={setMessages}
               portfolioContext={enrichedContext}
               hideHeader={false}
+              onOpenHistory={() => setMobileHistoryOpen(true)}
+              onNewChat={handleNewChat}
               className="flex-1 rounded-none border-0"
             />
           </div>
