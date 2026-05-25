@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
