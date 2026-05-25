@@ -189,7 +189,6 @@ export function ChatInterface({
 
   const suggestedPrompts = [
     { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Bitcoin outlook?', desc: 'Price analysis & predictions' },
-    { icon: <BarChart3 className="w-4 h-4 text-blue-500" />, label: 'Analyze my portfolio', desc: 'Risk & performance review' },
     { icon: <Zap className="w-4 h-4 text-amber-500" />, label: 'Best DeFi tokens?', desc: 'Top opportunities right now' },
     { icon: <Shield className="w-4 h-4 text-purple-500" />, label: 'Buy ETH now?', desc: 'Entry point analysis' },
   ];
