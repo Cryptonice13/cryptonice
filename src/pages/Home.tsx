@@ -9,7 +9,7 @@ import AppHeader from '@/components/AppHeader';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import { MiniSparkline } from '@/components/ai/MiniSparkline';
 import { useMarketData } from '@/hooks/useMarketData';
-import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
+import cryptoaiLogo from '@/assets/cryptonice-logo.png';
 import {
   TrendingUp,
   ArrowRight,
