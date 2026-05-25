@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
-import cryptoaiLogo from "@/assets/cryptoai-logo.jpg";
+import cryptoaiLogo from "@/assets/cryptonice-logo.png";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useNavigate } from "react-router-dom";

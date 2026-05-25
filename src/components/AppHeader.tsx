@@ -3,7 +3,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
 import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell } from 'lucide-react';
-import cryptoaiLogo from '@/assets/cryptoai-logo.jpg';
+import cryptoaiLogo from '@/assets/cryptonice-logo.png';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

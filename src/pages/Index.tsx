@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Brain, TrendingUp, Shield, Zap, BarChart3, Bot, ChevronDown, Star, Check, LineChart, Bell, Wallet } from "lucide-react";
-import cryptoaiLogo from "@/assets/cryptoai-logo.jpg";
+import cryptoaiLogo from "@/assets/cryptonice-logo.png";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -22,6 +22,8 @@ interface ChatInterfaceProps {
   portfolioContext?: any;
   className?: string;
   hideHeader?: boolean;
+  onOpenHistory?: () => void;
+  onNewChat?: () => void;
 }
 
 const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-ai`;
@@ -35,6 +37,8 @@ export function ChatInterface({
   portfolioContext, 
   className = '',
   hideHeader = false,
+  onOpenHistory,
+  onNewChat,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
@@ -217,11 +221,23 @@ export function ChatInterface({
               </div>
             </div>
           </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 sm:h-8 sm:w-8 p-0">
-              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {onOpenHistory && (
+              <Button variant="ghost" size="sm" onClick={onOpenHistory} className="lg:hidden h-7 w-7 sm:h-8 sm:w-8 p-0" title="Chat history">
+                <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            )}
+            {onNewChat && (
+              <Button variant="ghost" size="sm" onClick={onNewChat} className="lg:hidden h-7 w-7 sm:h-8 sm:w-8 p-0" title="New chat">
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            )}
+            {messages.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearMessages} className="h-7 w-7 sm:h-8 sm:w-8 p-0">
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
