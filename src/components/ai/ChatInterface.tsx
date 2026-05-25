@@ -22,6 +22,8 @@ interface ChatInterfaceProps {
   portfolioContext?: any;
   className?: string;
   hideHeader?: boolean;
+  onOpenHistory?: () => void;
+  onNewChat?: () => void;
 }
 
 const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-ai`;
@@ -35,6 +37,8 @@ export function ChatInterface({
   portfolioContext, 
   className = '',
   hideHeader = false,
+  onOpenHistory,
+  onNewChat,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
