@@ -725,7 +725,7 @@ serve(async (req) => {
 
     // ---- Input validation / sanitization (mitigate prompt injection) ----
     const ALLOWED_TYPES = new Set([
-      "chat", "crypto_analyst", "alert_suggestions", "portfolio_analysis",
+      "chat", "agent_chat", "crypto_analyst", "alert_suggestions", "portfolio_analysis",
       "market_prediction", "trading_signal", "whale_analysis", "strategy_builder",
       "technical_analysis", "fundamental_analysis", "derivatives_strategy",
     ]);
