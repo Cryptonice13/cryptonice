@@ -904,7 +904,7 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-
+    let marketData: MarketData[] = [];
     let coinDetails: any = null;
 
     if (type === "chat" || type === "alert_suggestions") {
