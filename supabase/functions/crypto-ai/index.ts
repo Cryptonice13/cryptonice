@@ -825,7 +825,86 @@ serve(async (req) => {
       });
     }
 
-    let marketData: MarketData[] = [];
+    // ============= AGENT CHAT (tool-calling loop) =============
+    if (type === "agent_chat") {
+      const agentTimestamp = new Date().toISOString();
+      const sysPrompt = buildAgentSystemPrompt(context, agentTimestamp);
+      const convo: any[] = [
+        { role: "system", content: sysPrompt },
+        ...messages,
+      ];
+      const toolCallsLog: Array<{ name: string; args: any; result: any }> = [];
+      let finalContent = "";
+
+      for (let step = 0; step < 6; step++) {
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: convo,
+            tools: AGENT_TOOLS,
+            tool_choice: "auto",
+            stream: false,
+          }),
+        });
+
+        if (!r.ok) {
+          if (r.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          if (r.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          const t = await r.text();
+          console.error("agent gateway error:", r.status, t);
+          return new Response(JSON.stringify({ error: "AI service error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const data = await r.json();
+        const msg = data.choices?.[0]?.message;
+        if (!msg) break;
+
+        const toolCalls = msg.tool_calls || [];
+        // Push assistant message (must include tool_calls if present, per OpenAI spec)
+        convo.push({
+          role: "assistant",
+          content: msg.content || "",
+          ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+        });
+
+        if (!toolCalls.length) {
+          finalContent = msg.content || "";
+          break;
+        }
+
+        // Execute all tool calls in parallel
+        const results = await Promise.all(toolCalls.map(async (tc: any) => {
+          let parsedArgs: any = {};
+          try { parsedArgs = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch { /* noop */ }
+          const result = await executeAgentTool(tc.function?.name, parsedArgs, context);
+          return { tc, parsedArgs, result };
+        }));
+
+        for (const { tc, parsedArgs, result } of results) {
+          toolCallsLog.push({ name: tc.function?.name, args: parsedArgs, result });
+          convo.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify(result).slice(0, 8000),
+          });
+        }
+      }
+
+      if (!finalContent) {
+        finalContent = toolCallsLog.length
+          ? "Here is the latest data — see the cards below for details."
+          : "I couldn't generate a response. Please try again.";
+      }
+
+      return new Response(JSON.stringify({
+        content: finalContent,
+        toolCalls: toolCallsLog,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+
     let coinDetails: any = null;
 
     if (type === "chat" || type === "alert_suggestions") {
