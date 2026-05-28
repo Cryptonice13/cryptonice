@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus, Briefcase, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -7,10 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { AgentToolCard, type ToolCall } from './AgentToolCard';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  toolCalls?: ToolCall[];
 }
 
 interface ChatInterfaceProps {
@@ -71,12 +73,11 @@ export function ChatInterface({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
   const sendMessage = async (messageContent: string) => {
     const userMsg: Message = { role: 'user', content: messageContent };
     let activeConversationId = currentConversationId;
     const hasExternalState = onSaveMessage && onCreateConversation;
-    
+
     if (hasExternalState) {
       if (!currentConversationId) {
         const newConv = await onCreateConversation(messageContent);
@@ -84,12 +85,10 @@ export function ChatInterface({
         activeConversationId = newConv.id;
       }
     }
-    
+
     setMessages((prev: Message[]) => [...prev, userMsg]);
     setIsLoading(true);
     setError(null);
-
-    let assistantContent = '';
 
     try {
       const response = await fetch(CHAT_URL, {
@@ -100,71 +99,34 @@ export function ChatInterface({
         },
         body: JSON.stringify({
           messages: [...messages, userMsg],
-          type: 'chat',
+          type: 'agent_chat',
           context: portfolioContext,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to get AI response');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
+      const data = await response.json();
+      const assistantContent: string = data.content || '';
+      const toolCalls: ToolCall[] = Array.isArray(data.toolCalls) ? data.toolCalls : [];
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      const updateAssistant = (content: string) => {
-        assistantContent = content;
-        setMessages((prev: Message[]) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') {
-            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
-          }
-          return [...prev, { role: 'assistant' as const, content }];
-        });
-      };
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              updateAssistant(assistantContent);
-            }
-          } catch {
-            buffer = line + '\n' + buffer;
-            break;
-          }
-        }
-      }
-
+      const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
+      setMessages((prev: Message[]) => [...prev, assistantMsg]);
       setLastDataUpdate(new Date());
+
+      window.dispatchEvent(new CustomEvent('credits-updated'));
 
       if (hasExternalState && activeConversationId) {
         await onSaveMessage('user', messageContent, activeConversationId);
         if (assistantContent) {
-          await onSaveMessage('assistant', assistantContent, activeConversationId);
+          // Persist tool results inline as JSON fenced block so reload restores them
+          const payload = toolCalls.length
+            ? `${assistantContent}\n\n<!--tools:${JSON.stringify(toolCalls)}-->`
+            : assistantContent;
+          await onSaveMessage('assistant', payload, activeConversationId);
         }
       }
     } catch (err) {
@@ -173,6 +135,7 @@ export function ChatInterface({
       setIsLoading(false);
     }
   };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,12 +149,13 @@ export function ChatInterface({
     setMessages([]);
     setError(null);
   };
-
   const suggestedPrompts = [
-    { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Bitcoin outlook?', desc: 'Price analysis & predictions' },
-    { icon: <Zap className="w-4 h-4 text-amber-500" />, label: 'Best DeFi tokens?', desc: 'Top opportunities right now' },
-    { icon: <Shield className="w-4 h-4 text-purple-500" />, label: 'Buy ETH now?', desc: 'Entry point analysis' },
+    { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Predict BTC', desc: 'Short & medium-term outlook' },
+    { icon: <Target className="w-4 h-4 text-blue-500" />, label: 'Give me a signal for SOL', desc: 'Entry, SL, TP levels' },
+    { icon: <BarChart3 className="w-4 h-4 text-purple-500" />, label: 'TA on ETH', desc: 'RSI, MACD, trend' },
+    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Review my portfolio', desc: 'Risk & allocation' },
   ];
+
 
   return (
     <Card className={`glass-card flex flex-col h-full overflow-hidden ${className}`}>
@@ -270,11 +234,12 @@ export function ChatInterface({
                 <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold text-sm sm:text-base">How can I help you today?</h4>
+                <h4 className="font-semibold text-sm sm:text-base">Your AI Trading Agent</h4>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
-                  Ask about crypto markets, portfolio analysis, or trading strategies.
+                  Ask for predictions, signals, technical analysis, or trade ideas — I'll run the right tools for you.
                 </p>
               </div>
+
               <div className="grid grid-cols-2 gap-2 max-w-md mx-auto px-2">
                 {suggestedPrompts.map((prompt, i) => (
                   <motion.div
@@ -300,43 +265,58 @@ export function ChatInterface({
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className={`flex gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/50'
-                    }`}
+              {messages.map((msg, i) => {
+                // Restore tool calls from persisted marker if present
+                let displayContent = msg.content;
+                let toolCalls = msg.toolCalls;
+                if (msg.role === 'assistant' && !toolCalls && typeof msg.content === 'string') {
+                  const m = msg.content.match(/<!--tools:(.+?)-->\s*$/s);
+                  if (m) {
+                    try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
+                    displayContent = msg.content.replace(/<!--tools:.+?-->\s*$/s, '').trim();
+                  }
+                }
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className={`flex gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.role === 'assistant' && (
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                       </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
-                        {msg.content}
-                      </p>
                     )}
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className={`max-w-[85%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
+                      {msg.role === 'assistant' && toolCalls && toolCalls.length > 0 && (
+                        <div className="space-y-1.5">
+                          {toolCalls.map((tc, j) => <AgentToolCard key={j} call={tc} />)}
+                        </div>
+                      )}
+                      <div
+                        className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
+                          msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'
+                        }`}
+                      >
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
+                            <ReactMarkdown>{displayContent}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </motion.div>
-              ))}
+                    {msg.role === 'user' && (
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           )}
 
