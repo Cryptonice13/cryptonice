@@ -149,11 +149,12 @@ export function ChatInterface({
     setMessages([]);
     setError(null);
   };
-
   const suggestedPrompts = [
-    { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Bitcoin outlook?', desc: 'Price analysis & predictions' },
-    { icon: <Zap className="w-4 h-4 text-amber-500" />, label: 'Best DeFi tokens?', desc: 'Top opportunities right now' },
-    { icon: <Shield className="w-4 h-4 text-purple-500" />, label: 'Buy ETH now?', desc: 'Entry point analysis' },
+    { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Predict BTC', desc: 'Short & medium-term outlook' },
+    { icon: <Target className="w-4 h-4 text-blue-500" />, label: 'Give me a signal for SOL', desc: 'Entry, SL, TP levels' },
+    { icon: <BarChart3 className="w-4 h-4 text-purple-500" />, label: 'TA on ETH', desc: 'RSI, MACD, trend' },
+    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Review my portfolio', desc: 'Risk & allocation' },
+  ];
   ];
 
   return (
