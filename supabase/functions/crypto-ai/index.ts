@@ -701,7 +701,6 @@ RESPONSE STYLE:
 }
 
 
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
