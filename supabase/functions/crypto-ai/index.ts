@@ -9,6 +9,7 @@ const corsHeaders = {
 // Server-authoritative credit cost per request type
 const CREDIT_COSTS: Record<string, number> = {
   chat: 1,
+  agent_chat: 3,
   crypto_analyst: 1,
   alert_suggestions: 2,
   portfolio_analysis: 3,
