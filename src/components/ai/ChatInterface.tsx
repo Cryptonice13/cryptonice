@@ -264,43 +264,58 @@ export function ChatInterface({
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className={`flex gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/50'
-                    }`}
+              {messages.map((msg, i) => {
+                // Restore tool calls from persisted marker if present
+                let displayContent = msg.content;
+                let toolCalls = msg.toolCalls;
+                if (msg.role === 'assistant' && !toolCalls && typeof msg.content === 'string') {
+                  const m = msg.content.match(/<!--tools:(.+?)-->\s*$/s);
+                  if (m) {
+                    try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
+                    displayContent = msg.content.replace(/<!--tools:.+?-->\s*$/s, '').trim();
+                  }
+                }
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className={`flex gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.role === 'assistant' && (
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                       </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
-                        {msg.content}
-                      </p>
                     )}
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className={`max-w-[85%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
+                      {msg.role === 'assistant' && toolCalls && toolCalls.length > 0 && (
+                        <div className="space-y-1.5">
+                          {toolCalls.map((tc, j) => <AgentToolCard key={j} call={tc} />)}
+                        </div>
+                      )}
+                      <div
+                        className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
+                          msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'
+                        }`}
+                      >
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
+                            <ReactMarkdown>{displayContent}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </motion.div>
-              ))}
+                    {msg.role === 'user' && (
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           )}
 
