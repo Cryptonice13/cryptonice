@@ -239,7 +239,7 @@ export function ChatInterface({
                   Ask for predictions, signals, technical analysis, or trade ideas — I'll run the right tools for you.
                 </p>
               </div>
-              </div>
+
               <div className="grid grid-cols-2 gap-2 max-w-md mx-auto px-2">
                 {suggestedPrompts.map((prompt, i) => (
                   <motion.div
