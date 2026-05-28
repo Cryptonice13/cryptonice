@@ -234,10 +234,11 @@ export function ChatInterface({
                 <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold text-sm sm:text-base">How can I help you today?</h4>
+                <h4 className="font-semibold text-sm sm:text-base">Your AI Trading Agent</h4>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
-                  Ask about crypto markets, portfolio analysis, or trading strategies.
+                  Ask for predictions, signals, technical analysis, or trade ideas — I'll run the right tools for you.
                 </p>
+              </div>
               </div>
               <div className="grid grid-cols-2 gap-2 max-w-md mx-auto px-2">
                 {suggestedPrompts.map((prompt, i) => (
