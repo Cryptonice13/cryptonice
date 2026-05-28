@@ -135,7 +135,7 @@ export function ChatInterface({
       setIsLoading(false);
     }
   };
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
