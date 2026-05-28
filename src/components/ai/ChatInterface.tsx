@@ -155,7 +155,7 @@ export function ChatInterface({
     { icon: <BarChart3 className="w-4 h-4 text-purple-500" />, label: 'TA on ETH', desc: 'RSI, MACD, trend' },
     { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Review my portfolio', desc: 'Risk & allocation' },
   ];
-  ];
+
 
   return (
     <Card className={`glass-card flex flex-col h-full overflow-hidden ${className}`}>
