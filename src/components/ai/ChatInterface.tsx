@@ -50,6 +50,7 @@ export function ChatInterface({
   const [error, setError] = useState<string | null>(null);
   const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getRelativeTime = (date: Date | null) => {
