@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
+import { useAccount } from 'wagmi';
 
 interface Message {
   role: 'user' | 'assistant';
