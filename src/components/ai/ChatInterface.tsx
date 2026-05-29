@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
+import { useAccount } from 'wagmi';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -48,6 +50,7 @@ export function ChatInterface({
   const [error, setError] = useState<string | null>(null);
   const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getRelativeTime = (date: Date | null) => {
@@ -91,22 +94,16 @@ export function ChatInterface({
     setError(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0cWhkZnh6cmFqd2dwYmtraGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjAwMjgsImV4cCI6MjA2OTAzNjAyOH0.ZB4PiYMnNSGPcK3Pe3Z_LStE_MQGeVFiL6ZyXgwukkY`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          type: 'agent_chat',
-          context: portfolioContext,
-        }),
+      const response = await invokeCryptoAI({
+        type: 'agent_chat',
+        messages: [...messages, userMsg],
+        context: portfolioContext,
+        walletAddress: address,
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to get AI response');
+        const msg = await readCryptoAIError(response);
+        throw new Error(msg);
       }
 
       const data = await response.json();
