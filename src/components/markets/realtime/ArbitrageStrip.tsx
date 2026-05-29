@@ -10,7 +10,7 @@ export function ArbitrageStrip({ symbol }: Props) {
   const { data, isLoading } = useArbitrage(symbol, 10000);
 
   return (
-    <Card className="glass-card p-3">
+    <Card className="glass-card p-3 @container">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-primary" />
