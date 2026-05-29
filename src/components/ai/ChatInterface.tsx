@@ -270,15 +270,17 @@ export function ChatInterface({
           ) : (
             <AnimatePresence initial={false}>
               {messages.map((msg, i) => {
-                // Restore tool calls from persisted marker if present
+                // Restore tool calls from persisted marker if present, and always strip any markers from display
                 let displayContent = msg.content;
                 let toolCalls = msg.toolCalls;
-                if (msg.role === 'assistant' && !toolCalls && typeof msg.content === 'string') {
-                  const m = msg.content.match(/<!--tools:(.+?)-->\s*$/s);
-                  if (m) {
-                    try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
-                    displayContent = msg.content.replace(/<!--tools:.+?-->\s*$/s, '').trim();
+                if (msg.role === 'assistant' && typeof msg.content === 'string') {
+                  if (!toolCalls) {
+                    const m = msg.content.match(/<!--tools:([\s\S]+?)-->/);
+                    if (m) {
+                      try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
+                    }
                   }
+                  displayContent = msg.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim();
                 }
                 return (
                   <motion.div
