@@ -10,7 +10,7 @@ export function ArbitrageStrip({ symbol }: Props) {
   const { data, isLoading } = useArbitrage(symbol, 10000);
 
   return (
-    <Card className="glass-card p-3">
+    <Card className="glass-card p-3 @container">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-primary" />
@@ -22,25 +22,25 @@ export function ArbitrageStrip({ symbol }: Props) {
           </Badge>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-2 @[340px]:grid-cols-3 @[480px]:grid-cols-5 gap-1.5">
         {(data?.results ?? []).map((r) => {
           const isBestBid = r.exchange === data?.bestBidExchange;
           const isBestAsk = r.exchange === data?.bestAskExchange;
           return (
             <div
               key={r.exchange}
-              className={`rounded-md border p-2 text-center transition-colors ${
+              className={`min-w-0 rounded-md border p-1.5 text-center transition-colors ${
                 isBestBid ? "border-green-500/50 bg-green-500/5"
                 : isBestAsk ? "border-red-500/50 bg-red-500/5"
                 : "border-border/40"
               }`}
             >
-              <div className="text-[10px] uppercase text-muted-foreground">{r.exchange}</div>
+              <div className="text-[9px] uppercase text-muted-foreground truncate">{r.exchange}</div>
               {r.ok ? (
                 <>
-                  <div className="font-mono text-xs">{formatPrice(r.last ?? 0)}</div>
+                  <div className="font-mono text-[11px] truncate">{formatPrice(r.last ?? 0)}</div>
                   {r.percentage != null && (
-                    <div className={`text-[10px] ${(r.percentage ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    <div className={`text-[9px] truncate ${(r.percentage ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
                       {(r.percentage ?? 0) >= 0 ? "+" : ""}{(r.percentage ?? 0).toFixed(2)}%
                     </div>
                   )}
@@ -55,6 +55,7 @@ export function ArbitrageStrip({ symbol }: Props) {
           <div className="col-span-full text-[11px] text-muted-foreground text-center py-2">Comparing exchanges…</div>
         )}
       </div>
+
     </Card>
   );
 }
