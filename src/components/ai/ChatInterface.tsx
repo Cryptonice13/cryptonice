@@ -94,9 +94,16 @@ export function ChatInterface({
     setError(null);
 
     try {
+      // Strip persisted tool markers from history so the model doesn't echo them back as text
+      const sanitizedHistory = [...messages, userMsg].map((m) => ({
+        ...m,
+        content: typeof m.content === 'string'
+          ? m.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim()
+          : m.content,
+      }));
       const response = await invokeCryptoAI({
         type: 'agent_chat',
-        messages: [...messages, userMsg],
+        messages: sanitizedHistory,
         context: portfolioContext,
         walletAddress: address,
       });
@@ -263,15 +270,17 @@ export function ChatInterface({
           ) : (
             <AnimatePresence initial={false}>
               {messages.map((msg, i) => {
-                // Restore tool calls from persisted marker if present
+                // Restore tool calls from persisted marker if present, and always strip any markers from display
                 let displayContent = msg.content;
                 let toolCalls = msg.toolCalls;
-                if (msg.role === 'assistant' && !toolCalls && typeof msg.content === 'string') {
-                  const m = msg.content.match(/<!--tools:(.+?)-->\s*$/s);
-                  if (m) {
-                    try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
-                    displayContent = msg.content.replace(/<!--tools:.+?-->\s*$/s, '').trim();
+                if (msg.role === 'assistant' && typeof msg.content === 'string') {
+                  if (!toolCalls) {
+                    const m = msg.content.match(/<!--tools:([\s\S]+?)-->/);
+                    if (m) {
+                      try { toolCalls = JSON.parse(m[1]) as ToolCall[]; } catch { /* noop */ }
+                    }
                   }
+                  displayContent = msg.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim();
                 }
                 return (
                   <motion.div
