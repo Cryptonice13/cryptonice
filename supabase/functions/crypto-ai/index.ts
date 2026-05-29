@@ -396,7 +396,9 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks):
 
     default:
       return "You are a helpful cryptocurrency advisor with real-time market data.";
+  }
 }
+
 
 // ============= AGENT TOOLS =============
 // Each tool returns compact structured JSON. The agent model reasons over these.
