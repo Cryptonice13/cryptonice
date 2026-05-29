@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 
 export interface Strategy {
   id: string;
@@ -154,28 +153,21 @@ export function useStrategyBuilder() {
     setLastResult(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      const response = await invokeCryptoAI({
+        messages: [{ role: 'user', content: `Generate a ${params.strategyType} strategy for ${params.assetSymbol}` }],
+        type: 'strategy_builder',
+        context: {
+          symbol: params.assetSymbol,
+          strategyType: params.strategyType,
+          riskLevel: params.riskLevel,
+          timeframe: params.timeframe,
+          investmentAmount: params.investmentAmount,
         },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Generate a ${params.strategyType} strategy for ${params.assetSymbol}` }],
-          type: 'strategy_builder',
-          context: {
-            symbol: params.assetSymbol,
-            strategyType: params.strategyType,
-            riskLevel: params.riskLevel,
-            timeframe: params.timeframe,
-            investmentAmount: params.investmentAmount,
-          },
-        }),
+        walletAddress: address,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate strategy');
+        throw new Error(await readCryptoAIError(response));
       }
 
       const data = await response.json();
@@ -254,39 +246,32 @@ export function useStrategyBuilder() {
     setLastDerivativesResult(null);
 
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      const response = await invokeCryptoAI({
+        messages: [{ role: 'user', content: `Generate a ${params.mode} ${params.mode === 'options' ? params.optionPreset : params.positionDirection} strategy for ${params.assetSymbol}` }],
+        type: 'derivatives_strategy',
+        context: {
+          symbol: params.assetSymbol,
+          mode: params.mode,
+          riskLevel: params.riskLevel,
+          investmentAmount: params.investmentAmount,
+          ...(params.mode === 'options' ? {
+            contractType: params.contractType,
+            strikePrice: params.strikePrice,
+            expiry: params.expiry,
+            premiumBudget: params.premiumBudget,
+            optionPreset: params.optionPreset,
+          } : {
+            leverage: params.leverage,
+            futuresContract: params.futuresContract,
+            positionDirection: params.positionDirection,
+            marginType: params.marginType,
+          }),
         },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Generate a ${params.mode} ${params.mode === 'options' ? params.optionPreset : params.positionDirection} strategy for ${params.assetSymbol}` }],
-          type: 'derivatives_strategy',
-          context: {
-            symbol: params.assetSymbol,
-            mode: params.mode,
-            riskLevel: params.riskLevel,
-            investmentAmount: params.investmentAmount,
-            ...(params.mode === 'options' ? {
-              contractType: params.contractType,
-              strikePrice: params.strikePrice,
-              expiry: params.expiry,
-              premiumBudget: params.premiumBudget,
-              optionPreset: params.optionPreset,
-            } : {
-              leverage: params.leverage,
-              futuresContract: params.futuresContract,
-              positionDirection: params.positionDirection,
-              marginType: params.marginType,
-            }),
-          },
-        }),
+        walletAddress: address,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate strategy');
+        throw new Error(await readCryptoAIError(response));
       }
 
       const data = await response.json();
