@@ -94,9 +94,16 @@ export function ChatInterface({
     setError(null);
 
     try {
+      // Strip persisted tool markers from history so the model doesn't echo them back as text
+      const sanitizedHistory = [...messages, userMsg].map((m) => ({
+        ...m,
+        content: typeof m.content === 'string'
+          ? m.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim()
+          : m.content,
+      }));
       const response = await invokeCryptoAI({
         type: 'agent_chat',
-        messages: [...messages, userMsg],
+        messages: sanitizedHistory,
         context: portfolioContext,
         walletAddress: address,
       });
