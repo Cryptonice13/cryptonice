@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell, Radio } from 'lucide-react';
 import cryptoaiLogo from '@/assets/cryptonice-logo.png';
 import { Button } from '@/components/ui/button';
 import {
@@ -112,6 +112,18 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
             className="h-8 w-8 relative"
           >
             <Brain className="w-4 h-4 text-primary" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </Button>
+
+          {/* Realtime Markets Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/realtime')}
+            className="h-8 w-8 relative"
+            title="Realtime Markets"
+          >
+            <Radio className="w-4 h-4" />
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </Button>
 

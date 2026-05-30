@@ -26,6 +26,7 @@ import FloatingChatButton from "./components/FloatingChatButton";
 import ResetPassword from "./pages/ResetPassword";
 import Community from "./pages/Community";
 import Safety from "./pages/Safety";
+import Realtime from "./pages/Realtime";
 const queryClient = new QueryClient();
 
 const WalletInitializer = () => {
@@ -57,6 +58,11 @@ const App = () => (
                 <Route path="/portfolio" element={<Navigate to="/chat" replace />} />
                 <Route path="/safety" element={<Navigate to="/chat?tab=markets" replace />} />
                 <Route path="/markets" element={<Navigate to="/chat?tab=markets" replace />} />
+                <Route path="/realtime" element={
+                  <ProtectedRoute>
+                    <Realtime />
+                  </ProtectedRoute>
+                } />
                 <Route path="/strategy" element={<Navigate to="/chat?tab=strategy" replace />} />
                 <Route path="/alerts" element={
                   <ProtectedRoute>
