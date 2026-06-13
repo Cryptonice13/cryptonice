@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sparkles, Loader2, CheckCircle2, Circle, BarChart3, Target, Activity,
-  Brain, Waves, Cpu, Zap, ChevronRight, AlertCircle,
+  Brain, Waves, Cpu, Zap, ChevronRight, AlertCircle, History, Trash2, RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMarketData, type CryptoAsset } from '@/hooks/useMarketData';
@@ -17,6 +19,36 @@ import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
 import { formatPrice } from '@/lib/format';
+
+const HISTORY_KEY = 'agent-run-history-v1';
+const HISTORY_LIMIT = 20;
+
+interface HistoryRun {
+  id: string;
+  timestamp: number;
+  assetSymbol: string;
+  assetName: string;
+  assetLogo?: string;
+  price: number;
+  technicalData: any;
+  fundamentalData: any;
+  prediction: any;
+  signal: any;
+  whaleSentiment: string | null;
+  whaleSummary: string | null;
+  strategyResult: any;
+}
+
+function loadHistory(): HistoryRun[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveHistory(items: HistoryRun[]) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, HISTORY_LIMIT))); } catch {}
+}
 
 interface Props {
   selectedAssetId: string | null;
