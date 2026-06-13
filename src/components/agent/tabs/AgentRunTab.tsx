@@ -277,7 +277,95 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
             <h3 className="text-sm font-semibold">Full AI Agent</h3>
             <p className="text-[10px] text-muted-foreground">Runs analysis → predictions → strategy</p>
           </div>
+          <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                <History className="w-3.5 h-3.5" />
+                History
+                {history.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">{history.length}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <History className="w-4 h-4" /> Agent Run History
+                </SheetTitle>
+              </SheetHeader>
+              {history.length > 0 && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={clearHistory} className="h-7 text-[11px] text-destructive">
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear all
+                  </Button>
+                </div>
+              )}
+              <ScrollArea className="flex-1 -mx-6 px-6">
+                {history.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    <History className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>No past runs yet</p>
+                    <p className="text-xs mt-1">Complete an analysis to save it here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pb-6">
+                    {history.map(run => (
+                      <Card
+                        key={run.id}
+                        className="glass-card p-3 cursor-pointer hover:border-primary/40 transition-colors group"
+                        onClick={() => viewRun(run)}
+                      >
+                        <div className="flex items-start gap-2">
+                          {run.assetLogo && <img src={run.assetLogo} alt="" className="w-6 h-6 rounded-full mt-0.5" />}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">{run.assetSymbol}</span>
+                              <span className="text-[10px] text-muted-foreground truncate">{run.assetName}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(run.timestamp).toLocaleString()} · {formatPrice(run.price)}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {run.signal?.signal && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">{run.signal.signal}</Badge>
+                              )}
+                              {run.prediction?.sentiment && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 capitalize">{run.prediction.sentiment}</Badge>
+                              )}
+                              {run.strategyResult?.signal && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">Strat: {run.strategyResult.signal}</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); deleteRun(run.id); }}
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
+
+        {viewing && (
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-primary/10 border border-primary/30">
+            <span className="text-[11px] text-primary flex items-center gap-1.5">
+              <History className="w-3 h-3" />
+              Viewing past run: <strong>{viewing.assetSymbol}</strong> · {new Date(viewing.timestamp).toLocaleString()}
+            </span>
+            <Button variant="ghost" size="sm" onClick={exitViewing} className="h-6 text-[10px]">
+              <RotateCcw className="w-3 h-3 mr-1" /> Exit
+            </Button>
+          </div>
+        )}
 
         <Select value={selectedAssetId || ''} onValueChange={(v) => onSelectAsset(assets.find(a => a.id === v) || null)}>
           <SelectTrigger className="h-9 text-sm">
