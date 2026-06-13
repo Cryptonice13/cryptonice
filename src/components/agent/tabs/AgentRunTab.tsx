@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sparkles, Loader2, CheckCircle2, Circle, BarChart3, Target, Activity,
-  Brain, Waves, Cpu, Zap, ChevronRight, AlertCircle,
+  Brain, Waves, Cpu, Zap, ChevronRight, AlertCircle, History, Trash2, RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMarketData, type CryptoAsset } from '@/hooks/useMarketData';
@@ -17,6 +19,36 @@ import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
 import { formatPrice } from '@/lib/format';
+
+const HISTORY_KEY = 'agent-run-history-v1';
+const HISTORY_LIMIT = 20;
+
+interface HistoryRun {
+  id: string;
+  timestamp: number;
+  assetSymbol: string;
+  assetName: string;
+  assetLogo?: string;
+  price: number;
+  technicalData: any;
+  fundamentalData: any;
+  prediction: any;
+  signal: any;
+  whaleSentiment: string | null;
+  whaleSummary: string | null;
+  strategyResult: any;
+}
+
+function loadHistory(): HistoryRun[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveHistory(items: HistoryRun[]) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, HISTORY_LIMIT))); } catch {}
+}
 
 interface Props {
   selectedAssetId: string | null;
@@ -89,6 +121,22 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
   const [whaleSentiment, setWhaleSentiment] = useState<string | null>(null);
   const [whaleSummary, setWhaleSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryRun[]>([]);
+  const [viewing, setViewing] = useState<HistoryRun | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => { setHistory(loadHistory()); }, []);
+
+  // View data (past run takes precedence over live hook data)
+  const v = viewing;
+  const vTechnical = v ? v.technicalData : technicalData;
+  const vFundamental = v ? v.fundamentalData : fundamentalData;
+  const vPrediction = v ? v.prediction : prediction;
+  const vSignal = v ? v.signal : signal;
+  const vWhaleSentiment = v ? v.whaleSentiment : whaleSentiment;
+  const vWhaleSummary = v ? v.whaleSummary : whaleSummary;
+  const vStrategy = v ? v.strategyResult : strategyResult;
+  const vSymbol = v ? v.assetSymbol : selected?.symbol;
 
   const update = (k: keyof StepState, s: StepStatus) => setSteps(prev => ({ ...prev, [k]: s }));
 
@@ -174,7 +222,48 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
     }
   }, [selected, runAnalysis, getPrediction, getSignal, runWhales, generateStrategy, onStrategyResult]);
 
+  // Persist completed run to history
+  useEffect(() => {
+    if (phase !== 'done' || !selected || viewing) return;
+    const run: HistoryRun = {
+      id: `${Date.now()}-${selected.id}`,
+      timestamp: Date.now(),
+      assetSymbol: selected.symbol,
+      assetName: selected.name,
+      assetLogo: selected.logo,
+      price: selected.price,
+      technicalData, fundamentalData, prediction, signal,
+      whaleSentiment, whaleSummary, strategyResult,
+    };
+    setHistory(prev => {
+      const next = [run, ...prev.filter(r => r.id !== run.id)].slice(0, HISTORY_LIMIT);
+      saveHistory(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const deleteRun = (id: string) => {
+    setHistory(prev => {
+      const next = prev.filter(r => r.id !== id);
+      saveHistory(next);
+      return next;
+    });
+    if (viewing?.id === id) setViewing(null);
+  };
+
+  const clearHistory = () => { setHistory([]); saveHistory([]); setViewing(null); };
+
+  const viewRun = (run: HistoryRun) => {
+    setViewing(run);
+    setPhase('idle');
+    setHistoryOpen(false);
+  };
+
+  const exitViewing = () => setViewing(null);
+
   const isRunning = phase !== 'idle' && phase !== 'done';
+  const showContent = phase !== 'idle' || !!viewing;
 
   return (
     <div className="space-y-3">
@@ -188,7 +277,95 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
             <h3 className="text-sm font-semibold">Full AI Agent</h3>
             <p className="text-[10px] text-muted-foreground">Runs analysis → predictions → strategy</p>
           </div>
+          <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                <History className="w-3.5 h-3.5" />
+                History
+                {history.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">{history.length}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <History className="w-4 h-4" /> Agent Run History
+                </SheetTitle>
+              </SheetHeader>
+              {history.length > 0 && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={clearHistory} className="h-7 text-[11px] text-destructive">
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear all
+                  </Button>
+                </div>
+              )}
+              <ScrollArea className="flex-1 -mx-6 px-6">
+                {history.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    <History className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>No past runs yet</p>
+                    <p className="text-xs mt-1">Complete an analysis to save it here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pb-6">
+                    {history.map(run => (
+                      <Card
+                        key={run.id}
+                        className="glass-card p-3 cursor-pointer hover:border-primary/40 transition-colors group"
+                        onClick={() => viewRun(run)}
+                      >
+                        <div className="flex items-start gap-2">
+                          {run.assetLogo && <img src={run.assetLogo} alt="" className="w-6 h-6 rounded-full mt-0.5" />}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">{run.assetSymbol}</span>
+                              <span className="text-[10px] text-muted-foreground truncate">{run.assetName}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(run.timestamp).toLocaleString()} · {formatPrice(run.price)}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {run.signal?.signal && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">{run.signal.signal}</Badge>
+                              )}
+                              {run.prediction?.sentiment && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 capitalize">{run.prediction.sentiment}</Badge>
+                              )}
+                              {run.strategyResult?.signal && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">Strat: {run.strategyResult.signal}</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); deleteRun(run.id); }}
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
+
+        {viewing && (
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-primary/10 border border-primary/30">
+            <span className="text-[11px] text-primary flex items-center gap-1.5">
+              <History className="w-3 h-3" />
+              Viewing past run: <strong>{viewing.assetSymbol}</strong> · {new Date(viewing.timestamp).toLocaleString()}
+            </span>
+            <Button variant="ghost" size="sm" onClick={exitViewing} className="h-6 text-[10px]">
+              <RotateCcw className="w-3 h-3 mr-1" /> Exit
+            </Button>
+          </div>
+        )}
 
         <Select value={selectedAssetId || ''} onValueChange={(v) => onSelectAsset(assets.find(a => a.id === v) || null)}>
           <SelectTrigger className="h-9 text-sm">
@@ -236,119 +413,121 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
       </Card>
 
       <AnimatePresence>
-        {phase !== 'idle' && (
+        {showContent && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
 
             {/* PHASE 1: ANALYSIS */}
             <div>
-              <PhaseHeader n={1} title="Market Analysis" active={phase === 'analysis'} done={steps.technical === 'done' && steps.fundamental === 'done'} />
+              <PhaseHeader n={1} title={`Market Analysis${vSymbol ? ` · ${vSymbol}` : ''}`} active={!viewing && phase === 'analysis'} done={!!viewing || (steps.technical === 'done' && steps.fundamental === 'done')} />
               <div className="grid grid-cols-1 gap-3">
-                {/* Sentiment */}
-                <Card className="glass-card overflow-hidden">
-                  <div className="px-3 py-2 border-b border-border/40 flex items-center gap-2">
-                    <Activity className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-semibold">Sentiment</span>
-                  </div>
-                  <FearGreedGauge />
-                </Card>
+                {/* Sentiment (live only) */}
+                {!viewing && (
+                  <Card className="glass-card overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border/40 flex items-center gap-2">
+                      <Activity className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-semibold">Sentiment</span>
+                    </div>
+                    <FearGreedGauge />
+                  </Card>
+                )}
 
                 {/* Technical */}
-                {technicalData && (
+                {vTechnical && (
                   <Card className="glass-card p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-primary" /> Technical</span>
-                      <Badge variant="outline" className="text-[10px]">{technicalData.verdict?.signal}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{vTechnical.verdict?.signal}</Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">RSI</p>
-                        <p className="font-mono font-bold">{technicalData.indicators?.rsi?.value}</p>
+                        <p className="font-mono font-bold">{vTechnical.indicators?.rsi?.value}</p>
                       </div>
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">MACD</p>
-                        <p className="font-mono font-bold">{technicalData.indicators?.macd?.signal}</p>
+                        <p className="font-mono font-bold">{vTechnical.indicators?.macd?.signal}</p>
                       </div>
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">Trend</p>
-                        <p className="font-mono font-bold">{technicalData.trendAnalysis?.direction}</p>
+                        <p className="font-mono font-bold">{vTechnical.trendAnalysis?.direction}</p>
                       </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-3">{technicalData.verdict?.reasoning}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-3">{vTechnical.verdict?.reasoning}</p>
                   </Card>
                 )}
 
                 {/* Fundamental */}
-                {fundamentalData && (
+                {vFundamental && (
                   <Card className="glass-card p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-primary" /> Fundamental</span>
-                      <Badge variant="outline" className="text-[10px]">Score {fundamentalData.overallScore}/100</Badge>
+                      <Badge variant="outline" className="text-[10px]">Score {vFundamental.overallScore}/100</Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-3">{fundamentalData.assessment?.thesis || fundamentalData.assessment?.summary}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-3">{vFundamental.assessment?.thesis || vFundamental.assessment?.summary}</p>
                   </Card>
                 )}
               </div>
             </div>
 
             {/* PHASE 2: PREDICTIONS */}
-            {(phase === 'signals' || phase === 'strategy' || phase === 'done') && (
+            {(viewing || phase === 'signals' || phase === 'strategy' || phase === 'done') && (
               <div>
-                <PhaseHeader n={2} title="Predictions & Signals" active={phase === 'signals'} done={steps.prediction === 'done' && steps.signal === 'done'} />
+                <PhaseHeader n={2} title="Predictions & Signals" active={!viewing && phase === 'signals'} done={!!viewing || (steps.prediction === 'done' && steps.signal === 'done')} />
                 <div className="space-y-3">
-                  {prediction && (
+                  {vPrediction && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Brain className="w-3.5 h-3.5 text-primary" /> Prediction</span>
-                        <Badge variant="outline" className="text-[10px] capitalize">{prediction.sentiment}</Badge>
+                        <Badge variant="outline" className="text-[10px] capitalize">{vPrediction.sentiment}</Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
                         <div className="rounded bg-muted/30 p-2">
                           <p className="text-muted-foreground text-[9px] uppercase">Short-term</p>
-                          <p className="font-semibold capitalize">{prediction.shortTerm?.direction}</p>
+                          <p className="font-semibold capitalize">{vPrediction.shortTerm?.direction}</p>
                         </div>
                         <div className="rounded bg-muted/30 p-2">
                           <p className="text-muted-foreground text-[9px] uppercase">Medium-term</p>
-                          <p className="font-semibold capitalize">{prediction.mediumTerm?.direction}</p>
+                          <p className="font-semibold capitalize">{vPrediction.mediumTerm?.direction}</p>
                         </div>
                       </div>
-                      {prediction.analysis && <p className="text-[11px] text-muted-foreground line-clamp-3">{prediction.analysis}</p>}
+                      {vPrediction.analysis && <p className="text-[11px] text-muted-foreground line-clamp-3">{vPrediction.analysis}</p>}
                     </Card>
                   )}
 
-                  {signal && (
+                  {vSignal && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-primary" /> Trading Signal</span>
                         <Badge className={
-                          signal.signal === 'BUY' ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                          : signal.signal === 'SELL' ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          vSignal.signal === 'BUY' ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : vSignal.signal === 'SELL' ? 'bg-red-500/20 text-red-400 border-red-500/30'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                        }>{signal.signal}</Badge>
+                        }>{vSignal.signal}</Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-[11px]">
                         <div className="rounded bg-muted/30 p-1.5">
                           <p className="text-muted-foreground text-[9px]">Entry</p>
-                          <p className="font-mono">${signal.entryRange?.min}</p>
+                          <p className="font-mono">${vSignal.entryRange?.min}</p>
                         </div>
                         <div className="rounded bg-red-500/10 p-1.5">
                           <p className="text-muted-foreground text-[9px]">Stop</p>
-                          <p className="font-mono text-red-400">${signal.stopLoss}</p>
+                          <p className="font-mono text-red-400">${vSignal.stopLoss}</p>
                         </div>
                         <div className="rounded bg-green-500/10 p-1.5">
                           <p className="text-muted-foreground text-[9px]">TP1</p>
-                          <p className="font-mono text-green-400">${signal.takeProfits?.[0]}</p>
+                          <p className="font-mono text-green-400">${vSignal.takeProfits?.[0]}</p>
                         </div>
                       </div>
                     </Card>
                   )}
 
-                  {(whaleSentiment || whaleSummary) && (
+                  {(vWhaleSentiment || vWhaleSummary) && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Waves className="w-3.5 h-3.5 text-primary" /> Whale Activity</span>
-                        {whaleSentiment && <Badge variant="outline" className="text-[10px] capitalize">{whaleSentiment}</Badge>}
+                        {vWhaleSentiment && <Badge variant="outline" className="text-[10px] capitalize">{vWhaleSentiment}</Badge>}
                       </div>
-                      {whaleSummary && <p className="text-[11px] text-muted-foreground line-clamp-3">{whaleSummary}</p>}
+                      {vWhaleSummary && <p className="text-[11px] text-muted-foreground line-clamp-3">{vWhaleSummary}</p>}
                     </Card>
                   )}
                 </div>
@@ -356,12 +535,12 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
             )}
 
             {/* PHASE 3: STRATEGY */}
-            {(phase === 'strategy' || phase === 'done') && (
+            {(viewing || phase === 'strategy' || phase === 'done') && (
               <div>
-                <PhaseHeader n={3} title="Trading Strategy" active={phase === 'strategy'} done={steps.strategy === 'done'} />
-                {strategyResult && selected ? (
-                  <StrategyDetailCard result={strategyResult} assetSymbol={selected.symbol} />
-                ) : steps.strategy === 'running' ? (
+                <PhaseHeader n={3} title="Trading Strategy" active={!viewing && phase === 'strategy'} done={!!viewing || steps.strategy === 'done'} />
+                {vStrategy && vSymbol ? (
+                  <StrategyDetailCard result={vStrategy} assetSymbol={vSymbol} />
+                ) : !viewing && steps.strategy === 'running' ? (
                   <Card className="glass-card p-6 flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <p className="text-xs text-muted-foreground">Building strategy…</p>
