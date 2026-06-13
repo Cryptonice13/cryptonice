@@ -222,7 +222,48 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
     }
   }, [selected, runAnalysis, getPrediction, getSignal, runWhales, generateStrategy, onStrategyResult]);
 
+  // Persist completed run to history
+  useEffect(() => {
+    if (phase !== 'done' || !selected || viewing) return;
+    const run: HistoryRun = {
+      id: `${Date.now()}-${selected.id}`,
+      timestamp: Date.now(),
+      assetSymbol: selected.symbol,
+      assetName: selected.name,
+      assetLogo: selected.logo,
+      price: selected.price,
+      technicalData, fundamentalData, prediction, signal,
+      whaleSentiment, whaleSummary, strategyResult,
+    };
+    setHistory(prev => {
+      const next = [run, ...prev.filter(r => r.id !== run.id)].slice(0, HISTORY_LIMIT);
+      saveHistory(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const deleteRun = (id: string) => {
+    setHistory(prev => {
+      const next = prev.filter(r => r.id !== id);
+      saveHistory(next);
+      return next;
+    });
+    if (viewing?.id === id) setViewing(null);
+  };
+
+  const clearHistory = () => { setHistory([]); saveHistory([]); setViewing(null); };
+
+  const viewRun = (run: HistoryRun) => {
+    setViewing(run);
+    setPhase('idle');
+    setHistoryOpen(false);
+  };
+
+  const exitViewing = () => setViewing(null);
+
   const isRunning = phase !== 'idle' && phase !== 'done';
+  const showContent = phase !== 'idle' || !!viewing;
 
   return (
     <div className="space-y-3">
