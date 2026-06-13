@@ -121,6 +121,22 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
   const [whaleSentiment, setWhaleSentiment] = useState<string | null>(null);
   const [whaleSummary, setWhaleSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryRun[]>([]);
+  const [viewing, setViewing] = useState<HistoryRun | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => { setHistory(loadHistory()); }, []);
+
+  // View data (past run takes precedence over live hook data)
+  const v = viewing;
+  const vTechnical = v ? v.technicalData : technicalData;
+  const vFundamental = v ? v.fundamentalData : fundamentalData;
+  const vPrediction = v ? v.prediction : prediction;
+  const vSignal = v ? v.signal : signal;
+  const vWhaleSentiment = v ? v.whaleSentiment : whaleSentiment;
+  const vWhaleSummary = v ? v.whaleSummary : whaleSummary;
+  const vStrategy = v ? v.strategyResult : strategyResult;
+  const vSymbol = v ? v.assetSymbol : selected?.symbol;
 
   const update = (k: keyof StepState, s: StepStatus) => setSteps(prev => ({ ...prev, [k]: s }));
 
