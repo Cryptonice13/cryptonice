@@ -413,119 +413,121 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
       </Card>
 
       <AnimatePresence>
-        {phase !== 'idle' && (
+        {showContent && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
 
             {/* PHASE 1: ANALYSIS */}
             <div>
-              <PhaseHeader n={1} title="Market Analysis" active={phase === 'analysis'} done={steps.technical === 'done' && steps.fundamental === 'done'} />
+              <PhaseHeader n={1} title={`Market Analysis${vSymbol ? ` · ${vSymbol}` : ''}`} active={!viewing && phase === 'analysis'} done={!!viewing || (steps.technical === 'done' && steps.fundamental === 'done')} />
               <div className="grid grid-cols-1 gap-3">
-                {/* Sentiment */}
-                <Card className="glass-card overflow-hidden">
-                  <div className="px-3 py-2 border-b border-border/40 flex items-center gap-2">
-                    <Activity className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-semibold">Sentiment</span>
-                  </div>
-                  <FearGreedGauge />
-                </Card>
+                {/* Sentiment (live only) */}
+                {!viewing && (
+                  <Card className="glass-card overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border/40 flex items-center gap-2">
+                      <Activity className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-semibold">Sentiment</span>
+                    </div>
+                    <FearGreedGauge />
+                  </Card>
+                )}
 
                 {/* Technical */}
-                {technicalData && (
+                {vTechnical && (
                   <Card className="glass-card p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-primary" /> Technical</span>
-                      <Badge variant="outline" className="text-[10px]">{technicalData.verdict?.signal}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{vTechnical.verdict?.signal}</Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-[11px]">
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">RSI</p>
-                        <p className="font-mono font-bold">{technicalData.indicators?.rsi?.value}</p>
+                        <p className="font-mono font-bold">{vTechnical.indicators?.rsi?.value}</p>
                       </div>
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">MACD</p>
-                        <p className="font-mono font-bold">{technicalData.indicators?.macd?.signal}</p>
+                        <p className="font-mono font-bold">{vTechnical.indicators?.macd?.signal}</p>
                       </div>
                       <div className="rounded bg-muted/30 p-1.5 text-center">
                         <p className="text-muted-foreground text-[9px]">Trend</p>
-                        <p className="font-mono font-bold">{technicalData.trendAnalysis?.direction}</p>
+                        <p className="font-mono font-bold">{vTechnical.trendAnalysis?.direction}</p>
                       </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-3">{technicalData.verdict?.reasoning}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-3">{vTechnical.verdict?.reasoning}</p>
                   </Card>
                 )}
 
                 {/* Fundamental */}
-                {fundamentalData && (
+                {vFundamental && (
                   <Card className="glass-card p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-primary" /> Fundamental</span>
-                      <Badge variant="outline" className="text-[10px]">Score {fundamentalData.overallScore}/100</Badge>
+                      <Badge variant="outline" className="text-[10px]">Score {vFundamental.overallScore}/100</Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-3">{fundamentalData.assessment?.thesis || fundamentalData.assessment?.summary}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-3">{vFundamental.assessment?.thesis || vFundamental.assessment?.summary}</p>
                   </Card>
                 )}
               </div>
             </div>
 
             {/* PHASE 2: PREDICTIONS */}
-            {(phase === 'signals' || phase === 'strategy' || phase === 'done') && (
+            {(viewing || phase === 'signals' || phase === 'strategy' || phase === 'done') && (
               <div>
-                <PhaseHeader n={2} title="Predictions & Signals" active={phase === 'signals'} done={steps.prediction === 'done' && steps.signal === 'done'} />
+                <PhaseHeader n={2} title="Predictions & Signals" active={!viewing && phase === 'signals'} done={!!viewing || (steps.prediction === 'done' && steps.signal === 'done')} />
                 <div className="space-y-3">
-                  {prediction && (
+                  {vPrediction && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Brain className="w-3.5 h-3.5 text-primary" /> Prediction</span>
-                        <Badge variant="outline" className="text-[10px] capitalize">{prediction.sentiment}</Badge>
+                        <Badge variant="outline" className="text-[10px] capitalize">{vPrediction.sentiment}</Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
                         <div className="rounded bg-muted/30 p-2">
                           <p className="text-muted-foreground text-[9px] uppercase">Short-term</p>
-                          <p className="font-semibold capitalize">{prediction.shortTerm?.direction}</p>
+                          <p className="font-semibold capitalize">{vPrediction.shortTerm?.direction}</p>
                         </div>
                         <div className="rounded bg-muted/30 p-2">
                           <p className="text-muted-foreground text-[9px] uppercase">Medium-term</p>
-                          <p className="font-semibold capitalize">{prediction.mediumTerm?.direction}</p>
+                          <p className="font-semibold capitalize">{vPrediction.mediumTerm?.direction}</p>
                         </div>
                       </div>
-                      {prediction.analysis && <p className="text-[11px] text-muted-foreground line-clamp-3">{prediction.analysis}</p>}
+                      {vPrediction.analysis && <p className="text-[11px] text-muted-foreground line-clamp-3">{vPrediction.analysis}</p>}
                     </Card>
                   )}
 
-                  {signal && (
+                  {vSignal && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-primary" /> Trading Signal</span>
                         <Badge className={
-                          signal.signal === 'BUY' ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                          : signal.signal === 'SELL' ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          vSignal.signal === 'BUY' ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : vSignal.signal === 'SELL' ? 'bg-red-500/20 text-red-400 border-red-500/30'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                        }>{signal.signal}</Badge>
+                        }>{vSignal.signal}</Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-[11px]">
                         <div className="rounded bg-muted/30 p-1.5">
                           <p className="text-muted-foreground text-[9px]">Entry</p>
-                          <p className="font-mono">${signal.entryRange?.min}</p>
+                          <p className="font-mono">${vSignal.entryRange?.min}</p>
                         </div>
                         <div className="rounded bg-red-500/10 p-1.5">
                           <p className="text-muted-foreground text-[9px]">Stop</p>
-                          <p className="font-mono text-red-400">${signal.stopLoss}</p>
+                          <p className="font-mono text-red-400">${vSignal.stopLoss}</p>
                         </div>
                         <div className="rounded bg-green-500/10 p-1.5">
                           <p className="text-muted-foreground text-[9px]">TP1</p>
-                          <p className="font-mono text-green-400">${signal.takeProfits?.[0]}</p>
+                          <p className="font-mono text-green-400">${vSignal.takeProfits?.[0]}</p>
                         </div>
                       </div>
                     </Card>
                   )}
 
-                  {(whaleSentiment || whaleSummary) && (
+                  {(vWhaleSentiment || vWhaleSummary) && (
                     <Card className="glass-card p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold flex items-center gap-1.5"><Waves className="w-3.5 h-3.5 text-primary" /> Whale Activity</span>
-                        {whaleSentiment && <Badge variant="outline" className="text-[10px] capitalize">{whaleSentiment}</Badge>}
+                        {vWhaleSentiment && <Badge variant="outline" className="text-[10px] capitalize">{vWhaleSentiment}</Badge>}
                       </div>
-                      {whaleSummary && <p className="text-[11px] text-muted-foreground line-clamp-3">{whaleSummary}</p>}
+                      {vWhaleSummary && <p className="text-[11px] text-muted-foreground line-clamp-3">{vWhaleSummary}</p>}
                     </Card>
                   )}
                 </div>
@@ -533,12 +535,12 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
             )}
 
             {/* PHASE 3: STRATEGY */}
-            {(phase === 'strategy' || phase === 'done') && (
+            {(viewing || phase === 'strategy' || phase === 'done') && (
               <div>
-                <PhaseHeader n={3} title="Trading Strategy" active={phase === 'strategy'} done={steps.strategy === 'done'} />
-                {strategyResult && selected ? (
-                  <StrategyDetailCard result={strategyResult} assetSymbol={selected.symbol} />
-                ) : steps.strategy === 'running' ? (
+                <PhaseHeader n={3} title="Trading Strategy" active={!viewing && phase === 'strategy'} done={!!viewing || steps.strategy === 'done'} />
+                {vStrategy && vSymbol ? (
+                  <StrategyDetailCard result={vStrategy} assetSymbol={vSymbol} />
+                ) : !viewing && steps.strategy === 'running' ? (
                   <Card className="glass-card p-6 flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <p className="text-xs text-muted-foreground">Building strategy…</p>
