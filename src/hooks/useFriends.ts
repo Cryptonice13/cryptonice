@@ -42,16 +42,14 @@ export function useFriends() {
       f.requester_id === user.id ? f.addressee_id : f.requester_id
     );
 
-    let profilesMap: Record<string, { name: string; email: string }> = {};
+    let profilesMap: Record<string, { name: string }> = {};
     if (friendIds.length > 0) {
       const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, email')
-        .in('user_id', friendIds);
+        .rpc('get_public_profiles', { _ids: friendIds });
 
       if (profiles) {
-        profiles.forEach(p => {
-          profilesMap[p.user_id] = { name: p.name || 'User', email: p.email || '' };
+        (profiles as any[]).forEach((p) => {
+          profilesMap[p.user_id] = { name: p.name || 'User' };
         });
       }
     }
