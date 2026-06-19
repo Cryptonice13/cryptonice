@@ -1126,6 +1126,22 @@ export type Database = {
           wallet_address: string
         }[]
       }
+      get_public_profiles: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_url: string
+          name: string
+          user_id: string
+        }[]
+      }
+      search_public_profiles: {
+        Args: { _query: string }
+        Returns: {
+          avatar_url: string
+          name: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

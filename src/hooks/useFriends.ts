@@ -42,16 +42,14 @@ export function useFriends() {
       f.requester_id === user.id ? f.addressee_id : f.requester_id
     );
 
-    let profilesMap: Record<string, { name: string; email: string }> = {};
+    let profilesMap: Record<string, { name: string }> = {};
     if (friendIds.length > 0) {
       const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, email')
-        .in('user_id', friendIds);
+        .rpc('get_public_profiles', { _ids: friendIds });
 
       if (profiles) {
-        profiles.forEach(p => {
-          profilesMap[p.user_id] = { name: p.name || 'User', email: p.email || '' };
+        (profiles as any[]).forEach((p) => {
+          profilesMap[p.user_id] = { name: p.name || 'User' };
         });
       }
     }
@@ -62,7 +60,7 @@ export function useFriends() {
       return {
         ...f,
         friend_name: profile?.name || 'User',
-        friend_email: profile?.email || '',
+        friend_email: '',
       };
     });
 
@@ -79,17 +77,13 @@ export function useFriends() {
     if (!query.trim() || !user) return [];
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('user_id, name, email')
-      .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
-      .neq('user_id', user.id)
-      .limit(10);
+      .rpc('search_public_profiles', { _query: query });
 
     if (error) {
       console.error('Search error:', error);
       return [];
     }
-    return data || [];
+    return (data as any[]) || [];
   };
 
   const sendRequest = async (addresseeId: string) => {
