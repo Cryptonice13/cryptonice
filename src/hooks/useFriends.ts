@@ -60,7 +60,7 @@ export function useFriends() {
       return {
         ...f,
         friend_name: profile?.name || 'User',
-        friend_email: profile?.email || '',
+        friend_email: '',
       };
     });
 
