@@ -141,7 +141,7 @@ export function useCryptoAI() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, [messages, identity.walletAddress]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -205,7 +205,7 @@ export function usePortfolioAnalysis() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [identity.walletAddress]);
 
   return { analysis, isLoading, error, analyzePortfolio };
 }
@@ -259,7 +259,7 @@ export function useMarketPrediction() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [identity.walletAddress]);
 
   return { prediction, isLoading, error, getPrediction };
 }
@@ -314,7 +314,7 @@ export function useTradingSignal() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [identity.walletAddress]);
 
   return { signal, isLoading, error, getSignal };
 }
