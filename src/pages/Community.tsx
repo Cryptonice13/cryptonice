@@ -328,7 +328,7 @@ function FriendsTab() {
   const { friends, pending, loading, searchUsers, sendRequest, acceptRequest, rejectRequest } = useFriends();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
+  const [searchResults, setSearchResults] = useState<{ user_id: string; name: string | null }[]>([]);
   const [searching, setSearching] = useState(false);
 
   const handleSearch = async () => {
