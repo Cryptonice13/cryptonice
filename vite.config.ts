@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff2}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,

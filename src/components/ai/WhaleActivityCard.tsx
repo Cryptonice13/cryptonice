@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Fish, ArrowDownRight, ArrowUpRight, RefreshCw, ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
+import { useAccount } from 'wagmi';
 
 interface WhaleTransaction {
   type: 'buy' | 'sell';
@@ -35,32 +37,25 @@ function extractJSON(raw: string): string {
   return str;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-ai`;
-
 export function WhaleActivityCard({ symbol, name, price, onSave }: WhaleActivityCardProps) {
   const [analysis, setAnalysis] = useState<WhaleAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txOpen, setTxOpen] = useState(true);
+  const { address } = useAccount();
 
   const fetchWhaleData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Analyze whale activity for ${symbol}` }],
-          type: 'whale_analysis',
-          context: { symbol, price },
-        }),
+      const response = await invokeCryptoAI({
+        messages: [{ role: 'user', content: `Analyze whale activity for ${symbol}` }],
+        type: 'whale_analysis',
+        context: { symbol, price },
+        walletAddress: address,
       });
 
-      if (!response.ok) throw new Error('Failed to fetch whale data');
+      if (!response.ok) throw new Error(await readCryptoAIError(response));
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content;
 
@@ -84,7 +79,7 @@ export function WhaleActivityCard({ symbol, name, price, onSave }: WhaleActivity
     } finally {
       setIsLoading(false);
     }
-  }, [symbol, price]);
+  }, [symbol, price, address, name, onSave]);
 
   const getSentimentStyle = (s: string) => {
     if (s === 'accumulation') return { badge: 'bg-green-500/20 text-green-400 border-green-500/30', icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Accumulation' };
