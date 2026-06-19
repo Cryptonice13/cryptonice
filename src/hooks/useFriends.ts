@@ -77,17 +77,13 @@ export function useFriends() {
     if (!query.trim() || !user) return [];
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('user_id, name, email')
-      .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
-      .neq('user_id', user.id)
-      .limit(10);
+      .rpc('search_public_profiles', { _query: query });
 
     if (error) {
       console.error('Search error:', error);
       return [];
     }
-    return data || [];
+    return (data as any[]) || [];
   };
 
   const sendRequest = async (addresseeId: string) => {
