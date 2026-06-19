@@ -346,7 +346,7 @@ function FriendsTab() {
         <CardContent className="p-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Search by name or email..."
+              placeholder="Search by name..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -362,7 +362,6 @@ function FriendsTab() {
                 <div key={u.user_id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <div>
                     <p className="text-sm font-medium">{u.name || 'User'}</p>
-                    <p className="text-xs text-muted-foreground">{u.email}</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => sendRequest(u.user_id)}>
                     <UserPlus className="w-3.5 h-3.5 mr-1" />
