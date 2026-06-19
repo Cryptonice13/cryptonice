@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          finished_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          status: string
+          summary: Json
+          user_id: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          kind: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          user_id: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_alert_suggestions: {
         Row: {
           asset_id: string
@@ -941,6 +971,110 @@ export type Database = {
           user_id?: string | null
           wallet_address?: string | null
           win_rate?: number | null
+        }
+        Relationships: []
+      }
+      strategy_backtests: {
+        Row: {
+          created_at: string
+          equity_curve: Json
+          exchange: string
+          id: string
+          metrics: Json
+          range_end: string
+          range_start: string
+          strategy_id: string
+          symbol: string
+          timeframe: string
+          trades: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equity_curve?: Json
+          exchange: string
+          id?: string
+          metrics?: Json
+          range_end: string
+          range_start: string
+          strategy_id: string
+          symbol: string
+          timeframe: string
+          trades?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          equity_curve?: Json
+          exchange?: string
+          id?: string
+          metrics?: Json
+          range_end?: string
+          range_start?: string
+          strategy_id?: string
+          symbol?: string
+          timeframe?: string
+          trades?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_backtests_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "trading_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_strategies: {
+        Row: {
+          assets: string[]
+          created_at: string
+          description: string | null
+          exchange: string
+          id: string
+          last_backtest_score: number | null
+          name: string
+          params: Json
+          source: string
+          status: string
+          timeframe: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assets?: string[]
+          created_at?: string
+          description?: string | null
+          exchange?: string
+          id?: string
+          last_backtest_score?: number | null
+          name: string
+          params?: Json
+          source?: string
+          status?: string
+          timeframe?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assets?: string[]
+          created_at?: string
+          description?: string | null
+          exchange?: string
+          id?: string
+          last_backtest_score?: number | null
+          name?: string
+          params?: Json
+          source?: string
+          status?: string
+          timeframe?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

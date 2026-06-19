@@ -28,6 +28,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Community from "./pages/Community";
 import Safety from "./pages/Safety";
 import Realtime from "./pages/Realtime";
+import AutoTrader from "./pages/AutoTrader";
 const queryClient = new QueryClient();
 
 const WalletInitializer = () => {
@@ -62,6 +63,11 @@ const App = () => (
                 <Route path="/realtime" element={
                   <ProtectedRoute>
                     <Realtime />
+                  </ProtectedRoute>
+                } />
+                <Route path="/auto-trader" element={
+                  <ProtectedRoute>
+                    <AutoTrader />
                   </ProtectedRoute>
                 } />
                 <Route path="/strategy" element={<Navigate to="/chat?tab=strategy" replace />} />
