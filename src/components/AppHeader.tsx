@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell, Radio } from 'lucide-react';
+import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell, Radio, Cpu } from 'lucide-react';
 import cryptoaiLogo from '@/assets/cryptonice-logo.png';
 import { Button } from '@/components/ui/button';
 import {
@@ -113,6 +113,17 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           >
             <Brain className="w-4 h-4 text-primary" />
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </Button>
+
+          {/* Auto Trader Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/auto-trader')}
+            className="h-8 w-8 relative"
+            title="Auto Trader"
+          >
+            <Cpu className="w-4 h-4 text-primary" />
           </Button>
 
           {/* Realtime Markets Icon */}
