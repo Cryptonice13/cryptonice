@@ -299,6 +299,42 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitrage_opportunities: {
+        Row: {
+          detected_at: string
+          est_net_bps: number
+          exchange_a: string
+          exchange_b: string
+          id: string
+          price_a: number
+          price_b: number
+          spread_bps: number
+          symbol: string
+        }
+        Insert: {
+          detected_at?: string
+          est_net_bps: number
+          exchange_a: string
+          exchange_b: string
+          id?: string
+          price_a: number
+          price_b: number
+          spread_bps: number
+          symbol: string
+        }
+        Update: {
+          detected_at?: string
+          est_net_bps?: number
+          exchange_a?: string
+          exchange_b?: string
+          id?: string
+          price_a?: number
+          price_b?: number
+          spread_bps?: number
+          symbol?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -638,6 +674,246 @@ export type Database = {
         }
         Relationships: []
       }
+      paper_accounts: {
+        Row: {
+          base_currency: string
+          cash_balance: number
+          created_at: string
+          equity: number
+          id: string
+          starting_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_currency?: string
+          cash_balance?: number
+          created_at?: string
+          equity?: number
+          id?: string
+          starting_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_currency?: string
+          cash_balance?: number
+          created_at?: string
+          equity?: number
+          id?: string
+          starting_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      paper_orders: {
+        Row: {
+          account_id: string
+          created_at: string
+          exchange: string
+          fee: number
+          filled_at: string
+          id: string
+          order_type: string
+          price: number
+          qty: number
+          reason: string | null
+          side: string
+          slippage_bps: number
+          status: string
+          strategy_id: string | null
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          exchange?: string
+          fee?: number
+          filled_at?: string
+          id?: string
+          order_type?: string
+          price: number
+          qty: number
+          reason?: string | null
+          side: string
+          slippage_bps?: number
+          status?: string
+          strategy_id?: string | null
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          exchange?: string
+          fee?: number
+          filled_at?: string
+          id?: string
+          order_type?: string
+          price?: number
+          qty?: number
+          reason?: string | null
+          side?: string
+          slippage_bps?: number
+          status?: string
+          strategy_id?: string | null
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_orders_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_orders_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "trading_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_positions: {
+        Row: {
+          account_id: string
+          avg_entry: number
+          exchange: string
+          id: string
+          opened_at: string
+          qty: number
+          stop_loss: number | null
+          strategy_id: string | null
+          symbol: string
+          take_profit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          avg_entry: number
+          exchange?: string
+          id?: string
+          opened_at?: string
+          qty: number
+          stop_loss?: number | null
+          strategy_id?: string | null
+          symbol: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          avg_entry?: number
+          exchange?: string
+          id?: string
+          opened_at?: string
+          qty?: number
+          stop_loss?: number | null
+          strategy_id?: string | null
+          symbol?: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_positions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_positions_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "trading_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_trades: {
+        Row: {
+          account_id: string
+          ai_commentary: string | null
+          closed_at: string
+          entry_price: number
+          exchange: string
+          exit_price: number
+          id: string
+          opened_at: string
+          pnl: number
+          pnl_pct: number
+          qty: number
+          reason_close: string | null
+          reason_open: string | null
+          side: string
+          strategy_id: string | null
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          ai_commentary?: string | null
+          closed_at?: string
+          entry_price: number
+          exchange?: string
+          exit_price: number
+          id?: string
+          opened_at: string
+          pnl: number
+          pnl_pct: number
+          qty: number
+          reason_close?: string | null
+          reason_open?: string | null
+          side?: string
+          strategy_id?: string | null
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          ai_commentary?: string | null
+          closed_at?: string
+          entry_price?: number
+          exchange?: string
+          exit_price?: number
+          id?: string
+          opened_at?: string
+          pnl?: number
+          pnl_pct?: number
+          qty?: number
+          reason_close?: string | null
+          reason_open?: string | null
+          side?: string
+          strategy_id?: string | null
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_trades_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_trades_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "trading_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolio_briefs: {
         Row: {
           brief_data: Json
@@ -671,6 +947,30 @@ export type Database = {
           total_value?: number
           user_id?: string | null
           wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      portfolio_targets: {
+        Row: {
+          generated_at: string
+          id: string
+          rationale: string | null
+          user_id: string
+          weights: Json
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          rationale?: string | null
+          user_id: string
+          weights: Json
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          rationale?: string | null
+          user_id?: string
+          weights?: Json
         }
         Relationships: []
       }
