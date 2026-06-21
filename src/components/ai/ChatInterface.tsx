@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
 import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
+import { isTradingIntent, callTradingAgent } from '@/hooks/useTradingAgent';
 import { useAccount } from 'wagmi';
 
 interface Message {
@@ -101,21 +102,32 @@ export function ChatInterface({
           ? m.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim()
           : m.content,
       }));
-      const response = await invokeCryptoAI({
-        type: 'agent_chat',
-        messages: sanitizedHistory,
-        context: portfolioContext,
-        walletAddress: address,
-      });
 
-      if (!response.ok) {
-        const msg = await readCryptoAIError(response);
-        throw new Error(msg);
+      let assistantContent = '';
+      let toolCalls: ToolCall[] = [];
+
+      // Route trading-intent prompts to the specialized Auto-Trader agent.
+      if (isTradingIntent(messageContent)) {
+        const res = await callTradingAgent(sanitizedHistory.map(m => ({ role: m.role, content: m.content as string })));
+        assistantContent = res.content;
+        toolCalls = res.toolCalls;
+      } else {
+        const response = await invokeCryptoAI({
+          type: 'agent_chat',
+          messages: sanitizedHistory,
+          context: portfolioContext,
+          walletAddress: address,
+        });
+
+        if (!response.ok) {
+          const msg = await readCryptoAIError(response);
+          throw new Error(msg);
+        }
+
+        const data = await response.json();
+        assistantContent = data.content || '';
+        toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : [];
       }
-
-      const data = await response.json();
-      const assistantContent: string = data.content || '';
-      const toolCalls: ToolCall[] = Array.isArray(data.toolCalls) ? data.toolCalls : [];
 
       const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
       setMessages((prev: Message[]) => [...prev, assistantMsg]);
@@ -156,8 +168,8 @@ export function ChatInterface({
   const suggestedPrompts = [
     { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Predict BTC', desc: 'Short & medium-term outlook' },
     { icon: <Target className="w-4 h-4 text-blue-500" />, label: 'Give me a signal for SOL', desc: 'Entry, SL, TP levels' },
-    { icon: <BarChart3 className="w-4 h-4 text-purple-500" />, label: 'TA on ETH', desc: 'RSI, MACD, trend' },
-    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Review my portfolio', desc: 'Risk & allocation' },
+    { icon: <Sparkles className="w-4 h-4 text-purple-500" />, label: 'Build me a momentum strategy for ETH', desc: 'AI strategy → backtest' },
+    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Show my paper trading account', desc: 'Equity, positions, orders' },
   ];
 
 

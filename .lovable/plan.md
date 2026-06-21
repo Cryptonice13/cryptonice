@@ -1,97 +1,82 @@
+# Integrate Auto-Trader into Chat as an Intelligent Trading Agent
 
-# Autonomous Crypto AI Trading Agent
-
-A new "Auto Trader" module inside the existing Agent workspace that turns the AI from an analyst into a self-running operator: it generates strategies, backtests them, runs them in paper or live mode, manages risk, and rebalances the portfolio.
-
-## Scope for this build
-
-Lovable runs in the browser + Supabase Edge Functions. We cannot legally or safely place real CEX/DEX orders for users without their private keys + KYC + audited custody — so this build delivers the **full agent brain end-to-end in paper-trading mode**, with clean adapters so a real exchange key can be plugged in later per user.
-
-What's IN:
-1. Multi-source market data (already have CCXT + CoinGecko) extended for OHLCV history.
-2. AI Strategy Generator (trend / momentum / scalping / swing / mean-reversion / arbitrage scout).
-3. Backtesting engine (vectorized, runs in an edge function over historical OHLCV).
-4. Paper Trading execution engine (simulated fills using live CCXT prices, with slippage + fee model).
-5. Risk manager (position sizing, stop-loss, take-profit, max drawdown kill-switch).
-6. Portfolio optimizer (target weights, rebalance suggestions, one-click apply in paper mode).
-7. Arbitrage scanner (cross-exchange spread detection via CCXT).
-8. Adaptive loop ("learn from outcomes"): after each closed trade, AI re-scores the strategy and tunes parameters; not full RL training, but an evaluator-improver loop using the AI gateway.
-9. Trade journal + analytics dashboard (PnL, win rate, Sharpe, drawdown, per-strategy stats).
-10. Scheduler (pg_cron) that wakes the agent every N minutes to evaluate signals and execute paper trades.
-
-What's OUT (called out so expectations are clear):
-- Real money order placement on Binance/Bybit/Coinbase/Hyperliquid/DEX. We ship the adapter interface + a disabled "Live" toggle that explains the user must add their own API keys and accept risk. Actual live trading would require a separate hardened backend, KYC, and audit — out of scope for a Lovable build.
-- Smart-contract wallet custody / on-chain order signing. We integrate read-only with the already-connected wallet.
-- True reinforcement learning training. Replaced by an LLM-driven evaluator that adjusts strategy params between runs.
+Turn the chat assistant into a "trading copilot" that can detect strategy/backtest/portfolio/arbitrage intents, ask the right follow-up questions, run the existing Auto-Trader edge functions as tools, and render the results inline in the chat — without leaving the conversation.
 
 ## User experience
 
-New top-level route `/auto-trader` reachable from a new nav icon next to the existing Agent icon. Layout uses the existing Agent workspace shell, with these tabs:
+Examples that should "just work" from the chat composer:
 
-1. **Overview** — agent status (running / paused), equity curve, open positions, today's PnL, kill-switch.
-2. **Strategies** — list of AI-generated and user-saved strategies; create new via prompt ("scalp ETH on 5m with RSI + volume"); each strategy card shows type, assets, timeframe, params, last backtest score.
-3. **Backtest** — pick a strategy, asset, timeframe, date range; run; see equity curve, trades table, metrics (CAGR, Sharpe, max DD, win rate, profit factor).
-4. **Paper Trading** — toggle a strategy live in paper mode; shows fills, open positions, PnL; respects risk limits.
-5. **Portfolio Optimizer** — current allocation vs AI target allocation; "Apply rebalance (paper)" button generates the required paper trades.
-6. **Arbitrage** — live table of cross-exchange spreads above a threshold, with estimated net edge after fees.
-7. **Journal & Analytics** — every paper trade with entry, exit, reason, AI commentary; aggregated stats and charts.
-8. **Settings** — global risk caps (max position %, daily loss %, max leverage = 1 for spot paper), enabled exchanges (data only), notification prefs.
+- "Build me a momentum strategy for ETH on the 1h" → agent asks 2-3 missing details (risk %, capital, indicator) → calls `agent-strategy-generate` → renders a Strategy Card with "Run backtest" and "Activate paper trading" buttons.
+- "Backtest that on the last 6 months" → agent reuses the last strategy id → calls `agent-backtest` → renders equity curve + KPIs.
+- "Optimize my portfolio, I'm medium risk, 6-month horizon" → calls `agent-optimize-portfolio` → renders target weights table.
+- "Any arbitrage on SOL right now?" → calls `agent-arbitrage-scan` → renders top spreads.
+- "Run a tick on my active strategy" → calls `agent-tick` → renders the trades opened/closed.
+- "How are my paper trades doing?" → calls `agent-evaluate` → renders AI journal commentary.
 
-A global "Agent state" pill in the header shows: Idle / Scanning / Trading / Halted.
+Free-form analysis prompts ("what do you think about BTC right now?") continue to work through the existing crypto-ai flow — no regression.
 
-## Data model (Supabase)
+## What gets built
 
-New tables, all RLS-scoped to `auth.uid()` with GRANTs to authenticated + service_role:
+### 1. Tool layer (edge function)
+- New edge function `crypto-trading-agent` (server-side, Lovable AI Gateway, model `google/gemini-3-flash-preview`).
+- Uses the AI SDK's tool calling with `stepCountIs(50)` so the model can chain: ask → generate strategy → backtest → summarize.
+- Tools wired as thin proxies that re-invoke the existing edge functions with the caller's JWT:
+  - `generate_strategy` → `agent-strategy-generate`
+  - `run_backtest` → `agent-backtest`
+  - `list_my_strategies` (reads `trading_strategies` via service role, scoped to `user_id`)
+  - `activate_strategy` / `pause_strategy` (UPDATE on `trading_strategies`)
+  - `run_paper_tick` → `agent-tick`
+  - `get_paper_state` (reads `paper_accounts`, `paper_positions`, recent `paper_orders`)
+  - `optimize_portfolio` → `agent-optimize-portfolio`
+  - `scan_arbitrage` → `agent-arbitrage-scan`
+  - `evaluate_journal` → `agent-evaluate`
+- Each tool has a tight Zod input schema and returns compact JSON the chat can render.
+- Auth: function validates the user JWT (current chat pattern), passes `userId` into every tool call, and rejects unauthenticated calls.
+- Credits: tools that already cost credits (strategy gen, backtest, optimizer, evaluate) reuse the existing `deduct_credits_atomic` path inside the downstream functions — no double charging.
 
-- `trading_strategies` — id, user_id, name, type, assets[], timeframe, params jsonb, status (draft/active/paused), source (ai/user), created_at.
-- `strategy_backtests` — id, strategy_id, user_id, range_start, range_end, metrics jsonb, equity_curve jsonb, trades jsonb, created_at.
-- `paper_accounts` — id, user_id, base_currency, starting_balance, cash_balance, equity, updated_at.
-- `paper_positions` — id, user_id, account_id, symbol, exchange, qty, avg_entry, stop_loss, take_profit, strategy_id, opened_at.
-- `paper_orders` — id, user_id, account_id, strategy_id, symbol, side, type, qty, price, status, filled_at, fee, slippage_bps.
-- `paper_trades` — id, user_id, account_id, strategy_id, symbol, side, qty, entry_price, exit_price, pnl, pnl_pct, opened_at, closed_at, reason_open, reason_close, ai_commentary.
-- `portfolio_targets` — id, user_id, weights jsonb, rationale text, generated_at.
-- `agent_runs` — id, user_id, kind (scan/execute/rebalance/backtest), status, started_at, finished_at, summary jsonb.
-- `arbitrage_opportunities` — id, symbol, exchange_a, exchange_b, spread_bps, est_net_bps, detected_at (global table, anon read OK).
+### 2. Chat routing
+- `useChat` / `useCryptoAI` gets a lightweight intent classifier (regex + keyword match on "strategy/backtest/paper/arbitrage/optimize/portfolio weights/tick") that flips the request to `crypto-trading-agent` instead of `crypto-ai`. Generic chat keeps using `crypto-ai`.
+- A "Trading Agent" toggle in the chat composer lets users force the trading agent on/off; auto-detection is the default.
 
-Every `CREATE TABLE` migration includes its GRANTs and RLS policies in the same migration.
+### 3. Rich result rendering in chat
+New message-part renderers in `src/components/ai/` so tool outputs look like product, not JSON:
+- `ChatStrategyCard` — name, indicator, SL/TP, "Run backtest", "Activate paper trading", "Open in Auto-Trader".
+- `ChatBacktestCard` — equity sparkline (Recharts), PnL, Sharpe, Max DD, win rate.
+- `ChatPortfolioTargetsCard` — target weights table + rationale.
+- `ChatArbitrageCard` — top 3 spreads with exchange pair and net basis.
+- `ChatPaperStateCard` — equity, open positions, last 5 orders.
+- All cards link to `/auto-trader` with the relevant tab pre-selected via `?tab=...&strategyId=...`.
 
-## Edge functions
+### 4. Clarifying-question pattern
+The agent's system prompt instructs it to ask before acting whenever a required parameter is missing (asset, timeframe, indicator, risk, capital, horizon). Questions render as normal assistant text — no special UI needed — and the agent only invokes a tool once it has enough to proceed.
 
-- `agent-strategy-generate` — LLM (Lovable AI Gateway, gemini-3-flash-preview) takes a prompt + market context, returns a strategy spec validated by a small Zod schema (kept tight to avoid Gemini "too many states").
-- `agent-backtest` — fetches OHLCV via CCXT, runs the strategy vectorized in TypeScript, returns metrics + equity curve, stores result.
-- `agent-tick` — invoked by pg_cron every 5 min: for each active strategy, fetch latest candles, evaluate signals, place paper orders, update positions, enforce stops/TPs, write journal entries.
-- `agent-optimize-portfolio` — LLM + simple mean-variance heuristic over the user's holdings; returns target weights and the trades needed to reach them.
-- `agent-arbitrage-scan` — pg_cron every 1 min: pull tickers from N exchanges via CCXT, write opportunities above threshold.
-- `agent-evaluate` — after a trade closes, AI reviews journal entries and proposes parameter tweaks; user approves to apply.
+### 5. AutoTrader page wiring (light touch)
+- Read `?tab=` and `?strategyId=` query params on `/auto-trader` so deep links from chat open the right tab and highlight the right row. No layout changes.
 
-All functions reuse the existing `crypto-ai` auth + credits pattern (JWT + walletAddress fallback), CORS from `npm:@supabase/supabase-js@2/cors`, and `deduct_credits_atomic` for any AI-billed calls (free for pure backtests and ticks).
+## Out of scope (call out, don't build)
+- Live (non-paper) execution against real exchanges.
+- Reinforcement-learning strategy evolution.
+- Smart-contract wallet integration.
+- Streaming token-by-token output in chat (current chat uses non-streaming; keeping that to minimize churn). Can be added later.
 
-## Frontend pieces
+## Technical details
 
-- `src/pages/AutoTrader.tsx` + tab components under `src/components/auto-trader/tabs/`.
-- New nav icon in `AppHeader.tsx` next to the Agent icon (Bot → Cpu).
-- Hooks: `useStrategies`, `useBacktest`, `usePaperAccount`, `usePaperPositions`, `useArbitrage`, `useAgentRuns`.
-- Realtime subscriptions on `paper_orders`, `paper_positions`, `agent_runs` for live updates.
-- Charts reuse existing Recharts setup; equity curve, drawdown, allocation pie.
+- **Stack**: existing Vite + React + Supabase Edge Functions; AI SDK (`npm:ai`) + `@ai-sdk/openai-compatible` via the Lovable AI Gateway helper pattern already used elsewhere.
+- **New files**:
+  - `supabase/functions/crypto-trading-agent/index.ts` — agent loop with tools.
+  - `supabase/functions/_shared/ai-gateway.ts` — shared gateway provider helper (if not already present).
+  - `src/hooks/useTradingAgent.ts` — client hook that posts to the new function and normalizes tool-part output.
+  - `src/components/ai/cards/ChatStrategyCard.tsx`, `ChatBacktestCard.tsx`, `ChatPortfolioTargetsCard.tsx`, `ChatArbitrageCard.tsx`, `ChatPaperStateCard.tsx`.
+- **Modified files**:
+  - `src/components/ai/ChatInterface.tsx` — intent routing, render new card types when `message.toolResults` is present, "Trading Agent" toggle.
+  - `src/hooks/useCryptoAI.ts` — branch to `useTradingAgent` based on intent / toggle.
+  - `src/pages/AutoTrader.tsx` — honor `?tab=` / `?strategyId=` query params.
+- **No database migration required.** Reuses existing tables (`trading_strategies`, `strategy_backtests`, `paper_*`, `portfolio_targets`, `arbitrage_opportunities`) and existing RLS (post-lockdown: signed-in user only).
+- **Security**: function rejects requests without a valid Supabase JWT (already required after the wallet-bypass fix). All tool execution scopes to `auth.uid()`.
 
-## Safety and credits
-
-- Live trading toggle is disabled with an explainer modal.
-- Daily-loss kill-switch halts the agent and notifies the user.
-- AI calls (strategy generation, evaluator, portfolio optimizer) cost credits like other AI features; ticks and backtests are free.
-- All new tables RLS-scoped; arbitrage table is public-read because it's market data.
-
-## Delivery in phases
-
-Phase 1 — Data model + nav + Overview/Strategies/Backtest tabs + `agent-strategy-generate` + `agent-backtest`.
-Phase 2 — Paper trading: `paper_accounts`/`paper_positions`/`paper_orders`/`paper_trades` + `agent-tick` cron + Paper Trading tab + Journal.
-Phase 3 — Portfolio Optimizer + Arbitrage scanner + Evaluator loop + Analytics dashboard.
-
-Each phase ends with a runnable, demoable feature.
-
-```text
-nav: [Home] [Markets] [Portfolio] [Agent] [Auto-Trader*] [Realtime] [Chat] ...
-                                            ^ new
-```
-
-Approve this and I'll start with Phase 1.
+## Acceptance checks before shipping
+1. Logged-in user types "build me an RSI strategy for BTC, 2% risk" → strategy card renders, "Run backtest" works, results render as a second card.
+2. "Show me my paper account" → renders equity + open positions; matches the Paper tab.
+3. "Find arbitrage on ETH" → arbitrage card with at least one row when the scanner has data.
+4. Generic question ("what's BTC sentiment?") still goes through `crypto-ai` and renders normally — no regression.
+5. Logged-out user → chat shows the existing auth gate; trading tools never run.
