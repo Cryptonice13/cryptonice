@@ -219,6 +219,273 @@ function renderResult(name: string, result: any) {
         </ul>
       );
 
+    case 'generate_strategy': {
+      const s = result.strategy || result;
+      if (!s?.params) return <div className="text-xs text-muted-foreground">No strategy returned.</div>;
+      return (
+        <div className="text-xs space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="font-semibold text-sm truncate">{s.name}</div>
+              <div className="text-[11px] text-muted-foreground capitalize">{s.type} · {s.timeframe} · {s.exchange}</div>
+            </div>
+            <Badge variant="outline" className="text-[9px] flex-shrink-0">{s.params.indicator}</Badge>
+          </div>
+          {s.description && <p className="text-[11px] text-muted-foreground">{s.description}</p>}
+          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground text-[9px] uppercase">Stop</div><div className="text-red-500">{s.params.stopLossPct}%</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground text-[9px] uppercase">TP</div><div className="text-emerald-500">{s.params.takeProfitPct}%</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground text-[9px] uppercase">Size</div><div>{s.params.positionSizePct}%</div></div>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {(s.assets || []).map((a: string) => <Badge key={a} variant="outline" className="text-[9px]">{a}</Badge>)}
+          </div>
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to="/auto-trader?tab=strategies"><ExternalLink className="w-3 h-3 mr-1" />Open in Auto-Trader</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'save_strategy': {
+      const s = result.strategy;
+      if (!s) return <div className="text-xs text-destructive">Save failed.</div>;
+      return (
+        <div className="text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">{s.name}</span>
+            <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
+          </div>
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to={`/auto-trader?tab=strategies&strategyId=${s.id}`}><ExternalLink className="w-3 h-3 mr-1" />Open strategy</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'list_my_strategies': {
+      const list = result.strategies || [];
+      if (!list.length) return <div className="text-xs text-muted-foreground">No strategies yet.</div>;
+      return (
+        <div className="text-xs space-y-1">
+          {list.slice(0, 8).map((s: any) => (
+            <Link key={s.id} to={`/auto-trader?tab=strategies&strategyId=${s.id}`} className="flex items-center justify-between py-1 border-b border-border/20 last:border-0 hover:bg-muted/30 rounded px-1 -mx-1">
+              <div className="min-w-0">
+                <div className="font-medium truncate">{s.name}</div>
+                <div className="text-[10px] text-muted-foreground capitalize">{s.type} · {s.timeframe} · {(s.assets || []).join(', ')}</div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {s.last_backtest_score != null && (
+                  <span className={Number(s.last_backtest_score) >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                    {Number(s.last_backtest_score) >= 0 ? '+' : ''}{Number(s.last_backtest_score).toFixed(1)}%
+                  </span>
+                )}
+                <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
+              </div>
+            </Link>
+          ))}
+        </div>
+      );
+    }
+
+    case 'set_strategy_status': {
+      const s = result.strategy;
+      if (!s) return <div className="text-xs text-destructive">{result.error || 'Update failed'}</div>;
+      return (
+        <div className="text-xs flex items-center justify-between">
+          <span className="font-medium">{s.name}</span>
+          <Badge variant="outline" className={s.status === 'active' ? 'text-emerald-500 border-emerald-500/30' : 'text-muted-foreground'}>
+            {s.status}
+          </Badge>
+        </div>
+      );
+    }
+
+    case 'run_backtest': {
+      const m = result.metrics || {};
+      const curve = (result.equityCurve || []).map((p: any) => ({ t: p.t, equity: p.equity }));
+      return (
+        <div className="text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">{result.symbol} · {result.timeframe} · {result.exchange}</span>
+            <span className={Number(m.totalReturnPct) >= 0 ? 'text-emerald-500 font-semibold' : 'text-red-500 font-semibold'}>
+              {Number(m.totalReturnPct) >= 0 ? '+' : ''}{Number(m.totalReturnPct ?? 0).toFixed(2)}%
+            </span>
+          </div>
+          {curve.length > 1 && (
+            <div className="h-16 -mx-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={curve}>
+                  <YAxis hide domain={['dataMin', 'dataMax']} />
+                  <Line type="monotone" dataKey="equity" stroke={Number(m.totalReturnPct) >= 0 ? 'hsl(var(--primary))' : '#ef4444'} strokeWidth={1.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+          <div className="grid grid-cols-4 gap-1 text-[10px]">
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Trades</div><div className="text-sm font-semibold">{m.tradesCount ?? 0}</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Win</div><div className="text-sm font-semibold">{Number(m.winRate ?? 0).toFixed(0)}%</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Sharpe</div><div className="text-sm font-semibold">{Number(m.sharpe ?? 0).toFixed(2)}</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Max DD</div><div className="text-sm font-semibold text-red-500">-{Number(m.maxDrawdownPct ?? 0).toFixed(1)}%</div></div>
+          </div>
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to={`/auto-trader?tab=backtest${result.strategyId ? `&strategyId=${result.strategyId}` : ''}`}><ExternalLink className="w-3 h-3 mr-1" />Full backtest view</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'run_paper_tick': {
+      const events = result.events || [];
+      return (
+        <div className="text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">{events.length} event{events.length === 1 ? '' : 's'}</span>
+            {result.equity != null && <span className="text-muted-foreground">Equity ${Number(result.equity).toFixed(2)}</span>}
+          </div>
+          {events.length === 0 ? (
+            <div className="text-muted-foreground">No signals fired this tick.</div>
+          ) : (
+            <div className="space-y-1">
+              {events.slice(0, 6).map((e: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-[11px] py-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className={e.type === 'open' ? 'text-emerald-500 border-emerald-500/30 text-[9px]' : 'text-amber-500 border-amber-500/30 text-[9px]'}>
+                      {e.type}
+                    </Badge>
+                    <span className="font-medium">{e.symbol}</span>
+                  </div>
+                  {e.pnl != null ? (
+                    <span className={Number(e.pnl) >= 0 ? 'text-emerald-500' : 'text-red-500'}>${Number(e.pnl).toFixed(2)}</span>
+                  ) : (
+                    <span className="text-muted-foreground">{e.qty} @ ${Number(e.price).toFixed(2)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to="/auto-trader?tab=paper"><ExternalLink className="w-3 h-3 mr-1" />Paper trading dashboard</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'get_paper_state': {
+      const a = result.account;
+      const pos = result.positions || [];
+      const orders = result.recentOrders || [];
+      if (!a) return <div className="text-xs text-muted-foreground">No paper account yet — run a tick to create one.</div>;
+      const pnl = a.equity - a.starting;
+      return (
+        <div className="text-xs space-y-2">
+          <div className="grid grid-cols-3 gap-1">
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-[9px] text-muted-foreground uppercase">Equity</div><div className="text-sm font-semibold">${a.equity.toFixed(2)}</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-[9px] text-muted-foreground uppercase">Cash</div><div className="text-sm">${a.cash.toFixed(2)}</div></div>
+            <div className="rounded bg-muted/30 p-1.5"><div className="text-[9px] text-muted-foreground uppercase">PnL</div><div className={`text-sm font-semibold ${pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</div></div>
+          </div>
+          {pos.length > 0 && (
+            <div>
+              <div className="text-[10px] text-muted-foreground uppercase mb-1">Open positions</div>
+              {pos.slice(0, 5).map((p: any, i: number) => (
+                <div key={i} className="flex justify-between text-[11px] py-0.5 border-b border-border/20 last:border-0">
+                  <span className="font-medium">{p.symbol}</span>
+                  <span className="text-muted-foreground">{Number(p.qty).toFixed(4)} @ ${Number(p.avg_entry).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {orders.length > 0 && (
+            <div>
+              <div className="text-[10px] text-muted-foreground uppercase mb-1">Recent orders</div>
+              {orders.slice(0, 4).map((o: any, i: number) => (
+                <div key={i} className="flex justify-between text-[11px] py-0.5">
+                  <span><Badge variant="outline" className={`text-[9px] mr-1 ${o.side === 'buy' ? 'text-emerald-500 border-emerald-500/30' : 'text-red-500 border-red-500/30'}`}>{o.side}</Badge>{o.symbol}</span>
+                  <span className="text-muted-foreground">{Number(o.qty).toFixed(4)} @ ${Number(o.price).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'optimize_portfolio': {
+      const targets = result.targets || result.weights || result.allocations || [];
+      const rationale = result.rationale || result.summary || result.analysis;
+      return (
+        <div className="text-xs space-y-2">
+          {Array.isArray(targets) && targets.length > 0 ? (
+            <div className="space-y-1">
+              {targets.slice(0, 8).map((t: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-0.5 border-b border-border/20 last:border-0">
+                  <span className="font-medium">{t.symbol || t.asset || t.name}</span>
+                  <div className="flex items-center gap-2 flex-1 ml-3 max-w-[60%]">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${Math.min(100, Number(t.weight || t.weightPct || t.percentage || 0))}%` }} />
+                    </div>
+                    <span className="text-[11px] w-10 text-right">{Number(t.weight || t.weightPct || t.percentage || 0).toFixed(1)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-muted-foreground">No targets returned.</div>
+          )}
+          {rationale && <p className="text-[11px] text-muted-foreground line-clamp-3">{String(rationale)}</p>}
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to="/auto-trader?tab=portfolio"><ExternalLink className="w-3 h-3 mr-1" />Open optimizer</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'scan_arbitrage': {
+      const ops = result.opportunities || [];
+      if (!ops.length) return <div className="text-xs text-muted-foreground">No spreads above threshold right now.</div>;
+      return (
+        <div className="text-xs space-y-1">
+          {ops.slice(0, 6).map((o: any, i: number) => (
+            <div key={i} className="flex items-center justify-between py-1 border-b border-border/20 last:border-0">
+              <div className="min-w-0">
+                <div className="font-medium">{o.symbol}</div>
+                <div className="text-[10px] text-muted-foreground">{o.buy_exchange || o.buyExchange} → {o.sell_exchange || o.sellExchange}</div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <div className="text-emerald-500 font-semibold">
+                  +{Number(o.spread_pct || o.spreadPct || o.netBasisPct || 0).toFixed(2)}%
+                </div>
+                {(o.buy_price || o.buyPrice) && (
+                  <div className="text-[10px] text-muted-foreground">${formatPrice(o.buy_price || o.buyPrice)}</div>
+                )}
+              </div>
+            </div>
+          ))}
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full mt-1">
+            <Link to="/auto-trader?tab=arbitrage"><ExternalLink className="w-3 h-3 mr-1" />Live arbitrage feed</Link>
+          </Button>
+        </div>
+      );
+    }
+
+    case 'evaluate_journal': {
+      const summary = result.summary || result.commentary || result.analysis;
+      const suggestions = result.suggestions || result.tweaks || [];
+      return (
+        <div className="text-xs space-y-2">
+          {summary && <p className="text-[11px]">{String(summary)}</p>}
+          {Array.isArray(suggestions) && suggestions.length > 0 && (
+            <ul className="list-disc list-inside text-[11px] space-y-0.5">
+              {suggestions.slice(0, 5).map((s: any, i: number) => <li key={i}>{typeof s === 'string' ? s : (s.text || JSON.stringify(s))}</li>)}
+            </ul>
+          )}
+          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
+            <Link to="/auto-trader?tab=journal"><ExternalLink className="w-3 h-3 mr-1" />Open journal</Link>
+          </Button>
+        </div>
+      );
+    }
+
     default:
       return <pre className="text-[10px] overflow-x-auto">{JSON.stringify(result, null, 2)}</pre>;
   }
