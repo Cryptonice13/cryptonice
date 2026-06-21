@@ -168,8 +168,8 @@ export function ChatInterface({
   const suggestedPrompts = [
     { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Predict BTC', desc: 'Short & medium-term outlook' },
     { icon: <Target className="w-4 h-4 text-blue-500" />, label: 'Give me a signal for SOL', desc: 'Entry, SL, TP levels' },
-    { icon: <BarChart3 className="w-4 h-4 text-purple-500" />, label: 'TA on ETH', desc: 'RSI, MACD, trend' },
-    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Review my portfolio', desc: 'Risk & allocation' },
+    { icon: <Sparkles className="w-4 h-4 text-purple-500" />, label: 'Build me a momentum strategy for ETH', desc: 'AI strategy → backtest' },
+    { icon: <Briefcase className="w-4 h-4 text-amber-500" />, label: 'Show my paper trading account', desc: 'Equity, positions, orders' },
   ];
 
 
