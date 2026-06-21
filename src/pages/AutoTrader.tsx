@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,9 +13,34 @@ import ArbitrageTab from '@/components/auto-trader/tabs/ArbitrageTab';
 import JournalTab from '@/components/auto-trader/tabs/JournalTab';
 import type { TradingStrategy } from '@/hooks/useStrategies';
 
+const VALID_TABS = ['overview', 'strategies', 'backtest', 'paper', 'portfolio', 'arbitrage', 'journal'];
+
 export default function AutoTrader() {
-  const [tab, setTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [backtestTarget, setBacktestTarget] = useState<TradingStrategy | null>(null);
+  const highlightStrategyId = searchParams.get('strategyId');
+
+  // Sync URL ↔ state when the user clicks tabs
+  useEffect(() => {
+    const current = searchParams.get('tab');
+    if (current !== tab) {
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', tab);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  // Respond to back/forward navigation
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && VALID_TABS.includes(urlTab) && urlTab !== tab) {
+      setTab(urlTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -43,7 +69,7 @@ export default function AutoTrader() {
           <div className="mt-4">
             <TabsContent value="overview" className="mt-0"><OverviewTab /></TabsContent>
             <TabsContent value="strategies" className="mt-0">
-              <StrategiesTab onBacktest={(s) => { setBacktestTarget(s); setTab('backtest'); }} />
+              <StrategiesTab onBacktest={(s) => { setBacktestTarget(s); setTab('backtest'); }} highlightId={highlightStrategyId} />
             </TabsContent>
             <TabsContent value="backtest" className="mt-0"><BacktestTab initialStrategy={backtestTarget} /></TabsContent>
             <TabsContent value="paper" className="mt-0"><PaperTradingTab /></TabsContent>
