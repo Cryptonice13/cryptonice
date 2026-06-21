@@ -102,21 +102,32 @@ export function ChatInterface({
           ? m.content.replace(/<!--tools:[\s\S]*?-->/g, '').trim()
           : m.content,
       }));
-      const response = await invokeCryptoAI({
-        type: 'agent_chat',
-        messages: sanitizedHistory,
-        context: portfolioContext,
-        walletAddress: address,
-      });
 
-      if (!response.ok) {
-        const msg = await readCryptoAIError(response);
-        throw new Error(msg);
+      let assistantContent = '';
+      let toolCalls: ToolCall[] = [];
+
+      // Route trading-intent prompts to the specialized Auto-Trader agent.
+      if (isTradingIntent(messageContent)) {
+        const res = await callTradingAgent(sanitizedHistory.map(m => ({ role: m.role, content: m.content as string })));
+        assistantContent = res.content;
+        toolCalls = res.toolCalls;
+      } else {
+        const response = await invokeCryptoAI({
+          type: 'agent_chat',
+          messages: sanitizedHistory,
+          context: portfolioContext,
+          walletAddress: address,
+        });
+
+        if (!response.ok) {
+          const msg = await readCryptoAIError(response);
+          throw new Error(msg);
+        }
+
+        const data = await response.json();
+        assistantContent = data.content || '';
+        toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : [];
       }
-
-      const data = await response.json();
-      const assistantContent: string = data.content || '';
-      const toolCalls: ToolCall[] = Array.isArray(data.toolCalls) ? data.toolCalls : [];
 
       const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
       setMessages((prev: Message[]) => [...prev, assistantMsg]);
