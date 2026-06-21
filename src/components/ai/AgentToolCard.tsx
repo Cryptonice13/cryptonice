@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Wrench, TrendingUp, TrendingDown, Activity, BarChart3, Layers, Briefcase, Newspaper, Target } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronRight, Wrench, TrendingUp, TrendingDown, Activity, BarChart3, Layers, Briefcase, Newspaper, Target, Sparkles, Save, ListChecks, Power, FlaskConical, Play, Wallet, PieChart, Zap, BookOpen, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/format';
+import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 
 export interface ToolCall {
   name: string;
@@ -19,6 +22,17 @@ const TOOL_META: Record<string, { label: string; icon: any; cost: number }> = {
   analyze_portfolio: { label: 'Portfolio Analysis', icon: Briefcase, cost: 1 },
   suggest_trade: { label: 'Trade Suggestions', icon: TrendingUp, cost: 1 },
   get_news: { label: 'Crypto News', icon: Newspaper, cost: 1 },
+  // Trading agent tools
+  generate_strategy: { label: 'AI Strategy', icon: Sparkles, cost: 3 },
+  save_strategy: { label: 'Saved Strategy', icon: Save, cost: 0 },
+  list_my_strategies: { label: 'My Strategies', icon: ListChecks, cost: 0 },
+  set_strategy_status: { label: 'Strategy Status', icon: Power, cost: 0 },
+  run_backtest: { label: 'Backtest', icon: FlaskConical, cost: 0 },
+  run_paper_tick: { label: 'Paper Tick', icon: Play, cost: 0 },
+  get_paper_state: { label: 'Paper Account', icon: Wallet, cost: 0 },
+  optimize_portfolio: { label: 'Portfolio Optimizer', icon: PieChart, cost: 5 },
+  scan_arbitrage: { label: 'Arbitrage Scan', icon: Zap, cost: 0 },
+  evaluate_journal: { label: 'Journal Review', icon: BookOpen, cost: 3 },
 };
 
 function fmtPct(v: any) {
