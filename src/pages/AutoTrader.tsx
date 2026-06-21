@@ -69,7 +69,7 @@ export default function AutoTrader() {
           <div className="mt-4">
             <TabsContent value="overview" className="mt-0"><OverviewTab /></TabsContent>
             <TabsContent value="strategies" className="mt-0">
-              <StrategiesTab onBacktest={(s) => { setBacktestTarget(s); setTab('backtest'); }} highlightId={highlightStrategyId} />
+              <StrategiesTab onBacktest={(s) => { setBacktestTarget(s); setTab('backtest'); }} />
             </TabsContent>
             <TabsContent value="backtest" className="mt-0"><BacktestTab initialStrategy={backtestTarget} /></TabsContent>
             <TabsContent value="paper" className="mt-0"><PaperTradingTab /></TabsContent>
