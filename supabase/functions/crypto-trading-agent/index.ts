@@ -383,87 +383,156 @@ Deno.serve(async (req) => {
       ...history,
     ];
 
-    const toolCalls: { name: string; args: any; result: any }[] = [];
-    let finalText = "";
+    // ---- Stream agent events as SSE -------------------------------------
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (event: string, data: any) => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        const allToolCalls: { id: string; name: string; args: any; result: any; ms: number }[] = [];
+        let finalText = "";
 
-    for (let step = 0; step < MAX_STEPS; step++) {
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: chatMessages,
-          tools: TOOLS,
-          tool_choice: "auto",
-          stream: false,
-        }),
-      });
+        try {
+          for (let step = 0; step < MAX_STEPS; step++) {
+            send("step", { index: step, status: "thinking" });
 
-      if (!r.ok) {
-        if (r.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: MODEL,
+                messages: chatMessages,
+                tools: TOOLS,
+                tool_choice: "auto",
+                stream: true,
+              }),
+            });
+
+            if (!r.ok) {
+              const status = r.status;
+              const msg = status === 429 ? "Rate limit exceeded. Try again shortly."
+                : status === 402 ? "AI credits exhausted."
+                : "AI service error";
+              send("error", { status, message: msg });
+              controller.close();
+              return;
+            }
+
+            // Parse SSE stream from the gateway, accumulate text + tool_calls
+            let accText = "";
+            const accCalls: Map<number, { id?: string; name?: string; args: string }> = new Map();
+            const reader = r.body!.getReader();
+            const decoder = new TextDecoder();
+            let buf = "";
+            outer: while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buf += decoder.decode(value, { stream: true });
+              let nl: number;
+              while ((nl = buf.indexOf("\n")) >= 0) {
+                const line = buf.slice(0, nl).trim();
+                buf = buf.slice(nl + 1);
+                if (!line.startsWith("data:")) continue;
+                const payload = line.slice(5).trim();
+                if (payload === "[DONE]") break outer;
+                let chunk: any;
+                try { chunk = JSON.parse(payload); } catch { continue; }
+                const delta = chunk.choices?.[0]?.delta;
+                if (!delta) continue;
+                if (typeof delta.content === "string" && delta.content.length > 0) {
+                  accText += delta.content;
+                  send("text_delta", { delta: delta.content });
+                }
+                if (Array.isArray(delta.tool_calls)) {
+                  for (const tc of delta.tool_calls) {
+                    const idx = tc.index ?? 0;
+                    const cur = accCalls.get(idx) || { args: "" };
+                    if (tc.id) cur.id = tc.id;
+                    if (tc.function?.name) cur.name = tc.function.name;
+                    if (tc.function?.arguments) cur.args += tc.function.arguments;
+                    accCalls.set(idx, cur);
+                  }
+                }
+              }
+            }
+
+            if (accCalls.size > 0) {
+              const calls = Array.from(accCalls.entries())
+                .sort((a, b) => a[0] - b[0])
+                .map(([, v], i) => ({
+                  id: v.id || `call_${step}_${i}`,
+                  type: "function",
+                  function: { name: v.name || "unknown", arguments: v.args || "{}" },
+                }));
+
+              chatMessages.push({
+                role: "assistant",
+                content: accText,
+                tool_calls: calls,
+              });
+
+              for (const c of calls) {
+                let parsedArgs: any = {};
+                try { parsedArgs = JSON.parse(c.function.arguments || "{}"); } catch { /* keep empty */ }
+                send("tool_call", { id: c.id, name: c.function.name, args: parsedArgs, status: "running" });
+                const t0 = Date.now();
+                const result = await execTool(c.function.name, parsedArgs, {
+                  userId, authHeader, admin, supabaseUrl: SUPABASE_URL,
+                });
+                const ms = Date.now() - t0;
+                const status = result && (result as any).error ? "error" : "done";
+                send("tool_result", { id: c.id, result, ms, status });
+                allToolCalls.push({ id: c.id, name: c.function.name, args: parsedArgs, result, ms });
+
+                chatMessages.push({
+                  role: "tool",
+                  tool_call_id: c.id,
+                  content: JSON.stringify(result).slice(0, 8000),
+                });
+              }
+              continue; // loop for follow-up
+            }
+
+            // No tool calls → this turn produced the final answer
+            finalText = accText;
+            break;
+          }
+
+          if (!finalText && allToolCalls.length === 0) {
+            finalText = "I couldn't complete that request. Try rephrasing.";
+            send("text_delta", { delta: finalText });
+          }
+          if (!finalText && allToolCalls.length > 0) {
+            finalText = "Done. See the tool results above.";
+            send("text_delta", { delta: finalText });
+          }
+
+          send("done", {
+            content: finalText,
+            toolCalls: allToolCalls.map(({ name, args, result }) => ({ name, args, result })),
           });
+          controller.close();
+        } catch (e) {
+          console.error("agent stream error", e);
+          send("error", { status: 500, message: (e as Error).message || "Internal error" });
+          controller.close();
         }
-        if (r.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        const txt = await r.text();
-        console.error("AI gateway error", r.status, txt.slice(0, 400));
-        return new Response(JSON.stringify({ error: "AI service error" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      },
+    });
 
-      const data = await r.json();
-      const msg = data.choices?.[0]?.message;
-      if (!msg) break;
-
-      const calls = msg.tool_calls;
-      if (calls && Array.isArray(calls) && calls.length > 0) {
-        // Push assistant message announcing tool calls
-        chatMessages.push({
-          role: "assistant",
-          content: msg.content || "",
-          tool_calls: calls,
-        });
-
-        for (const c of calls) {
-          let parsedArgs: any = {};
-          try { parsedArgs = JSON.parse(c.function?.arguments || "{}"); } catch { /* keep empty */ }
-          const result = await execTool(c.function?.name || "", parsedArgs, {
-            userId, authHeader, admin, supabaseUrl: SUPABASE_URL,
-          });
-          toolCalls.push({ name: c.function?.name || "unknown", args: parsedArgs, result });
-
-          chatMessages.push({
-            role: "tool",
-            tool_call_id: c.id,
-            content: JSON.stringify(result).slice(0, 8000),
-          });
-        }
-        continue; // loop for follow-up
-      }
-
-      // No tool calls → final answer
-      finalText = msg.content || "";
-      break;
-    }
-
-    if (!finalText && toolCalls.length === 0) {
-      finalText = "I couldn't complete that request. Try rephrasing.";
-    }
-    if (!finalText && toolCalls.length > 0) {
-      finalText = "Done. See the tool results above.";
-    }
-
-    return new Response(JSON.stringify({ content: finalText, toolCalls }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (e) {
     console.error("crypto-trading-agent error", e);
