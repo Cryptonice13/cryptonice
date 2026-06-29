@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
+import { AgentStepTimeline, type AgentStep } from './AgentStepTimeline';
 import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { isTradingIntent, callTradingAgent } from '@/hooks/useTradingAgent';
 import { useAccount } from 'wagmi';
@@ -16,6 +17,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: ToolCall[];
+  agentSteps?: AgentStep[];
+  agentStatus?: string | null;
 }
 
 interface ChatInterfaceProps {
