@@ -109,9 +109,57 @@ export function ChatInterface({
       let assistantContent = '';
       let toolCalls: ToolCall[] = [];
 
-      // Route trading-intent prompts to the specialized Auto-Trader agent.
       if (isTradingIntent(messageContent)) {
-        const res = await callTradingAgent(sanitizedHistory.map(m => ({ role: m.role, content: m.content as string })));
+        // Insert assistant placeholder we'll mutate in place as events stream in
+        const placeholder: Message = {
+          role: 'assistant',
+          content: '',
+          agentSteps: [],
+          agentStatus: 'Thinking…',
+        };
+        setMessages((prev: Message[]) => [...prev, placeholder]);
+
+        const updateLast = (mut: (m: Message) => Message) => {
+          setMessages((prev: Message[]) => {
+            if (!prev.length) return prev;
+            const next = prev.slice();
+            next[next.length - 1] = mut(next[next.length - 1]);
+            return next;
+          });
+        };
+
+        const res = await callTradingAgent(
+          sanitizedHistory.map((m) => ({ role: m.role, content: m.content as string })),
+          (ev) => {
+            if (ev.type === 'step') {
+              updateLast((m) => ({ ...m, agentStatus: 'Thinking…' }));
+            } else if (ev.type === 'tool_call') {
+              updateLast((m) => ({
+                ...m,
+                agentStatus: `Running ${ev.name.replace(/_/g, ' ')}…`,
+                agentSteps: [
+                  ...(m.agentSteps || []),
+                  { id: ev.id, name: ev.name, args: ev.args, status: 'running' },
+                ],
+              }));
+            } else if (ev.type === 'tool_result') {
+              updateLast((m) => ({
+                ...m,
+                agentSteps: (m.agentSteps || []).map((s) =>
+                  s.id === ev.id ? { ...s, result: ev.result, ms: ev.ms, status: ev.status } : s,
+                ),
+                agentStatus: 'Writing answer…',
+              }));
+            } else if (ev.type === 'text_delta') {
+              updateLast((m) => ({ ...m, content: (m.content || '') + ev.delta, agentStatus: 'Writing answer…' }));
+            } else if (ev.type === 'done') {
+              updateLast((m) => ({ ...m, content: ev.content || m.content, toolCalls: ev.toolCalls, agentStatus: null }));
+            } else if (ev.type === 'error') {
+              updateLast((m) => ({ ...m, agentStatus: null }));
+              setError(ev.message);
+            }
+          },
+        );
         assistantContent = res.content;
         toolCalls = res.toolCalls;
       } else {
@@ -130,18 +178,16 @@ export function ChatInterface({
         const data = await response.json();
         assistantContent = data.content || '';
         toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : [];
+        const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
+        setMessages((prev: Message[]) => [...prev, assistantMsg]);
       }
 
-      const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
-      setMessages((prev: Message[]) => [...prev, assistantMsg]);
       setLastDataUpdate(new Date());
-
       window.dispatchEvent(new CustomEvent('credits-updated'));
 
       if (hasExternalState && activeConversationId) {
         await onSaveMessage('user', messageContent, activeConversationId);
         if (assistantContent) {
-          // Persist tool results inline as JSON fenced block so reload restores them
           const payload = toolCalls.length
             ? `${assistantContent}\n\n<!--tools:${JSON.stringify(toolCalls)}-->`
             : assistantContent;
