@@ -21,15 +21,14 @@ export interface TradingAgentResponse {
  */
 export function isTradingIntent(input: string): boolean {
   const s = input.toLowerCase();
-  // Strong, unambiguous signals — keep this list tight to avoid false positives.
   const keywords = [
     'strategy', 'strategies',
     'backtest', 'back test', 'back-test',
     'paper trade', 'paper trading', 'paper account', 'paper position',
-    'agent tick', 'run tick', 'run a tick',
+    'agent tick', 'run tick', 'run a tick', 'tick',
     'auto trader', 'autotrader', 'auto-trader',
-    'arbitrage', 'arb opportunit',
-    'optimize portfolio', 'portfolio optimiz', 'target weights', 'rebalance',
+    'arbitrage', 'arb opportunit', 'spread',
+    'optimize portfolio', 'portfolio optimiz', 'target weights', 'rebalance', 'weights',
     'activate strateg', 'pause strateg',
     'trading journal', 'evaluate journal', 'journal analysis',
     'sma cross', 'sma_cross', 'rsi strategy', 'breakout strategy', 'macd strategy',
@@ -37,7 +36,18 @@ export function isTradingIntent(input: string): boolean {
   return keywords.some(k => s.includes(k));
 }
 
-export async function callTradingAgent(messages: TradingAgentMessage[]): Promise<TradingAgentResponse> {
+export type AgentEvent =
+  | { type: 'step'; index: number; status: 'thinking' }
+  | { type: 'tool_call'; id: string; name: string; args: any; status: 'running' }
+  | { type: 'tool_result'; id: string; result: any; ms: number; status: 'done' | 'error' }
+  | { type: 'text_delta'; delta: string }
+  | { type: 'done'; content: string; toolCalls: ToolCall[] }
+  | { type: 'error'; status: number; message: string };
+
+export async function callTradingAgent(
+  messages: TradingAgentMessage[],
+  onEvent?: (e: AgentEvent) => void,
+): Promise<TradingAgentResponse> {
   const { data: sess } = await supabase.auth.getSession();
   const accessToken = sess?.session?.access_token;
   if (!accessToken) {
@@ -54,20 +64,49 @@ export async function callTradingAgent(messages: TradingAgentMessage[]): Promise
     body: JSON.stringify({ messages }),
   });
 
-  if (!res.ok) {
+  if (!res.ok || !res.body) {
     let msg = `Trading agent failed (${res.status})`;
-    try {
-      const j = await res.json();
-      if (j?.error) msg = j.error;
-    } catch { /* keep default */ }
+    try { const j = await res.json(); if (j?.error) msg = j.error; } catch { /* noop */ }
     throw new Error(msg);
   }
 
-  const data = await res.json();
-  return {
-    content: data.content || '',
-    toolCalls: Array.isArray(data.toolCalls) ? data.toolCalls : [],
-  };
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let finalContent = '';
+  let finalToolCalls: ToolCall[] = [];
+  let errorMsg: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let sep: number;
+    while ((sep = buf.indexOf('\n\n')) >= 0) {
+      const frame = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+      let event = 'message';
+      let dataStr = '';
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+      }
+      if (!dataStr) continue;
+      let data: any;
+      try { data = JSON.parse(dataStr); } catch { continue; }
+
+      if (event === 'done') {
+        finalContent = data.content || '';
+        finalToolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : [];
+      } else if (event === 'error') {
+        errorMsg = data.message || 'Trading agent failed';
+      }
+      onEvent?.({ type: event as any, ...data });
+    }
+  }
+
+  if (errorMsg) throw new Error(errorMsg);
+  return { content: finalContent, toolCalls: finalToolCalls };
 }
 
 export function useTradingAgent() {

@@ -1,82 +1,90 @@
-# Integrate Auto-Trader into Chat as an Intelligent Trading Agent
+# Live Agent Flow for Auto-Trader in Chat
 
-Turn the chat assistant into a "trading copilot" that can detect strategy/backtest/portfolio/arbitrage intents, ask the right follow-up questions, run the existing Auto-Trader edge functions as tools, and render the results inline in the chat — without leaving the conversation.
+Today the trading agent already runs tool loops on the server (`crypto-trading-agent`), but the chat just shows a typing dots animation until everything is done, then dumps the final answer + tool cards. That doesn't feel like a real agent. This plan upgrades the UX to match how ChatGPT/Claude/Manus agents actually run: the user sees the agent *think*, *pick a tool*, *run it*, *show the result*, *think again*, and finally *answer* — all live.
 
-## User experience
+## What the user will see
 
-Examples that should "just work" from the chat composer:
+When they type something like "build me a momentum strategy for ETH 1h, 2% risk, then backtest it":
 
-- "Build me a momentum strategy for ETH on the 1h" → agent asks 2-3 missing details (risk %, capital, indicator) → calls `agent-strategy-generate` → renders a Strategy Card with "Run backtest" and "Activate paper trading" buttons.
-- "Backtest that on the last 6 months" → agent reuses the last strategy id → calls `agent-backtest` → renders equity curve + KPIs.
-- "Optimize my portfolio, I'm medium risk, 6-month horizon" → calls `agent-optimize-portfolio` → renders target weights table.
-- "Any arbitrage on SOL right now?" → calls `agent-arbitrage-scan` → renders top spreads.
-- "Run a tick on my active strategy" → calls `agent-tick` → renders the trades opened/closed.
-- "How are my paper trades doing?" → calls `agent-evaluate` → renders AI journal commentary.
+```text
+You: build me a momentum strategy for ETH 1h, 2% risk, then backtest it
 
-Free-form analysis prompts ("what do you think about BTC right now?") continue to work through the existing crypto-ai flow — no regression.
+Agent
+  ● Thinking…
+  ▸ Step 1 · generate_strategy        [running] → [done · 1.4s]
+       "ETH/USDT 1h SMA(20/50) cross, 2% SL, 4% TP"
+  ▸ Step 2 · save_strategy            [running] → [done · 0.3s]
+       Saved as "ETH Momentum 1h" (id abc…)
+  ▸ Step 3 · run_backtest             [running] → [done · 2.1s]
+       PnL +8.2%  ·  Sharpe 1.4  ·  Win 58%
+  ● Writing answer…
+  "Here's a momentum strategy on ETH 1h…" (streaming tokens)
 
-## What gets built
+  [Strategy card]  [Backtest card]  → Open in Auto-Trader
+```
 
-### 1. Tool layer (edge function)
-- New edge function `crypto-trading-agent` (server-side, Lovable AI Gateway, model `google/gemini-3-flash-preview`).
-- Uses the AI SDK's tool calling with `stepCountIs(50)` so the model can chain: ask → generate strategy → backtest → summarize.
-- Tools wired as thin proxies that re-invoke the existing edge functions with the caller's JWT:
-  - `generate_strategy` → `agent-strategy-generate`
-  - `run_backtest` → `agent-backtest`
-  - `list_my_strategies` (reads `trading_strategies` via service role, scoped to `user_id`)
-  - `activate_strategy` / `pause_strategy` (UPDATE on `trading_strategies`)
-  - `run_paper_tick` → `agent-tick`
-  - `get_paper_state` (reads `paper_accounts`, `paper_positions`, recent `paper_orders`)
-  - `optimize_portfolio` → `agent-optimize-portfolio`
-  - `scan_arbitrage` → `agent-arbitrage-scan`
-  - `evaluate_journal` → `agent-evaluate`
-- Each tool has a tight Zod input schema and returns compact JSON the chat can render.
-- Auth: function validates the user JWT (current chat pattern), passes `userId` into every tool call, and rejects unauthenticated calls.
-- Credits: tools that already cost credits (strategy gen, backtest, optimizer, evaluate) reuse the existing `deduct_credits_atomic` path inside the downstream functions — no double charging.
+Each step appears the moment the server fires it. The user can collapse/expand a step to see args + the rich result card. Final assistant text streams in token by token after the last tool returns.
 
-### 2. Chat routing
-- `useChat` / `useCryptoAI` gets a lightweight intent classifier (regex + keyword match on "strategy/backtest/paper/arbitrage/optimize/portfolio weights/tick") that flips the request to `crypto-trading-agent` instead of `crypto-ai`. Generic chat keeps using `crypto-ai`.
-- A "Trading Agent" toggle in the chat composer lets users force the trading agent on/off; auto-detection is the default.
+## Scope
 
-### 3. Rich result rendering in chat
-New message-part renderers in `src/components/ai/` so tool outputs look like product, not JSON:
-- `ChatStrategyCard` — name, indicator, SL/TP, "Run backtest", "Activate paper trading", "Open in Auto-Trader".
-- `ChatBacktestCard` — equity sparkline (Recharts), PnL, Sharpe, Max DD, win rate.
-- `ChatPortfolioTargetsCard` — target weights table + rationale.
-- `ChatArbitrageCard` — top 3 spreads with exchange pair and net basis.
-- `ChatPaperStateCard` — equity, open positions, last 5 orders.
-- All cards link to `/auto-trader` with the relevant tab pre-selected via `?tab=...&strategyId=...`.
+In: every Auto-Trader capability already exposed by `crypto-trading-agent` (generate/save/list/activate strategy, backtest, paper tick/state, optimize portfolio, scan arbitrage, evaluate journal). Out: live exchange execution, RL evolution, new tools — none of that changes here.
 
-### 4. Clarifying-question pattern
-The agent's system prompt instructs it to ask before acting whenever a required parameter is missing (asset, timeframe, indicator, risk, capital, horizon). Questions render as normal assistant text — no special UI needed — and the agent only invokes a tool once it has enough to proceed.
+## Changes
 
-### 5. AutoTrader page wiring (light touch)
-- Read `?tab=` and `?strategyId=` query params on `/auto-trader` so deep links from chat open the right tab and highlight the right row. No layout changes.
+### 1. `supabase/functions/crypto-trading-agent/index.ts` — stream agent events (SSE)
 
-## Out of scope (call out, don't build)
-- Live (non-paper) execution against real exchanges.
-- Reinforcement-learning strategy evolution.
-- Smart-contract wallet integration.
-- Streaming token-by-token output in chat (current chat uses non-streaming; keeping that to minimize churn). Can be added later.
+- Switch the response from a single JSON blob to `text/event-stream`.
+- Keep the same tool-loop logic, but emit named events as it runs:
+  - `step` — `{ index, status: "thinking" }` before each model call
+  - `tool_call` — `{ id, name, args, status: "running" }` when a tool starts
+  - `tool_result` — `{ id, result, ms, status: "done" | "error" }` when it returns
+  - `text_delta` — `{ delta }` for streamed final-answer tokens (request `stream:true` for the last model turn that produces user-facing text)
+  - `done` — `{ toolCalls }` at the end so the client can persist
+  - `error` — `{ message, status }` on failure (401/402/429 surfaced clearly)
+- Raise `MAX_STEPS` from 6 → 10 to support longer chains.
+- Auth + credit deduction unchanged (each downstream tool keeps charging via `deduct_credits_atomic`).
 
-## Technical details
+### 2. `src/hooks/useTradingAgent.ts` — SSE reader
 
-- **Stack**: existing Vite + React + Supabase Edge Functions; AI SDK (`npm:ai`) + `@ai-sdk/openai-compatible` via the Lovable AI Gateway helper pattern already used elsewhere.
-- **New files**:
-  - `supabase/functions/crypto-trading-agent/index.ts` — agent loop with tools.
-  - `supabase/functions/_shared/ai-gateway.ts` — shared gateway provider helper (if not already present).
-  - `src/hooks/useTradingAgent.ts` — client hook that posts to the new function and normalizes tool-part output.
-  - `src/components/ai/cards/ChatStrategyCard.tsx`, `ChatBacktestCard.tsx`, `ChatPortfolioTargetsCard.tsx`, `ChatArbitrageCard.tsx`, `ChatPaperStateCard.tsx`.
-- **Modified files**:
-  - `src/components/ai/ChatInterface.tsx` — intent routing, render new card types when `message.toolResults` is present, "Trading Agent" toggle.
-  - `src/hooks/useCryptoAI.ts` — branch to `useTradingAgent` based on intent / toggle.
-  - `src/pages/AutoTrader.tsx` — honor `?tab=` / `?strategyId=` query params.
-- **No database migration required.** Reuses existing tables (`trading_strategies`, `strategy_backtests`, `paper_*`, `portfolio_targets`, `arbitrage_opportunities`) and existing RLS (post-lockdown: signed-in user only).
-- **Security**: function rejects requests without a valid Supabase JWT (already required after the wallet-bypass fix). All tool execution scopes to `auth.uid()`.
+- Replace the single-shot `fetch` with a streaming reader that parses the SSE events above.
+- Expose an `onEvent` callback (or async generator) so the UI can update per event.
+- Keep `isTradingIntent` as is, but broaden the keyword set slightly (`tick`, `signal for paper`, `weights`, `spread`).
 
-## Acceptance checks before shipping
-1. Logged-in user types "build me an RSI strategy for BTC, 2% risk" → strategy card renders, "Run backtest" works, results render as a second card.
-2. "Show me my paper account" → renders equity + open positions; matches the Paper tab.
-3. "Find arbitrage on ETH" → arbitrage card with at least one row when the scanner has data.
-4. Generic question ("what's BTC sentiment?") still goes through `crypto-ai` and renders normally — no regression.
-5. Logged-out user → chat shows the existing auth gate; trading tools never run.
+### 3. `src/components/ai/ChatInterface.tsx` — progressive assistant message
+
+- When a trading-intent prompt is sent, immediately insert an assistant placeholder message with an empty `agentSteps: AgentStep[]` and `content: ''`.
+- Subscribe to `callTradingAgent`'s streamed events and mutate that placeholder in place:
+  - `tool_call` → push `{ id, name, args, status: 'running', startedAt }`
+  - `tool_result` → mark the matching step `done`/`error`, store `result` + duration
+  - `text_delta` → append to `content`
+  - `done` → flip overall status to `done` and persist via `onSaveMessage` (existing path, plus new `<!--steps:…-->` marker so reloads show the timeline)
+- Replace the static "three dots" with a live status line ("Thinking…" → "Running generate_strategy…" → "Writing answer…") driven by the latest event.
+- Reuse existing `AgentToolCard` for the rich card under each completed step; no new card components needed.
+
+### 4. `src/components/ai/AgentStepTimeline.tsx` *(new)*
+
+- Small presentational component that renders the per-message step list with:
+  - status dot (pulsing for running, check for done, x for error)
+  - tool name + duration
+  - collapsible args (JSON) + result (rendered via `AgentToolCard` when available, else compact JSON)
+- Used inside `ChatInterface` above the assistant text bubble.
+
+### 5. Non-trading chat unchanged
+
+Generic prompts ("what's BTC sentiment?") still go through `crypto-ai` and render the old way. No regression to that flow.
+
+## Acceptance checks
+
+1. "Build me an RSI strategy for BTC, 2% risk" shows steps appearing live, ending with a strategy card and streamed summary.
+2. "Backtest my latest strategy on 4h" runs `list_my_strategies` then `run_backtest` with both steps visible.
+3. "Find arbitrage on SOL" shows a single `scan_arbitrage` step + the arbitrage card.
+4. Reloading a saved conversation restores the steps timeline + cards from the persisted marker.
+5. Insufficient credits / rate limit / auth errors surface as a red error step, not a silent failure.
+6. Non-trading prompt ("what do you think of BTC?") still routes to `crypto-ai` and renders as before.
+
+## Technical notes
+
+- SSE format kept minimal: `event: <name>\ndata: <json>\n\n`. No external SSE lib — `TextDecoderStream` + line buffer on the client (same pattern already used in `useCryptoAI.ts`).
+- Persistence marker extended: `<!--tools:…-->` stays for back-compat; a new optional `<!--steps:…-->` block stores the timeline. Old messages without it just don't show a timeline.
+- No DB migration. No new edge function. No new env vars.
+- Model stays on `google/gemini-3-flash-preview` (already approved default).

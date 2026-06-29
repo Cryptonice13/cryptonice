@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
+import { AgentStepTimeline, type AgentStep } from './AgentStepTimeline';
 import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { isTradingIntent, callTradingAgent } from '@/hooks/useTradingAgent';
 import { useAccount } from 'wagmi';
@@ -16,6 +17,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: ToolCall[];
+  agentSteps?: AgentStep[];
+  agentStatus?: string | null;
 }
 
 interface ChatInterfaceProps {
@@ -106,9 +109,57 @@ export function ChatInterface({
       let assistantContent = '';
       let toolCalls: ToolCall[] = [];
 
-      // Route trading-intent prompts to the specialized Auto-Trader agent.
       if (isTradingIntent(messageContent)) {
-        const res = await callTradingAgent(sanitizedHistory.map(m => ({ role: m.role, content: m.content as string })));
+        // Insert assistant placeholder we'll mutate in place as events stream in
+        const placeholder: Message = {
+          role: 'assistant',
+          content: '',
+          agentSteps: [],
+          agentStatus: 'Thinking…',
+        };
+        setMessages((prev: Message[]) => [...prev, placeholder]);
+
+        const updateLast = (mut: (m: Message) => Message) => {
+          setMessages((prev: Message[]) => {
+            if (!prev.length) return prev;
+            const next = prev.slice();
+            next[next.length - 1] = mut(next[next.length - 1]);
+            return next;
+          });
+        };
+
+        const res = await callTradingAgent(
+          sanitizedHistory.map((m) => ({ role: m.role, content: m.content as string })),
+          (ev) => {
+            if (ev.type === 'step') {
+              updateLast((m) => ({ ...m, agentStatus: 'Thinking…' }));
+            } else if (ev.type === 'tool_call') {
+              updateLast((m) => ({
+                ...m,
+                agentStatus: `Running ${ev.name.replace(/_/g, ' ')}…`,
+                agentSteps: [
+                  ...(m.agentSteps || []),
+                  { id: ev.id, name: ev.name, args: ev.args, status: 'running' },
+                ],
+              }));
+            } else if (ev.type === 'tool_result') {
+              updateLast((m) => ({
+                ...m,
+                agentSteps: (m.agentSteps || []).map((s) =>
+                  s.id === ev.id ? { ...s, result: ev.result, ms: ev.ms, status: ev.status } : s,
+                ),
+                agentStatus: 'Writing answer…',
+              }));
+            } else if (ev.type === 'text_delta') {
+              updateLast((m) => ({ ...m, content: (m.content || '') + ev.delta, agentStatus: 'Writing answer…' }));
+            } else if (ev.type === 'done') {
+              updateLast((m) => ({ ...m, content: ev.content || m.content, toolCalls: ev.toolCalls, agentStatus: null }));
+            } else if (ev.type === 'error') {
+              updateLast((m) => ({ ...m, agentStatus: null }));
+              setError(ev.message);
+            }
+          },
+        );
         assistantContent = res.content;
         toolCalls = res.toolCalls;
       } else {
@@ -127,18 +178,16 @@ export function ChatInterface({
         const data = await response.json();
         assistantContent = data.content || '';
         toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : [];
+        const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
+        setMessages((prev: Message[]) => [...prev, assistantMsg]);
       }
 
-      const assistantMsg: Message = { role: 'assistant', content: assistantContent, toolCalls };
-      setMessages((prev: Message[]) => [...prev, assistantMsg]);
       setLastDataUpdate(new Date());
-
       window.dispatchEvent(new CustomEvent('credits-updated'));
 
       if (hasExternalState && activeConversationId) {
         await onSaveMessage('user', messageContent, activeConversationId);
         if (assistantContent) {
-          // Persist tool results inline as JSON fenced block so reload restores them
           const payload = toolCalls.length
             ? `${assistantContent}\n\n<!--tools:${JSON.stringify(toolCalls)}-->`
             : assistantContent;
@@ -308,24 +357,29 @@ export function ChatInterface({
                       </div>
                     )}
                     <div className={`max-w-[85%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
-                      {msg.role === 'assistant' && toolCalls && toolCalls.length > 0 && (
+                      {msg.role === 'assistant' && msg.agentSteps && msg.agentSteps.length > 0 && (
+                        <AgentStepTimeline steps={msg.agentSteps} statusLabel={msg.agentStatus ?? null} />
+                      )}
+                      {msg.role === 'assistant' && !msg.agentSteps && toolCalls && toolCalls.length > 0 && (
                         <div className="space-y-1.5">
                           {toolCalls.map((tc, j) => <AgentToolCard key={j} call={tc} />)}
                         </div>
                       )}
-                      <div
-                        className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
-                          msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'
-                        }`}
-                      >
-                        {msg.role === 'assistant' ? (
-                          <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
-                            <ReactMarkdown>{displayContent}</ReactMarkdown>
-                          </div>
-                        ) : (
-                          <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                        )}
-                      </div>
+                      {(displayContent || msg.role === 'user') && (
+                        <div
+                          className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
+                            msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'
+                          }`}
+                        >
+                          {msg.role === 'assistant' ? (
+                            <div className="prose prose-sm prose-invert max-w-none text-xs sm:text-sm leading-relaxed [&_p]:mb-1.5 [&_ul]:mb-1.5 [&_ol]:mb-1.5 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-secondary [&_pre]:p-2 [&_pre]:rounded-lg [&_strong]:text-foreground [&_a]:text-primary">
+                              <ReactMarkdown>{displayContent}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {msg.role === 'user' && (
                       <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
