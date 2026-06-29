@@ -12,7 +12,7 @@ const corsHeaders = {
 };
 
 const MODEL = "google/gemini-3-flash-preview";
-const MAX_STEPS = 6;
+const MAX_STEPS = 10;
 
 // ---------------------------------------------------------------------------
 // Tool definitions (OpenAI-compatible)
