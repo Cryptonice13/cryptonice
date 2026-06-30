@@ -449,6 +449,7 @@ export function ChatInterface({
           </Button>
         </div>
       </form>
+      <ArtifactPanel artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
     </Card>
   );
 }
