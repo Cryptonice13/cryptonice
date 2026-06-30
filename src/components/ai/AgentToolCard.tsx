@@ -51,7 +51,7 @@ function SignalBadge({ signal }: { signal: string }) {
   return <Badge variant="outline" className={c}>{signal}</Badge>;
 }
 
-function renderResult(name: string, result: any) {
+export function renderResult(name: string, result: any) {
   if (!result || result.error) {
     return <div className="text-xs text-destructive">{result?.error || 'No result'}</div>;
   }
