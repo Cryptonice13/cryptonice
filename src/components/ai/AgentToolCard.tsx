@@ -13,7 +13,7 @@ export interface ToolCall {
   result: any;
 }
 
-const TOOL_META: Record<string, { label: string; icon: any; cost: number }> = {
+export const TOOL_META: Record<string, { label: string; icon: any; cost: number }> = {
   get_market_snapshot: { label: 'Market Snapshot', icon: BarChart3, cost: 1 },
   predict_price: { label: 'Price Prediction', icon: TrendingUp, cost: 2 },
   generate_trading_signal: { label: 'Trading Signal', icon: Target, cost: 2 },
