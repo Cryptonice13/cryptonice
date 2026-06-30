@@ -7,8 +7,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { AgentToolCard, type ToolCall } from './AgentToolCard';
+import { type ToolCall } from './AgentToolCard';
 import { AgentStepTimeline, type AgentStep } from './AgentStepTimeline';
+import { ArtifactPill } from './ArtifactPill';
+import { ArtifactPanel } from './ArtifactPanel';
 import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { isTradingIntent, callTradingAgent } from '@/hooks/useTradingAgent';
 import { useAccount } from 'wagmi';
@@ -56,6 +58,7 @@ export function ChatInterface({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [openArtifact, setOpenArtifact] = useState<{ call: ToolCall; index?: number } | null>(null);
 
   const getRelativeTime = (date: Date | null) => {
     if (!date) return null;
@@ -358,11 +361,22 @@ export function ChatInterface({
                     )}
                     <div className={`max-w-[85%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
                       {msg.role === 'assistant' && msg.agentSteps && msg.agentSteps.length > 0 && (
-                        <AgentStepTimeline steps={msg.agentSteps} statusLabel={msg.agentStatus ?? null} />
+                        <AgentStepTimeline
+                          steps={msg.agentSteps}
+                          statusLabel={msg.agentStatus ?? null}
+                          onOpenArtifact={(call, idx) => setOpenArtifact({ call, index: idx })}
+                        />
                       )}
                       {msg.role === 'assistant' && !msg.agentSteps && toolCalls && toolCalls.length > 0 && (
                         <div className="space-y-1.5">
-                          {toolCalls.map((tc, j) => <AgentToolCard key={j} call={tc} />)}
+                          {toolCalls.map((tc, j) => (
+                            <ArtifactPill
+                              key={j}
+                              call={tc}
+                              index={j}
+                              onOpen={() => setOpenArtifact({ call: tc, index: j })}
+                            />
+                          ))}
                         </div>
                       )}
                       {(displayContent || msg.role === 'user') && (
@@ -435,6 +449,7 @@ export function ChatInterface({
           </Button>
         </div>
       </form>
+      <ArtifactPanel artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
     </Card>
   );
 }
