@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { AgentToolCard, type ToolCall } from './AgentToolCard';
 import { AgentStepTimeline, type AgentStep } from './AgentStepTimeline';
+import { ArtifactPill } from './ArtifactPill';
+import { ArtifactPanel } from './ArtifactPanel';
 import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { isTradingIntent, callTradingAgent } from '@/hooks/useTradingAgent';
 import { useAccount } from 'wagmi';
