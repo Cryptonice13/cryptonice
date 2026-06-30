@@ -58,6 +58,7 @@ export function ChatInterface({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [openArtifact, setOpenArtifact] = useState<{ call: ToolCall; index?: number } | null>(null);
 
   const getRelativeTime = (date: Date | null) => {
     if (!date) return null;
