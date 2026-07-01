@@ -64,7 +64,7 @@ export function renderResult(name: string, result: any) {
             <div key={a.symbol} className="flex items-center justify-between text-xs py-1 border-b border-border/20 last:border-0">
               <div className="font-medium">{a.symbol} <span className="text-muted-foreground">· {a.name}</span></div>
               <div className="flex items-center gap-3">
-                <span>${formatPrice(a.price)}</span>
+                <span>{formatPrice(a.price)}</span>
                 {fmtPct(a.change24h)}
               </div>
             </div>
@@ -76,7 +76,7 @@ export function renderResult(name: string, result: any) {
       return (
         <div className="text-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold">{result.symbol} @ ${formatPrice(result.price)}</span>
+            <span className="font-semibold">{result.symbol} @ {formatPrice(result.price)}</span>
             <Badge variant="outline" className={result.sentiment === 'bullish' ? 'text-emerald-500 border-emerald-500/30' : 'text-red-500 border-red-500/30'}>
               {result.sentiment}
             </Badge>
@@ -84,20 +84,20 @@ export function renderResult(name: string, result: any) {
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md bg-muted/30 p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Short term</div>
-              <div>${formatPrice(result.shortTerm?.target)} <span className="text-muted-foreground">· {result.shortTerm?.direction}</span></div>
+              <div>{formatPrice(result.shortTerm?.target)} <span className="text-muted-foreground">· {result.shortTerm?.direction}</span></div>
             </div>
             <div className="rounded-md bg-muted/30 p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Medium term</div>
-              <div>${formatPrice(result.mediumTerm?.target)} <span className="text-muted-foreground">· {result.mediumTerm?.direction}</span></div>
+              <div>{formatPrice(result.mediumTerm?.target)} <span className="text-muted-foreground">· {result.mediumTerm?.direction}</span></div>
             </div>
           </div>
           <div className="flex gap-2 text-[11px]">
             <span className="text-muted-foreground">Support:</span>
-            {(result.supportLevels || []).map((s: number, i: number) => <span key={i}>${formatPrice(s)}</span>)}
+            {(result.supportLevels || []).map((s: number, i: number) => <span key={i}>{formatPrice(s)}</span>)}
           </div>
           <div className="flex gap-2 text-[11px]">
             <span className="text-muted-foreground">Resistance:</span>
-            {(result.resistanceLevels || []).map((s: number, i: number) => <span key={i}>${formatPrice(s)}</span>)}
+            {(result.resistanceLevels || []).map((s: number, i: number) => <span key={i}>{formatPrice(s)}</span>)}
           </div>
         </div>
       );
@@ -106,24 +106,24 @@ export function renderResult(name: string, result: any) {
       return (
         <div className="text-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold">{result.symbol} @ ${formatPrice(result.price)}</span>
+            <span className="font-semibold">{result.symbol} @ {formatPrice(result.price)}</span>
             <SignalBadge signal={result.signal} />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md bg-muted/30 p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Entry</div>
-              <div>${formatPrice(result.entryRange?.min)} – ${formatPrice(result.entryRange?.max)}</div>
+              <div>{formatPrice(result.entryRange?.min)} – {formatPrice(result.entryRange?.max)}</div>
             </div>
             <div className="rounded-md bg-muted/30 p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Stop Loss</div>
-              <div className="text-red-500">${formatPrice(result.stopLoss)}</div>
+              <div className="text-red-500">{formatPrice(result.stopLoss)}</div>
             </div>
           </div>
           <div className="rounded-md bg-muted/30 p-2">
             <div className="text-[10px] text-muted-foreground uppercase mb-1">Take Profits</div>
             <div className="flex gap-2 flex-wrap">
               {(result.takeProfits || []).map((tp: number, i: number) => (
-                <span key={i} className="text-emerald-500">TP{i + 1}: ${formatPrice(tp)}</span>
+                <span key={i} className="text-emerald-500">TP{i + 1}: {formatPrice(tp)}</span>
               ))}
             </div>
           </div>
@@ -138,7 +138,7 @@ export function renderResult(name: string, result: any) {
     case 'technical_analysis':
       return (
         <div className="text-xs space-y-2">
-          <div className="font-semibold">{result.symbol} @ ${formatPrice(result.price)}</div>
+          <div className="font-semibold">{result.symbol} @ {formatPrice(result.price)}</div>
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-md bg-muted/30 p-2">
               <div className="text-[10px] text-muted-foreground uppercase">RSI</div>
@@ -155,7 +155,7 @@ export function renderResult(name: string, result: any) {
           </div>
           {result.indicators?.sma7 != null && (
             <div className="text-[11px] text-muted-foreground">
-              7d SMA: ${formatPrice(result.indicators.sma7)} ({fmtPct(result.indicators.priceVsSma7Pct)} vs price)
+              7d SMA: {formatPrice(result.indicators.sma7)} ({fmtPct(result.indicators.priceVsSma7Pct)} vs price)
             </div>
           )}
         </div>
@@ -168,7 +168,7 @@ export function renderResult(name: string, result: any) {
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
             <div>Market Cap: <span className="text-foreground">${(result.marketCap / 1e9).toFixed(2)}B</span></div>
             <div>24h Vol: <span className="text-foreground">${(result.volume24h / 1e9).toFixed(2)}B</span></div>
-            <div>ATH: <span className="text-foreground">${formatPrice(result.ath)} ({fmtPct(result.athChangePct)})</span></div>
+            <div>ATH: <span className="text-foreground">{formatPrice(result.ath)} ({fmtPct(result.athChangePct)})</span></div>
             <div>Supply: <span className="text-foreground">{result.circulatingSupply?.toLocaleString() ?? '—'}</span></div>
           </div>
           {result.description && (
@@ -206,7 +206,7 @@ export function renderResult(name: string, result: any) {
           {(result.picks || []).map((p: any) => (
             <div key={p.symbol} className="flex justify-between border-b border-border/20 last:border-0 py-1">
               <span className="font-medium">{p.symbol}</span>
-              <span>${formatPrice(p.price)} {fmtPct(p.change7d)}</span>
+              <span>{formatPrice(p.price)} {fmtPct(p.change7d)}</span>
             </div>
           ))}
         </div>
@@ -456,7 +456,7 @@ export function renderResult(name: string, result: any) {
                   +{Number(o.spread_pct || o.spreadPct || o.netBasisPct || 0).toFixed(2)}%
                 </div>
                 {(o.buy_price || o.buyPrice) && (
-                  <div className="text-[10px] text-muted-foreground">${formatPrice(o.buy_price || o.buyPrice)}</div>
+                  <div className="text-[10px] text-muted-foreground">{formatPrice(o.buy_price || o.buyPrice)}</div>
                 )}
               </div>
             </div>
