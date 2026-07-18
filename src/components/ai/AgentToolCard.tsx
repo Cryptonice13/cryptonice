@@ -308,7 +308,7 @@ export function renderResult(name: string, result: any) {
                 )}
                 <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       );
@@ -354,9 +354,6 @@ export function renderResult(name: string, result: any) {
             <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Sharpe</div><div className="text-sm font-semibold">{Number(m.sharpe ?? 0).toFixed(2)}</div></div>
             <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Max DD</div><div className="text-sm font-semibold text-red-500">-{Number(m.maxDrawdownPct ?? 0).toFixed(1)}%</div></div>
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to={`/auto-trader?tab=backtest${result.strategyId ? `&strategyId=${result.strategyId}` : ''}`}><ExternalLink className="w-3 h-3 mr-1" />Full backtest view</Link>
-          </Button>
         </div>
       );
     }
