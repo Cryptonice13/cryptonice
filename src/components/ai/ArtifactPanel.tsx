@@ -12,7 +12,6 @@ interface ArtifactPanelProps {
 }
 
 export function ArtifactPanel({ artifact, onClose }: ArtifactPanelProps) {
-  const [tab, setTab] = useState<'preview' | 'raw'>('preview');
   const [copied, setCopied] = useState(false);
 
   if (!artifact) return null;
