@@ -107,17 +107,8 @@ export function useCredits() {
       credits = Math.floor(credits * (1 + COUPON_BONUS));
     }
 
-    // Record purchase intent (will be replaced by a real Stripe webhook flow)
-    const purchaseData: any = {
-      plan,
-      credits,
-      amount_usd: planDetails.price,
-      coupon_code: validCoupon ? couponCode : null,
-      status: 'completed',
-    };
-    if (userId) purchaseData.user_id = userId;
-    else purchaseData.wallet_address = walletAddr;
-    await (supabase.from('credit_purchases' as any) as any).insert(purchaseData);
+    // Purchase records are written server-side by the Stripe webhook (trusted role only).
+    void plan; void planDetails;
 
     const { data, error } = await (supabase as any).rpc('add_credits', {
       _user_id: userId ?? null,
