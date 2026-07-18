@@ -1,4 +1,4 @@
-import { X, Wrench, Copy, Check, Code2, Eye } from 'lucide-react';
+import { Wrench, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
