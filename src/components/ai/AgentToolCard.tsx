@@ -59,13 +59,45 @@ export function renderResult(name: string, result: any) {
   switch (name) {
     case 'get_market_snapshot':
       return (
-        <div className="space-y-1">
+        <div className="space-y-3">
           {(result.assets || []).map((a: any) => (
-            <div key={a.symbol} className="flex items-center justify-between text-xs py-1 border-b border-border/20 last:border-0">
-              <div className="font-medium">{a.symbol} <span className="text-muted-foreground">· {a.name}</span></div>
-              <div className="flex items-center gap-3">
-                <span>{formatPrice(a.price)}</span>
-                {fmtPct(a.change24h)}
+            <div key={a.symbol} className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-sm">
+                  {a.symbol} <span className="text-muted-foreground font-normal">· {a.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold tabular-nums">{formatPrice(a.price)}</span>
+                  <span className="text-xs">{fmtPct(a.change24h)}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+                {a.change7d != null && (
+                  <div className="rounded bg-background/60 p-1.5">
+                    <div className="text-[9px] uppercase text-muted-foreground">7d</div>
+                    <div>{fmtPct(a.change7d)}</div>
+                  </div>
+                )}
+                {a.marketCap != null && (
+                  <div className="rounded bg-background/60 p-1.5">
+                    <div className="text-[9px] uppercase text-muted-foreground">Market Cap</div>
+                    <div className="tabular-nums">${(a.marketCap / 1e9).toFixed(2)}B</div>
+                  </div>
+                )}
+                {a.volume24h != null && (
+                  <div className="rounded bg-background/60 p-1.5">
+                    <div className="text-[9px] uppercase text-muted-foreground">24h Vol</div>
+                    <div className="tabular-nums">${(a.volume24h / 1e9).toFixed(2)}B</div>
+                  </div>
+                )}
+                {(a.high24h != null || a.low24h != null) && (
+                  <div className="rounded bg-background/60 p-1.5">
+                    <div className="text-[9px] uppercase text-muted-foreground">24h Range</div>
+                    <div className="tabular-nums text-[10px]">
+                      {a.low24h != null ? formatPrice(a.low24h) : '—'} – {a.high24h != null ? formatPrice(a.high24h) : '—'}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
