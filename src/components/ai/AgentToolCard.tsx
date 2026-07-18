@@ -285,9 +285,6 @@ export function renderResult(name: string, result: any) {
             <span className="font-semibold">{s.name}</span>
             <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to={`/auto-trader?tab=strategies&strategyId=${s.id}`}><ExternalLink className="w-3 h-3 mr-1" />Open strategy</Link>
-          </Button>
         </div>
       );
     }
