@@ -56,60 +56,19 @@ export function ArtifactPanel({ artifact, onClose }: ArtifactPanelProps) {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={copy} className="h-8 w-8 p-0" title="Copy JSON">
+            <Button variant="ghost" size="sm" onClick={copy} className="h-8 gap-1.5 text-[11px]" title="Copy JSON">
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-              <X className="w-4 h-4" />
+              {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 px-4 pt-2 border-b border-border/40">
-          <button
-            onClick={() => setTab('preview')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors ${
-              tab === 'preview'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" /> Preview
-          </button>
-          <button
-            onClick={() => setTab('raw')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors ${
-              tab === 'raw'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Code2 className="w-3.5 h-3.5" /> Raw
-          </button>
-        </div>
-
         {/* Body */}
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-4 space-y-4">
-            {tab === 'preview' ? (
-              <div className="rounded-xl border border-border/60 bg-card p-4">
-                {renderResult(call.name, call.result)}
-              </div>
-            ) : (
-              <pre className="text-[11px] bg-muted/40 border border-border/40 rounded-lg p-3 overflow-x-auto leading-relaxed">
-                {JSON.stringify(call.result, null, 2)}
-              </pre>
-            )}
-
-            {call.args && Object.keys(call.args).length > 0 && (
-              <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 px-1">Input parameters</div>
-                <pre className="text-[11px] bg-muted/30 border border-border/40 rounded-lg p-3 overflow-x-auto">
-                  {JSON.stringify(call.args, null, 2)}
-                </pre>
-              </div>
-            )}
+          <div className="p-4">
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              {renderResult(call.name, call.result)}
+            </div>
           </div>
         </ScrollArea>
       </SheetContent>
