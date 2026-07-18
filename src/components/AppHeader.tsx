@@ -115,16 +115,6 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </Button>
 
-          {/* Auto Trader Icon */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/auto-trader')}
-            className="h-8 w-8 relative"
-            title="Auto Trader"
-          >
-            <Cpu className="w-4 h-4 text-primary" />
-          </Button>
 
           {/* Realtime Markets Icon */}
           <Button

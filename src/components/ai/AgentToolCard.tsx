@@ -272,9 +272,6 @@ export function renderResult(name: string, result: any) {
           <div className="flex flex-wrap gap-1">
             {(s.assets || []).map((a: string) => <Badge key={a} variant="outline" className="text-[9px]">{a}</Badge>)}
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to="/auto-trader?tab=strategies"><ExternalLink className="w-3 h-3 mr-1" />Open in Auto-Trader</Link>
-          </Button>
         </div>
       );
     }
@@ -288,9 +285,6 @@ export function renderResult(name: string, result: any) {
             <span className="font-semibold">{s.name}</span>
             <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to={`/auto-trader?tab=strategies&strategyId=${s.id}`}><ExternalLink className="w-3 h-3 mr-1" />Open strategy</Link>
-          </Button>
         </div>
       );
     }
@@ -301,7 +295,7 @@ export function renderResult(name: string, result: any) {
       return (
         <div className="text-xs space-y-1">
           {list.slice(0, 8).map((s: any) => (
-            <Link key={s.id} to={`/auto-trader?tab=strategies&strategyId=${s.id}`} className="flex items-center justify-between py-1 border-b border-border/20 last:border-0 hover:bg-muted/30 rounded px-1 -mx-1">
+            <div key={s.id} className="flex items-center justify-between py-1 border-b border-border/20 last:border-0 rounded px-1 -mx-1">
               <div className="min-w-0">
                 <div className="font-medium truncate">{s.name}</div>
                 <div className="text-[10px] text-muted-foreground capitalize">{s.type} · {s.timeframe} · {(s.assets || []).join(', ')}</div>
@@ -314,7 +308,7 @@ export function renderResult(name: string, result: any) {
                 )}
                 <Badge variant="outline" className="text-[9px] capitalize">{s.status}</Badge>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       );
@@ -360,9 +354,6 @@ export function renderResult(name: string, result: any) {
             <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Sharpe</div><div className="text-sm font-semibold">{Number(m.sharpe ?? 0).toFixed(2)}</div></div>
             <div className="rounded bg-muted/30 p-1.5"><div className="text-muted-foreground uppercase">Max DD</div><div className="text-sm font-semibold text-red-500">-{Number(m.maxDrawdownPct ?? 0).toFixed(1)}%</div></div>
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to={`/auto-trader?tab=backtest${result.strategyId ? `&strategyId=${result.strategyId}` : ''}`}><ExternalLink className="w-3 h-3 mr-1" />Full backtest view</Link>
-          </Button>
         </div>
       );
     }
@@ -396,9 +387,6 @@ export function renderResult(name: string, result: any) {
               ))}
             </div>
           )}
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to="/auto-trader?tab=paper"><ExternalLink className="w-3 h-3 mr-1" />Paper trading dashboard</Link>
-          </Button>
         </div>
       );
     }
@@ -465,9 +453,6 @@ export function renderResult(name: string, result: any) {
             <div className="text-muted-foreground">No targets returned.</div>
           )}
           {rationale && <p className="text-[11px] text-muted-foreground line-clamp-3">{String(rationale)}</p>}
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to="/auto-trader?tab=portfolio"><ExternalLink className="w-3 h-3 mr-1" />Open optimizer</Link>
-          </Button>
         </div>
       );
     }
@@ -493,9 +478,6 @@ export function renderResult(name: string, result: any) {
               </div>
             </div>
           ))}
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full mt-1">
-            <Link to="/auto-trader?tab=arbitrage"><ExternalLink className="w-3 h-3 mr-1" />Live arbitrage feed</Link>
-          </Button>
         </div>
       );
     }
@@ -511,9 +493,6 @@ export function renderResult(name: string, result: any) {
               {suggestions.slice(0, 5).map((s: any, i: number) => <li key={i}>{typeof s === 'string' ? s : (s.text || JSON.stringify(s))}</li>)}
             </ul>
           )}
-          <Button asChild size="sm" variant="outline" className="h-7 text-[11px] w-full">
-            <Link to="/auto-trader?tab=journal"><ExternalLink className="w-3 h-3 mr-1" />Open journal</Link>
-          </Button>
         </div>
       );
     }
