@@ -6,10 +6,11 @@ const corsHeaders = {
 };
 
 const PLANS: Record<string, number> = {
-  starter: 500,
-  pro: 2000,
-  elite: 5000,
+  basic: 150,
+  pro: 800,
+  enterprise: 3500,
 };
+
 const COUPON_CODE = "CryptoAI";
 const COUPON_BONUS = 0.2;
 
