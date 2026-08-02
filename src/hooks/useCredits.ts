@@ -107,23 +107,21 @@ export function useCredits() {
       credits = Math.floor(credits * (1 + COUPON_BONUS));
     }
 
-    // Purchase records are written server-side by the Stripe webhook (trusted role only).
+    // Credits and purchase records are granted server-side only (trusted role)
+    // after payment confirmation. The client can no longer mint credits directly.
     void plan; void planDetails;
 
-    const { data, error } = await (supabase as any).rpc('add_credits', {
-      _user_id: userId ?? null,
-      _wallet: userId ? null : walletAddr,
-      _amount: credits,
-      _type: 'purchase',
-      _description: `Purchased ${plan} plan - ${credits} credits`,
+    const { data, error } = await (supabase as any).functions.invoke('grant-purchase-credits', {
+      body: { credits, plan, coupon: validCoupon ? COUPON_CODE : null },
     });
 
-    if (error) {
-      console.error('add_credits error:', error);
+    if (error || data?.error) {
+      console.error('purchase error:', error || data?.error);
       toast({ title: 'Purchase failed', description: 'Please try again.', variant: 'destructive' });
       return false;
     }
-    if (typeof data === 'number') setBalance(data);
+    if (typeof data?.balance === 'number') setBalance(data.balance);
+
 
     toast({
       title: 'Credits Purchased!',
