@@ -1019,6 +1019,258 @@ export type Database = {
         }
         Relationships: []
       }
+      prediction_market_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          market_id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          market_id: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          market_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_market_events_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_markets: {
+        Row: {
+          asset_symbol: string
+          close_at: string
+          created_at: string
+          creator_id: string
+          direction: string
+          id: string
+          no_price: number
+          observed_price: number | null
+          outcome: string | null
+          participant_count: number
+          question: string
+          resolution_source: string
+          resolve_at: string
+          resolved_at: string | null
+          settlement_note: string | null
+          status: string
+          target_price: number
+          updated_at: string
+          volume_credits: number
+          yes_price: number
+        }
+        Insert: {
+          asset_symbol: string
+          close_at: string
+          created_at?: string
+          creator_id: string
+          direction: string
+          id?: string
+          no_price?: number
+          observed_price?: number | null
+          outcome?: string | null
+          participant_count?: number
+          question: string
+          resolution_source?: string
+          resolve_at: string
+          resolved_at?: string | null
+          settlement_note?: string | null
+          status?: string
+          target_price: number
+          updated_at?: string
+          volume_credits?: number
+          yes_price?: number
+        }
+        Update: {
+          asset_symbol?: string
+          close_at?: string
+          created_at?: string
+          creator_id?: string
+          direction?: string
+          id?: string
+          no_price?: number
+          observed_price?: number | null
+          outcome?: string | null
+          participant_count?: number
+          question?: string
+          resolution_source?: string
+          resolve_at?: string
+          resolved_at?: string | null
+          settlement_note?: string | null
+          status?: string
+          target_price?: number
+          updated_at?: string
+          volume_credits?: number
+          yes_price?: number
+        }
+        Relationships: []
+      }
+      prediction_orders: {
+        Row: {
+          created_at: string
+          id: string
+          market_id: string
+          price: number
+          quantity: number
+          remaining_quantity: number
+          reserved_credits: number
+          side: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          market_id: string
+          price: number
+          quantity: number
+          remaining_quantity?: number
+          reserved_credits?: number
+          side: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          market_id?: string
+          price?: number
+          quantity?: number
+          remaining_quantity?: number
+          reserved_credits?: number
+          side?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_orders_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_positions: {
+        Row: {
+          average_price: number
+          created_at: string
+          id: string
+          market_id: string
+          payout: number
+          quantity: number
+          settled_at: string | null
+          side: string
+          total_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_price?: number
+          created_at?: string
+          id?: string
+          market_id: string
+          payout?: number
+          quantity?: number
+          settled_at?: string | null
+          side: string
+          total_cost?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_price?: number
+          created_at?: string
+          id?: string
+          market_id?: string
+          payout?: number
+          quantity?: number
+          settled_at?: string | null
+          side?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_positions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_trades: {
+        Row: {
+          created_at: string
+          id: string
+          market_id: string
+          order_id: string
+          price: number
+          quantity: number
+          side: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          market_id: string
+          order_id: string
+          price: number
+          quantity: number
+          side: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          market_id?: string
+          order_id?: string
+          price?: number
+          quantity?: number
+          side?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_trades_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_trades_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1527,6 +1779,18 @@ export type Database = {
         Args: { _user_id: string; _wallet: string }
         Returns: number
       }
+      create_prediction_market: {
+        Args: {
+          _asset_symbol: string
+          _close_at: string
+          _direction: string
+          _question: string
+          _resolution_source?: string
+          _resolve_at: string
+          _target_price: number
+        }
+        Returns: string
+      }
       deduct_credits_atomic: {
         Args: {
           _amount: number
@@ -1568,6 +1832,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      place_prediction_order: {
+        Args: {
+          _market_id: string
+          _price: number
+          _quantity: number
+          _side: string
+        }
+        Returns: Json
+      }
       search_public_profiles: {
         Args: { _query: string }
         Returns: {
@@ -1575,6 +1848,15 @@ export type Database = {
           name: string
           user_id: string
         }[]
+      }
+      settle_prediction_market: {
+        Args: {
+          _market_id: string
+          _note?: string
+          _observed_price: number
+          _outcome: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
