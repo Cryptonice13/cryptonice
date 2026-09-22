@@ -1788,6 +1788,7 @@ export type Database = {
           _resolution_source?: string
           _resolve_at: string
           _target_price: number
+          _user_id: string
         }
         Returns: string
       }
@@ -1838,6 +1839,7 @@ export type Database = {
           _price: number
           _quantity: number
           _side: string
+          _user_id: string
         }
         Returns: Json
       }
