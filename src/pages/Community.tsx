@@ -34,6 +34,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
+import { PredictionMarketsTab } from '@/components/community/PredictionMarketsTab';
 
 // ─── Feed Tab ───
 function FeedTab({ onOpenProfile }: { onOpenProfile: (userId: string) => void }) {
@@ -577,7 +578,7 @@ function MessagesTab({ initialFriend, onConsumeInitial }: { initialFriend: { id:
 
 // ─── Main Community Page ───
 export default function Community() {
-  const [tab, setTab] = useState<string>('feed');
+  const [tab, setTab] = useState<string>('markets');
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [pendingChatFriend, setPendingChatFriend] = useState<{ id: string; name: string } | null>(null);
@@ -598,17 +599,21 @@ export default function Community() {
       <AppHeader activePage="community" />
       <main className="pt-16 pb-24 lg:pb-8 px-4 max-w-2xl mx-auto">
         <div className="py-4">
-          <h1 className="text-xl font-bold">Community</h1>
-          <p className="text-sm text-muted-foreground">Share strategies, connect with traders</p>
+           <h1 className="text-xl font-bold">Community markets</h1>
+           <p className="text-sm text-muted-foreground">Trade crypto predictions with the community</p>
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-4">
+           <TabsList className="w-full grid grid-cols-4 mb-4">
+             <TabsTrigger value="markets">Markets</TabsTrigger>
             <TabsTrigger value="feed">Feed</TabsTrigger>
             <TabsTrigger value="friends">Friends</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
           </TabsList>
 
+           <TabsContent value="markets">
+             <PredictionMarketsTab />
+           </TabsContent>
           <TabsContent value="feed">
             <FeedTab onOpenProfile={handleOpenProfile} />
           </TabsContent>

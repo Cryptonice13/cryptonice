@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(
+    const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
 
     // ---- Settlement sweep: no user identity, safe to run publicly ----
     if (action === "settle_due") {
-      const { data: due, error } = await admin
+      const { data: due, error } = await serviceClient
         .from("prediction_markets")
         .select("id, asset_symbol, target_price, direction, resolution_source, resolve_at, status")
         .in("status", ["open", "closed"])
@@ -119,14 +119,14 @@ Deno.serve(async (req) => {
 
       for (const market of due ?? []) {
         if (market.resolution_source !== "coingecko") {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
 
         const price = await fetchSpotPrice(market.asset_symbol);
         if (price === null) {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
           ? (price > target ? "yes" : "no")
           : (price < target ? "yes" : "no");
 
-        const { error: settleError } = await admin.rpc("settle_prediction_market", {
+        const { error: settleError } = await serviceClient.rpc("settle_prediction_market", {
           _market_id: market.id,
           _outcome: outcome,
           _observed_price: price,
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         });
 
         if (settleError) {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       }
 
       // Close markets whose trading window ended but settlement is not due yet.
-      await admin
+      await serviceClient
         .from("prediction_markets")
         .update({ status: "closed" })
         .eq("status", "open")
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
 
     // ---- Everything below requires a verified signed-in user ----
     const authHeader = req.headers.get("Authorization") ?? "";
-    const anon = createClient(
+    const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
@@ -205,8 +205,7 @@ Deno.serve(async (req) => {
         return json({ error: ERROR_MESSAGES.invalid_market_times }, 400);
       }
 
-      const { data, error } = await admin.rpc("create_prediction_market", {
-        _user_id: user.id,
+      const { data, error } = await userClient.rpc("create_prediction_market", {
         _question: question,
         _asset_symbol: assetSymbol,
         _target_price: targetPrice,
@@ -239,8 +238,7 @@ Deno.serve(async (req) => {
         return json({ error: ERROR_MESSAGES.invalid_order }, 400);
       }
 
-      const { data, error } = await admin.rpc("place_prediction_order", {
-        _user_id: user.id,
+      const { data, error } = await userClient.rpc("place_prediction_order", {
         _market_id: marketId,
         _side: side,
         _price: price,
