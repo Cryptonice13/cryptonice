@@ -205,7 +205,8 @@ Deno.serve(async (req) => {
         return json({ error: ERROR_MESSAGES.invalid_market_times }, 400);
       }
 
-      const { data, error } = await userClient.rpc("create_prediction_market", {
+      const { data, error } = await serviceClient.rpc("create_prediction_market", {
+        _user_id: user.id,
         _question: question,
         _asset_symbol: assetSymbol,
         _target_price: targetPrice,
@@ -238,7 +239,8 @@ Deno.serve(async (req) => {
         return json({ error: ERROR_MESSAGES.invalid_order }, 400);
       }
 
-      const { data, error } = await userClient.rpc("place_prediction_order", {
+      const { data, error } = await serviceClient.rpc("place_prediction_order", {
+        _user_id: user.id,
         _market_id: marketId,
         _side: side,
         _price: price,
