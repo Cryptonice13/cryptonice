@@ -3,12 +3,9 @@
 // Community prediction markets. All credit and position changes happen inside
 // protected database functions called with the service role.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod";
 
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
@@ -30,6 +27,26 @@ const SYMBOL_TO_ID: Record<string, string> = {
   ARB: "arbitrum",
   OP: "optimism",
 };
+
+const CreateMarketSchema = z.object({
+  action: z.literal("create_market"),
+  question: z.string().trim().min(15).max(240),
+  assetSymbol: z.string().trim().toUpperCase().refine(value => Boolean(SYMBOL_TO_ID[value])),
+  targetPrice: z.number().finite().positive().max(100_000_000),
+  direction: z.enum(["above", "below"]),
+  closeAt: z.string().datetime(),
+  resolveAt: z.string().datetime(),
+});
+
+const PlaceOrderSchema = z.object({
+  action: z.literal("place_order"),
+  marketId: z.string().uuid(),
+  side: z.enum(["yes", "no"]),
+  price: z.number().int().min(1).max(99),
+  quantity: z.number().int().min(1).max(100_000),
+});
+
+const SettleDueSchema = z.object({ action: z.literal("settle_due") });
 
 export const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_TO_ID);
 
@@ -89,7 +106,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(
+    const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
@@ -101,11 +118,28 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid request." }, 400);
     }
 
+    // Every action requires a verified signed-in user, including settlement sweeps.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: userData } = await anon.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      return json({ error: "Please sign in to continue." }, 401);
+    }
+
     const action = String(body.action ?? "");
 
-    // ---- Settlement sweep: no user identity, safe to run publicly ----
+    // ---- Settlement sweep ----
     if (action === "settle_due") {
-      const { data: due, error } = await admin
+      const parsed = SettleDueSchema.safeParse(body);
+      if (!parsed.success) return json({ error: "Invalid request." }, 400);
+
+      const { data: due, error } = await serviceClient
         .from("prediction_markets")
         .select("id, asset_symbol, target_price, direction, resolution_source, resolve_at, status")
         .in("status", ["open", "closed"])
@@ -119,14 +153,14 @@ Deno.serve(async (req) => {
 
       for (const market of due ?? []) {
         if (market.resolution_source !== "coingecko") {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
 
         const price = await fetchSpotPrice(market.asset_symbol);
         if (price === null) {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
@@ -136,7 +170,7 @@ Deno.serve(async (req) => {
           ? (price > target ? "yes" : "no")
           : (price < target ? "yes" : "no");
 
-        const { error: settleError } = await admin.rpc("settle_prediction_market", {
+        const { error: settleError } = await serviceClient.rpc("settle_prediction_market", {
           _market_id: market.id,
           _outcome: outcome,
           _observed_price: price,
@@ -144,15 +178,14 @@ Deno.serve(async (req) => {
         });
 
         if (settleError) {
-          await admin.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
+          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
           needsReview.push(market.id);
           continue;
         }
         settled.push(market.id);
       }
 
-      // Close markets whose trading window ended but settlement is not due yet.
-      await admin
+      await serviceClient
         .from("prediction_markets")
         .update({ status: "closed" })
         .eq("status", "open")
@@ -162,50 +195,17 @@ Deno.serve(async (req) => {
       return json({ settled: settled.length, needsReview: needsReview.length });
     }
 
-    // ---- Everything below requires a verified signed-in user ----
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const anon = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const { data: userData } = await anon.auth.getUser();
-    const user = userData?.user;
-    if (!user) {
-      return json({ error: "Please sign in to continue." }, 401);
-    }
-
     if (action === "create_market") {
-      const question = String(body.question ?? "").trim();
-      const assetSymbol = String(body.assetSymbol ?? "").trim().toUpperCase();
-      const targetPrice = Number(body.targetPrice);
-      const direction = String(body.direction ?? "").trim().toLowerCase();
-      const closeAt = String(body.closeAt ?? "");
-      const resolveAt = String(body.resolveAt ?? "");
-
-      if (question.length < 15 || question.length > 240) {
-        return json({ error: ERROR_MESSAGES.invalid_question }, 400);
-      }
-      if (!SYMBOL_TO_ID[assetSymbol]) {
-        return json({ error: ERROR_MESSAGES.invalid_asset }, 400);
-      }
-      if (!isFiniteNumber(targetPrice) || targetPrice <= 0) {
-        return json({ error: ERROR_MESSAGES.invalid_target_price }, 400);
-      }
-      if (direction !== "above" && direction !== "below") {
-        return json({ error: ERROR_MESSAGES.invalid_direction }, 400);
-      }
+      const parsed = CreateMarketSchema.safeParse(body);
+      if (!parsed.success) return json({ error: "Please check the market details and try again." }, 400);
+      const { question, assetSymbol, targetPrice, direction, closeAt, resolveAt } = parsed.data;
       const closeTime = Date.parse(closeAt);
       const resolveTime = Date.parse(resolveAt);
-      if (!Number.isFinite(closeTime) || !Number.isFinite(resolveTime)) {
-        return json({ error: ERROR_MESSAGES.invalid_market_times }, 400);
-      }
       if (closeTime <= Date.now() || resolveTime <= closeTime) {
         return json({ error: ERROR_MESSAGES.invalid_market_times }, 400);
       }
 
-      const { data, error } = await admin.rpc("create_prediction_market", {
+      const { data, error } = await serviceClient.rpc("create_prediction_market", {
         _user_id: user.id,
         _question: question,
         _asset_symbol: assetSymbol,
@@ -221,25 +221,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "place_order") {
-      const marketId = String(body.marketId ?? "");
-      const side = String(body.side ?? "").trim().toLowerCase();
-      const price = Number(body.price);
-      const quantity = Number(body.quantity);
+      const parsed = PlaceOrderSchema.safeParse(body);
+      if (!parsed.success) return json({ error: ERROR_MESSAGES.invalid_order }, 400);
+      const { marketId, side, price, quantity } = parsed.data;
 
-      if (!/^[0-9a-f-]{36}$/i.test(marketId)) {
-        return json({ error: ERROR_MESSAGES.market_not_found }, 400);
-      }
-      if (side !== "yes" && side !== "no") {
-        return json({ error: ERROR_MESSAGES.invalid_side }, 400);
-      }
-      if (!Number.isInteger(price) || price < 1 || price > 99) {
-        return json({ error: ERROR_MESSAGES.invalid_order }, 400);
-      }
-      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) {
-        return json({ error: ERROR_MESSAGES.invalid_order }, 400);
-      }
-
-      const { data, error } = await admin.rpc("place_prediction_order", {
+      const { data, error } = await serviceClient.rpc("place_prediction_order", {
         _user_id: user.id,
         _market_id: marketId,
         _side: side,
