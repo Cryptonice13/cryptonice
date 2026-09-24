@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.market-data-ccxt]
 verify_jwt = false
+
+[functions.prediction-markets]
+verify_jwt = false
