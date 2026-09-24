@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: userData } = await anon.auth.getUser();
+    const { data: userData } = await userClient.auth.getUser();
     const user = userData?.user;
     if (!user) {
       return json({ error: "Please sign in to continue." }, 401);
