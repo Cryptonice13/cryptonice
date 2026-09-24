@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface FearGreedData {
@@ -12,11 +10,14 @@ interface FearGreedData {
 }
 
 function getGaugeColor(value: number): string {
-  if (value <= 25) return 'hsl(0, 84%, 50%)';
-  if (value <= 45) return 'hsl(30, 90%, 50%)';
-  if (value <= 55) return 'hsl(45, 90%, 50%)';
-  if (value <= 75) return 'hsl(100, 70%, 45%)';
-  return 'hsl(160, 84%, 45%)';
+  if (value <= 25) return 'hsl(var(--sentiment-fear))';
+  if (value <= 55) return 'hsl(var(--sentiment-caution))';
+  if (value <= 75) return 'hsl(var(--sentiment-greed))';
+  return 'hsl(var(--sentiment-extreme))';
+}
+
+function getChangeClass(value: number): string {
+  return value >= 0 ? 'text-sentiment-extreme' : 'text-sentiment-fear';
 }
 
 function getLabel(value: number): string {
@@ -96,9 +97,9 @@ export function FearGreedGauge() {
 
   if (isLoading) {
     return (
-      <Card className="glass-card p-4 flex items-center justify-center h-[140px]">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      </Card>
+      <div className="flex h-[260px] items-center justify-center" aria-label="Loading market sentiment">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -112,140 +113,120 @@ export function FearGreedGauge() {
   const range = Math.max(maxVal - minVal, 1);
 
   return (
-    <Card className="glass-card p-4 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+    <div className="overflow-hidden p-4 sm:p-5">
+      <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold flex items-center gap-1.5">
-            Market Sentiment
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: gaugeColor }} />
+          <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase text-muted-foreground">
+            <Activity className="h-3 w-3 text-primary" /> Live market mood
+          </p>
+          <h3 className="text-base font-semibold">
+            Fear &amp; Greed Index
           </h3>
-          <p className="text-[10px] text-muted-foreground">Fear & Greed Index · Updated daily</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Updated daily from broad crypto-market signals</p>
         </div>
-        <div 
-          className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-          style={{ backgroundColor: `${gaugeColor}20`, color: gaugeColor }}
-        >
-          {data.value <= 40 ? <TrendingDown className="w-3.5 h-3.5" /> : data.value <= 60 ? <Minus className="w-3.5 h-3.5" /> : <TrendingUp className="w-3.5 h-3.5" />}
+        <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-semibold" style={{ color: gaugeColor }}>
+          {data.value <= 40 ? <TrendingDown className="h-3.5 w-3.5" /> : data.value <= 60 ? <Minus className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
           {label}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Left: Gauge + Score */}
-        <div className="flex flex-col items-center">
-          <div className="relative w-[140px] h-[78px]">
-            <svg viewBox="0 0 140 78" className="w-full h-full">
-              {/* Background arc segments */}
+      <div className="grid grid-cols-1 gap-4 @sm:grid-cols-[minmax(150px,0.8fr)_minmax(190px,1.2fr)]">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border/60 bg-muted/20 px-3 py-4">
+          <div className="relative h-[92px] w-[168px]">
+            <svg viewBox="0 0 168 92" className="h-full w-full" aria-label={`Market sentiment score ${data.value} out of 100`} role="img">
               {[
-                { start: 0, end: 0.2, color: 'hsl(0, 84%, 50%)' },
-                { start: 0.2, end: 0.4, color: 'hsl(30, 90%, 50%)' },
-                { start: 0.4, end: 0.6, color: 'hsl(45, 90%, 50%)' },
-                { start: 0.6, end: 0.8, color: 'hsl(100, 70%, 45%)' },
-                { start: 0.8, end: 1, color: 'hsl(160, 84%, 45%)' },
+                { start: 0, end: 0.2, color: 'hsl(var(--sentiment-fear))' },
+                { start: 0.2, end: 0.4, color: 'hsl(var(--sentiment-caution))' },
+                { start: 0.4, end: 0.6, color: 'hsl(var(--sentiment-caution))' },
+                { start: 0.6, end: 0.8, color: 'hsl(var(--sentiment-greed))' },
+                { start: 0.8, end: 1, color: 'hsl(var(--sentiment-extreme))' },
               ].map((seg, i) => {
                 const startAngle = Math.PI + seg.start * Math.PI;
                 const endAngle = Math.PI + seg.end * Math.PI;
-                const x1 = 70 + 55 * Math.cos(startAngle);
-                const y1 = 70 + 55 * Math.sin(startAngle);
-                const x2 = 70 + 55 * Math.cos(endAngle);
-                const y2 = 70 + 55 * Math.sin(endAngle);
+                const x1 = 84 + 67 * Math.cos(startAngle);
+                const y1 = 82 + 67 * Math.sin(startAngle);
+                const x2 = 84 + 67 * Math.cos(endAngle);
+                const y2 = 82 + 67 * Math.sin(endAngle);
                 return (
                   <path
                     key={i}
-                    d={`M ${x1} ${y1} A 55 55 0 0 1 ${x2} ${y2}`}
+                    d={`M ${x1} ${y1} A 67 67 0 0 1 ${x2} ${y2}`}
                     fill="none"
                     stroke={seg.color}
-                    strokeWidth="10"
+                    strokeWidth="11"
                     strokeLinecap="butt"
-                    opacity={0.15}
+                    opacity={0.22}
                   />
                 );
               })}
-              {/* Active arc */}
               <path
-                d={`M ${70 + 55 * Math.cos(Math.PI)} ${70 + 55 * Math.sin(Math.PI)} A 55 55 0 ${data.value > 50 ? 1 : 0} 1 ${
-                  70 + 55 * Math.cos(Math.PI + (data.value / 100) * Math.PI)
-                } ${70 + 55 * Math.sin(Math.PI + (data.value / 100) * Math.PI)}`}
+                d={`M ${84 + 67 * Math.cos(Math.PI)} ${82 + 67 * Math.sin(Math.PI)} A 67 67 0 ${data.value > 50 ? 1 : 0} 1 ${
+                  84 + 67 * Math.cos(Math.PI + (data.value / 100) * Math.PI)
+                } ${82 + 67 * Math.sin(Math.PI + (data.value / 100) * Math.PI)}`}
                 fill="none"
                 stroke={gaugeColor}
-                strokeWidth="10"
+                strokeWidth="11"
                 strokeLinecap="round"
-                style={{ filter: `drop-shadow(0 0 8px ${gaugeColor}50)` }}
               />
-              {/* Needle */}
               <motion.line
-                x1="70"
-                y1="70"
-                x2="70"
-                y2="22"
+                x1="84"
+                y1="82"
+                x2="84"
+                y2="28"
                 stroke="hsl(var(--foreground))"
                 strokeWidth="2"
                 strokeLinecap="round"
                 initial={{ rotate: -90 }}
                 animate={{ rotate: angle }}
                 transition={{ type: 'spring', stiffness: 60, damping: 15 }}
-                style={{ transformOrigin: '70px 70px' }}
+                style={{ transformOrigin: '84px 82px' }}
               />
-              <circle cx="70" cy="70" r="5" fill={gaugeColor} />
-              <circle cx="70" cy="70" r="2.5" fill="hsl(var(--background))" />
-              {/* Scale labels */}
-              <text x="8" y="74" fontSize="8" fill="hsl(0, 84%, 50%)" fontWeight="600">0</text>
-              <text x="126" y="74" fontSize="8" fill="hsl(160, 84%, 45%)" fontWeight="600">100</text>
-              <text x="63" y="10" fontSize="8" fill="hsl(var(--muted-foreground))" fontWeight="500">50</text>
+              <circle cx="84" cy="82" r="5" fill={gaugeColor} />
+              <circle cx="84" cy="82" r="2.5" fill="hsl(var(--background))" />
+              <text x="8" y="89" fontSize="8" fill="hsl(var(--sentiment-fear))" fontWeight="600">0</text>
+              <text x="147" y="89" fontSize="8" fill="hsl(var(--sentiment-extreme))" fontWeight="600">100</text>
             </svg>
           </div>
-          <motion.p
-            className="text-3xl font-bold mt-1"
-            style={{ color: gaugeColor }}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            {data.value}
-          </motion.p>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <motion.p className="text-4xl font-bold" style={{ color: gaugeColor }} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{data.value}</motion.p>
+            <span className="text-xs text-muted-foreground">/ 100</span>
+          </div>
           {analytics && (
-            <div className="flex items-center gap-3 mt-1">
-              <span className={`text-[11px] font-medium flex items-center gap-0.5 ${
-                analytics.dailyChange >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}>
-                {analytics.dailyChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            <div className="mt-2 flex items-center gap-3">
+              <span className={`flex items-center gap-0.5 text-[11px] font-medium ${getChangeClass(analytics.dailyChange)}`}>
+                {analytics.dailyChange >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {analytics.dailyChange >= 0 ? '+' : ''}{analytics.dailyChange} 24h
               </span>
-              <span className={`text-[11px] font-medium flex items-center gap-0.5 ${
-                analytics.weeklyChange >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}>
-                {analytics.weeklyChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              <span className={`flex items-center gap-0.5 text-[11px] font-medium ${getChangeClass(analytics.weeklyChange)}`}>
+                {analytics.weeklyChange >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {analytics.weeklyChange >= 0 ? '+' : ''}{analytics.weeklyChange} 7d
               </span>
             </div>
           )}
         </div>
 
-        {/* Right: Trend chart + Stats */}
-        <div className="space-y-3">
-          {/* 7-day bar chart */}
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5">
           {data.history.length > 1 && (
             <div>
-              <p className="text-[10px] text-muted-foreground font-medium mb-1.5">7-Day Trend</p>
-              <div className="flex items-end gap-1 h-[48px]">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-medium">7-day momentum</p>
+                <span className="text-[10px] text-muted-foreground">Oldest → Today</span>
+              </div>
+              <div className="flex h-[72px] items-end gap-1.5">
                 {data.history.slice().reverse().map((h, i) => {
-                  const barHeight = ((h.value - minVal) / range) * 40 + 8;
+                  const barHeight = ((h.value - minVal) / range) * 48 + 16;
                   const barColor = getGaugeColor(h.value);
                   const isToday = i === data.history.length - 1;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`${getDayLabel(data.history.length - 1 - i)}: ${h.value}`}>
+                    <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1" title={`${getDayLabel(data.history.length - 1 - i)}: ${h.value}`}>
                       <motion.div
                         className="w-full rounded-sm"
-                        style={{
-                          backgroundColor: barColor,
-                          opacity: isToday ? 1 : 0.5,
-                          boxShadow: isToday ? `0 0 8px ${barColor}40` : 'none',
-                        }}
+                        style={{ backgroundColor: barColor, opacity: isToday ? 1 : 0.48 }}
                         initial={{ height: 0 }}
                         animate={{ height: barHeight }}
                         transition={{ delay: i * 0.05, type: 'spring', stiffness: 100 }}
                       />
-                      <span className="text-[8px] text-muted-foreground leading-none">
+                      <span className="text-[9px] leading-none text-muted-foreground">
                         {getDayLabel(data.history.length - 1 - i).slice(0, 2)}
                       </span>
                     </div>
@@ -255,35 +236,27 @@ export function FearGreedGauge() {
             </div>
           )}
 
-          {/* Stats grid */}
           {analytics && (
-            <div className="grid grid-cols-3 gap-2">
-              <div className="text-center">
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Avg</p>
-                <p className="text-sm font-bold" style={{ color: getGaugeColor(analytics.avg) }}>{analytics.avg}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">High</p>
-                <p className="text-sm font-bold" style={{ color: getGaugeColor(analytics.high) }}>{analytics.high}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Low</p>
-                <p className="text-sm font-bold" style={{ color: getGaugeColor(analytics.low) }}>{analytics.low}</p>
-              </div>
+            <div className="mt-3 grid grid-cols-3 divide-x divide-border/60 border-t border-border/60 pt-3">
+              {[['Average', analytics.avg], ['High', analytics.high], ['Low', analytics.low]].map(([name, value]) => (
+                <div className="text-center" key={name}>
+                  <p className="text-[9px] uppercase text-muted-foreground">{name}</p>
+                  <p className="mt-0.5 text-sm font-bold" style={{ color: getGaugeColor(Number(value)) }}>{value}</p>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* AI Analysis */}
       {analytics && (
-        <div className="mt-3 pt-3 border-t border-border/50">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            <span className="font-semibold text-foreground">Analysis: </span>
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="mb-1 text-[10px] font-semibold uppercase text-primary">Market read</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {getAnalysis(data.value, analytics.weeklyChange)}
           </p>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
