@@ -56,6 +56,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sentiment: {
+          fear: "hsl(var(--sentiment-fear))",
+          caution: "hsl(var(--sentiment-caution))",
+          greed: "hsl(var(--sentiment-greed))",
+          extreme: "hsl(var(--sentiment-extreme))",
+        },
       },
       keyframes: {
         marquee: {
