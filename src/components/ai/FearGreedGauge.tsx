@@ -130,7 +130,7 @@ export function FearGreedGauge() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 @sm:grid-cols-[minmax(150px,0.8fr)_minmax(190px,1.2fr)]">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(150px,0.8fr)_minmax(190px,1.2fr)]">
         <div className="flex flex-col items-center justify-center rounded-lg border border-border/60 bg-muted/20 px-3 py-4">
           <div className="relative h-[92px] w-[168px]">
             <svg viewBox="0 0 168 92" className="h-full w-full" aria-label={`Market sentiment score ${data.value} out of 100`} role="img">
