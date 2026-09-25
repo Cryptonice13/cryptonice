@@ -131,66 +131,68 @@ export function FearGreedGauge() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(150px,0.8fr)_minmax(190px,1.2fr)]">
-        <div className="flex flex-col items-center justify-center rounded-lg border border-border/60 bg-muted/20 px-3 py-4">
-          <div className="relative h-[92px] w-[168px]">
-            <svg viewBox="0 0 168 92" className="h-full w-full" aria-label={`Market sentiment score ${data.value} out of 100`} role="img">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border/60 bg-muted/20 px-4 py-5">
+          <div className="relative h-[126px] w-full max-w-[238px]">
+            <svg viewBox="0 0 220 126" className="h-full w-full overflow-visible font-mono" aria-label={`Market sentiment score ${data.value} out of 100`} role="img">
               {[
-                { start: 0, end: 0.2, color: 'hsl(var(--sentiment-fear))' },
-                { start: 0.2, end: 0.4, color: 'hsl(var(--sentiment-caution))' },
-                { start: 0.4, end: 0.6, color: 'hsl(var(--sentiment-caution))' },
-                { start: 0.6, end: 0.8, color: 'hsl(var(--sentiment-greed))' },
-                { start: 0.8, end: 1, color: 'hsl(var(--sentiment-extreme))' },
+                { start: 0, end: 0.19, color: 'hsl(var(--sentiment-fear))' },
+                { start: 0.21, end: 0.39, color: 'hsl(var(--sentiment-caution))' },
+                { start: 0.41, end: 0.59, color: 'hsl(var(--muted-foreground))' },
+                { start: 0.61, end: 0.79, color: 'hsl(var(--sentiment-greed))' },
+                { start: 0.81, end: 1, color: 'hsl(var(--sentiment-extreme))' },
               ].map((seg, i) => {
                 const startAngle = Math.PI + seg.start * Math.PI;
                 const endAngle = Math.PI + seg.end * Math.PI;
-                const x1 = 84 + 67 * Math.cos(startAngle);
-                const y1 = 82 + 67 * Math.sin(startAngle);
-                const x2 = 84 + 67 * Math.cos(endAngle);
-                const y2 = 82 + 67 * Math.sin(endAngle);
+                const x1 = 110 + 86 * Math.cos(startAngle);
+                const y1 = 104 + 86 * Math.sin(startAngle);
+                const x2 = 110 + 86 * Math.cos(endAngle);
+                const y2 = 104 + 86 * Math.sin(endAngle);
                 return (
                   <path
                     key={i}
-                    d={`M ${x1} ${y1} A 67 67 0 0 1 ${x2} ${y2}`}
+                    d={`M ${x1} ${y1} A 86 86 0 0 1 ${x2} ${y2}`}
                     fill="none"
                     stroke={seg.color}
-                    strokeWidth="11"
-                    strokeLinecap="butt"
-                    opacity={0.22}
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    opacity={0.3}
                   />
                 );
               })}
               <path
-                d={`M ${84 + 67 * Math.cos(Math.PI)} ${82 + 67 * Math.sin(Math.PI)} A 67 67 0 ${data.value > 50 ? 1 : 0} 1 ${
-                  84 + 67 * Math.cos(Math.PI + (data.value / 100) * Math.PI)
-                } ${82 + 67 * Math.sin(Math.PI + (data.value / 100) * Math.PI)}`}
+                d={`M ${110 + 86 * Math.cos(Math.PI)} ${104 + 86 * Math.sin(Math.PI)} A 86 86 0 ${data.value > 50 ? 1 : 0} 1 ${
+                  110 + 86 * Math.cos(Math.PI + (data.value / 100) * Math.PI)
+                } ${104 + 86 * Math.sin(Math.PI + (data.value / 100) * Math.PI)}`}
                 fill="none"
                 stroke={gaugeColor}
-                strokeWidth="11"
+                strokeWidth="14"
                 strokeLinecap="round"
               />
               <motion.line
-                x1="84"
-                y1="82"
-                x2="84"
-                y2="28"
+                x1="110"
+                y1="104"
+                x2="110"
+                y2="39"
                 stroke="hsl(var(--foreground))"
-                strokeWidth="2"
+                strokeWidth="3"
                 strokeLinecap="round"
                 initial={{ rotate: -90 }}
                 animate={{ rotate: angle }}
                 transition={{ type: 'spring', stiffness: 60, damping: 15 }}
-                style={{ transformOrigin: '84px 82px' }}
+                style={{ transformOrigin: '110px 104px' }}
               />
-              <circle cx="84" cy="82" r="5" fill={gaugeColor} />
-              <circle cx="84" cy="82" r="2.5" fill="hsl(var(--background))" />
-              <text x="8" y="89" fontSize="8" fill="hsl(var(--sentiment-fear))" fontWeight="600">0</text>
-              <text x="147" y="89" fontSize="8" fill="hsl(var(--sentiment-extreme))" fontWeight="600">100</text>
+              <circle cx="110" cy="104" r="8" fill={gaugeColor} />
+              <circle cx="110" cy="104" r="3" fill="hsl(var(--background))" />
+              <text x="18" y="124" fontSize="9" fill="hsl(var(--muted-foreground))" fontWeight="600">0</text>
+              <text x="188" y="124" fontSize="9" fill="hsl(var(--muted-foreground))" fontWeight="600">100</text>
+              <text x="110" y="20" textAnchor="middle" fontSize="8" fill="hsl(var(--muted-foreground))" fontWeight="600">50</text>
             </svg>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <motion.p className="text-4xl font-bold" style={{ color: gaugeColor }} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{data.value}</motion.p>
-            <span className="text-xs text-muted-foreground">/ 100</span>
+          <div className="-mt-1 flex items-baseline gap-1.5 font-mono">
+            <motion.p className="text-4xl font-bold tabular-nums" style={{ color: gaugeColor }} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{data.value}</motion.p>
+            <span className="text-[10px] uppercase text-muted-foreground">score</span>
           </div>
+          <p className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">Fear <span className="mx-1.5 text-border">•</span> Neutral <span className="mx-1.5 text-border">•</span> Greed</p>
           {analytics && (
             <div className="mt-2 flex items-center gap-3">
               <span className={`flex items-center gap-0.5 text-[11px] font-medium ${getChangeClass(analytics.dailyChange)}`}>
