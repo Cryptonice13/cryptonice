@@ -155,19 +155,10 @@ export function FearGreedGauge() {
                     stroke={seg.color}
                     strokeWidth="14"
                     strokeLinecap="round"
-                    opacity={0.3}
+                    opacity={data.value / 100 >= seg.start ? 1 : 0.22}
                   />
                 );
               })}
-              <path
-                d={`M ${110 + 86 * Math.cos(Math.PI)} ${104 + 86 * Math.sin(Math.PI)} A 86 86 0 ${data.value > 50 ? 1 : 0} 1 ${
-                  110 + 86 * Math.cos(Math.PI + (data.value / 100) * Math.PI)
-                } ${104 + 86 * Math.sin(Math.PI + (data.value / 100) * Math.PI)}`}
-                fill="none"
-                stroke={gaugeColor}
-                strokeWidth="14"
-                strokeLinecap="round"
-              />
               <motion.line
                 x1="110"
                 y1="104"
