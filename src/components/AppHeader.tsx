@@ -1,8 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { handleMobileDeepLink, hasInjectedProvider } from '@/lib/walletConnect';
-import { Bot, Wallet, Settings, User, LogOut, Brain, Zap, Bell, Radio, Cpu } from 'lucide-react';
+import { Wallet, Settings, User, LogOut, Brain, Zap, Bell } from 'lucide-react';
 import cryptoaiLogo from '@/assets/cryptonice-logo.png';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +21,12 @@ interface AppHeaderProps {
 }
 
 const navItems = [
-  { key: 'chat', label: 'AI Agent', path: '/chat' },
+  { key: 'chat', label: 'Chat', path: '/chat' },
+  { key: 'realtime', label: 'Realtime Market', path: '/realtime' },
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
-export default function AppHeader({ activePage, rightContent }: AppHeaderProps) {
+export default function AppHeader({ rightContent }: AppHeaderProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
@@ -66,17 +67,17 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav aria-label="Main menu" className="hidden lg:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
           {navItems.map((item) => (
-            <Link
+            <NavLink
               key={item.key}
               to={item.path}
-              className={`text-sm font-medium transition-colors ${
-                activePage === item.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              className={({ isActive }) => `text-sm font-medium transition-colors ${
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
 
@@ -115,18 +116,6 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </Button>
 
-
-          {/* Realtime Markets Icon */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/realtime')}
-            className="h-8 w-8 relative"
-            title="Realtime Markets"
-          >
-            <Radio className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          </Button>
 
           {/* Profile Icon */}
           <Button
