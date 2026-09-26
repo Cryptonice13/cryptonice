@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { History, Plus, PanelRight, LineChart, Cpu, Trophy, Radio, X } from 'lucide-react';
+import { Plus, PanelRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatInterface } from '@/components/ai/ChatInterface';
@@ -22,8 +21,9 @@ import { usePortfolioDb } from '@/hooks/usePortfolioDb';
 import { supabase } from '@/integrations/supabase/client';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import type { ToolCall } from '@/components/ai/AgentToolCard';
 
-const VALID_TABS = ['markets', 'strategy', 'signals', 'realtime'] as const;
+const VALID_TABS = ['agent', 'markets', 'strategy'] as const;
 
 export default function Chat() {
   const { user } = useAuth();
@@ -37,6 +37,7 @@ export default function Chat() {
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const [mobileWorkspaceOpen, setMobileWorkspaceOpen] = useState(false);
+  const [artifactRequest, setArtifactRequest] = useState<{ call: ToolCall; id: number } | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<CryptoAsset | null>(null);
 
   const { assets } = useMarketData();
@@ -134,15 +135,18 @@ export default function Chat() {
     return await saveMessageToDb(role, content, conversationId);
   };
 
-  // Inject strategy results into chat as assistant message
-  const handleStrategyResult = async (markdown: string) => {
-    setMessages((prev: any[]) => [...prev, { role: 'assistant', content: markdown }]);
+  // Workspace output belongs to the conversation, not only the workspace drawer.
+  const handleStrategyResult = async (markdown: string, artifact?: ToolCall) => {
+    const content = artifact ? `${markdown}\n\n<!--tools:${JSON.stringify([artifact])}-->` : markdown;
+    setMessages((prev: any[]) => [...prev, { role: 'assistant', content }]);
+    setMobileWorkspaceOpen(false);
+    if (artifact) setArtifactRequest({ call: artifact, id: Date.now() });
     let convId = currentConversationId;
     if (!convId) {
-      const conv = await createConversation('Strategy result');
+      const conv = await createConversation('Agent analysis');
       if (conv) convId = conv.id;
     }
-    if (convId) await saveMessageToDb('assistant', markdown, convId);
+    if (convId) await saveMessageToDb('assistant', content, convId);
   };
 
   const headerRight = (
@@ -188,11 +192,11 @@ export default function Chat() {
 
       {/* Mobile workspace sheet (opened from bottom nav center button) */}
       <Sheet open={mobileWorkspaceOpen} onOpenChange={setMobileWorkspaceOpen}>
-        <SheetContent side="right" className="w-[95%] sm:w-[480px] p-0 flex flex-col">
+        <SheetContent side="right" className="w-full sm:w-[480px] p-0 flex flex-col gap-0">
           <SheetHeader className="p-4 border-b border-border/50">
             <SheetTitle>Agent Workspace</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <AgentWorkspace
               tab={workspaceTab}
               onTabChange={setWorkspaceTab}
@@ -219,11 +223,11 @@ export default function Chat() {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] min-h-0 bg-background flex flex-col overflow-hidden">
       <AppHeader rightContent={headerRight} />
 
-      <main className="flex-1 flex flex-col pt-12 pb-16 lg:pb-0">
-        <div className="flex-1 flex">
+      <main className="flex-1 min-h-0 flex flex-col pt-12 pb-16 lg:pb-0">
+        <div className="flex-1 min-h-0 flex">
           {/* Left: Conversations */}
           <div className="hidden lg:block h-[calc(100vh-48px)] sticky top-12">
             <ChatSidebar
@@ -238,7 +242,7 @@ export default function Chat() {
           </div>
 
           {/* Center: Chat */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden">
             {selectedAsset && (
               <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/30 bg-muted/20">
                 <Badge variant="outline" className="gap-1.5 text-xs">
@@ -248,7 +252,7 @@ export default function Chat() {
                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setSelectedAsset(null)}>
                   <X className="w-3 h-3" />
                 </Button>
-                <span className="text-[10px] text-muted-foreground ml-auto">
+                <span className="hidden sm:inline text-[10px] text-muted-foreground ml-auto">
                   Sent with each message to the agent
                 </span>
               </div>
@@ -263,7 +267,8 @@ export default function Chat() {
               hideHeader={false}
               onOpenHistory={() => setMobileHistoryOpen(true)}
               onNewChat={handleNewChat}
-              className="flex-1 rounded-none border-0"
+              artifactRequest={artifactRequest}
+              className="flex-1 min-h-0 rounded-none border-0"
             />
           </div>
 
