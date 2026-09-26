@@ -19,6 +19,7 @@ import { invokeCryptoAI, readCryptoAIError } from '@/lib/cryptoAIClient';
 import { FearGreedGauge } from '@/components/ai/FearGreedGauge';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
 import { formatPrice } from '@/lib/format';
+import type { ToolCall } from '@/components/ai/AgentToolCard';
 
 const HISTORY_KEY = 'agent-run-history-v1';
 const HISTORY_LIMIT = 20;
@@ -53,7 +54,7 @@ function saveHistory(items: HistoryRun[]) {
 interface Props {
   selectedAssetId: string | null;
   onSelectAsset: (asset: CryptoAsset | null) => void;
-  onStrategyResult?: (markdown: string) => void;
+  onStrategyResult?: (markdown: string, artifact?: ToolCall) => void;
 }
 
 type Phase = 'idle' | 'analysis' | 'signals' | 'strategy' | 'done';
@@ -210,9 +211,6 @@ export default function AgentRunTab({ selectedAssetId, onSelectAsset, onStrategy
       });
       if (res) {
         update('strategy', 'done');
-        if (onStrategyResult) {
-          onStrategyResult(`## 📊 Strategy: ${res.strategyName} (${selected.symbol})\n**Signal:** ${res.signal} · **Confidence:** ${res.confidence}%\n${res.reasoning || ''}`);
-        }
       } else {
         update('strategy', 'error');
       }
