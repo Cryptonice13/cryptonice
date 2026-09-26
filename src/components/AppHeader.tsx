@@ -26,7 +26,7 @@ const navItems = [
   { key: 'community', label: 'Community', path: '/community' },
 ] as const;
 
-export default function AppHeader({ activePage, rightContent }: AppHeaderProps) {
+export default function AppHeader({ rightContent }: AppHeaderProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
@@ -67,7 +67,7 @@ export default function AppHeader({ activePage, rightContent }: AppHeaderProps) 
           <span className="text-lg font-bold gradient-text hidden sm:block">CryptoAI</span>
         </Link>
 
-        <nav aria-label="Main menu" className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+        <nav aria-label="Main menu" className="hidden lg:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
           {navItems.map((item) => (
             <NavLink
               key={item.key}
