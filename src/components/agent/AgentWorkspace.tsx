@@ -4,14 +4,13 @@ import MarketsTab from './tabs/MarketsTab';
 import StrategyTab from './tabs/StrategyTab';
 import AgentRunTab from './tabs/AgentRunTab';
 import type { CryptoAsset } from '@/hooks/useMarketData';
-import type { ToolCall } from '@/components/ai/AgentToolCard';
 
 interface Props {
   tab: string;
   onTabChange: (t: string) => void;
   selectedAssetId: string | null;
   onSelectAsset: (asset: CryptoAsset | null) => void;
-  onStrategyResult?: (markdown: string, artifact?: ToolCall) => void;
+  onStrategyResult?: (markdown: string) => void;
 }
 
 export default function AgentWorkspace({

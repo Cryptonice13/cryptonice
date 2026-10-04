@@ -4,10 +4,9 @@ import StrategyTable from '@/components/strategy/StrategyTable';
 import StrategyDetailCard from '@/components/strategy/StrategyDetailCard';
 import { useStrategyBuilder } from '@/hooks/useStrategyBuilder';
 import { useMarketData } from '@/hooks/useMarketData';
-import type { ToolCall } from '@/components/ai/AgentToolCard';
 
 interface Props {
-  onResult?: (markdown: string, artifact?: ToolCall) => void;
+  onResult?: (markdown: string) => void;
   defaultAssetSymbol?: string;
 }
 
@@ -32,9 +31,7 @@ export default function StrategyTab({ onResult, defaultAssetSymbol }: Props) {
 
   useEffect(() => {
     if (lastResult && onResult) {
-      onResult(resultToMarkdown(defaultAssetSymbol || lastResult.strategyName, lastResult), {
-        name: 'workspace_strategy', args: {}, result: lastResult,
-      });
+      onResult(resultToMarkdown(defaultAssetSymbol || lastResult.strategyName, lastResult));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastResult]);
