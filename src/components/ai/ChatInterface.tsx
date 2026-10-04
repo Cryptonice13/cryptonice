@@ -58,6 +58,7 @@ export function ChatInterface({
   const [error, setError] = useState<string | null>(null);
   const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
   const [openArtifact, setOpenArtifact] = useState<{ call: ToolCall; index?: number } | null>(null);
@@ -81,10 +82,8 @@ export function ChatInterface({
   const setMessages = setExternalMessages || setInternalMessages;
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, isLoading]);
   const sendMessage = async (messageContent: string) => {
     const userMsg: Message = { role: 'user', content: messageContent };
     let activeConversationId = currentConversationId;
@@ -437,6 +436,7 @@ export function ChatInterface({
               {error}
             </div>
           )}
+          <div ref={endRef} />
         </div>
       </ScrollArea>
 
