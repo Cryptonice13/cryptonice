@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus, Briefcase, Target } from 'lucide-react';
+import { PanelRight, Send, Bot, User, Sparkles, Trash2, BarChart3, Zap, TrendingUp, Shield, History, Plus, Briefcase, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -34,6 +34,7 @@ interface ChatInterfaceProps {
   hideHeader?: boolean;
   onOpenHistory?: () => void;
   onNewChat?: () => void;
+  onOpenWorkspace?: () => void;
 }
 
 const CHAT_URL = `https://ttqhdfxzrajwgpbkkhjj.supabase.co/functions/v1/crypto-ai`;
@@ -49,6 +50,7 @@ export function ChatInterface({
   hideHeader = false,
   onOpenHistory,
   onNewChat,
+  onOpenWorkspace,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
@@ -56,6 +58,7 @@ export function ChatInterface({
   const [error, setError] = useState<string | null>(null);
   const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const { address } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
   const [openArtifact, setOpenArtifact] = useState<{ call: ToolCall; index?: number } | null>(null);
@@ -79,10 +82,8 @@ export function ChatInterface({
   const setMessages = setExternalMessages || setInternalMessages;
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, isLoading]);
   const sendMessage = async (messageContent: string) => {
     const userMsg: Message = { role: 'user', content: messageContent };
     let activeConversationId = currentConversationId;
@@ -253,6 +254,11 @@ export function ChatInterface({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {onOpenWorkspace && (
+              <Button variant="ghost" size="sm" onClick={onOpenWorkspace} className="lg:hidden h-8 w-8 p-0" title="Agent workspace">
+                <PanelRight className="w-4 h-4" />
+              </Button>
+            )}
             {onOpenHistory && (
               <Button variant="ghost" size="sm" onClick={onOpenHistory} className="lg:hidden h-7 w-7 sm:h-8 sm:w-8 p-0" title="Chat history">
                 <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -308,7 +314,7 @@ export function ChatInterface({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 max-w-md mx-auto px-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-md mx-auto px-1 sm:px-2">
                 {suggestedPrompts.map((prompt, i) => (
                   <motion.div
                     key={i}
@@ -318,12 +324,12 @@ export function ChatInterface({
                   >
                     <Button
                       variant="outline"
-                      className="w-full text-left h-auto py-3 px-3 flex flex-col items-start gap-1 hover:bg-muted/50 hover:border-primary/30 transition-colors"
+                      className="w-full text-left h-auto py-2.5 px-3 flex flex-col items-start gap-1 whitespace-normal hover:bg-muted/50 hover:border-primary/30 transition-colors"
                       onClick={() => sendMessage(prompt.label)}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-start gap-2">
                         {prompt.icon}
-                        <span className="text-xs font-semibold">{prompt.label}</span>
+                        <span className="text-xs font-semibold leading-snug">{prompt.label}</span>
                       </div>
                       <span className="text-[10px] text-muted-foreground">{prompt.desc}</span>
                     </Button>
@@ -359,7 +365,7 @@ export function ChatInterface({
                         <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
                       </div>
                     )}
-                    <div className={`max-w-[85%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
+                    <div className={`max-w-[88%] sm:max-w-[80%] space-y-2 ${msg.role === 'user' ? '' : 'flex-1 min-w-0'}`}>
                       {msg.role === 'assistant' && msg.agentSteps && msg.agentSteps.length > 0 && (
                         <AgentStepTimeline
                           steps={msg.agentSteps}
@@ -430,11 +436,12 @@ export function ChatInterface({
               {error}
             </div>
           )}
+          <div ref={endRef} />
         </div>
       </ScrollArea>
 
       {/* Input Area */}
-      <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-border/50 flex-shrink-0">
+      <form onSubmit={handleSubmit} className="p-2.5 sm:p-4 border-t border-border/50 flex-shrink-0 bg-background/95 backdrop-blur">
         <div className="flex gap-2">
           <Input
             ref={inputRef}

@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
-const VALID_TABS = ['markets', 'strategy', 'signals', 'realtime'] as const;
+const VALID_TABS = ['agent', 'markets', 'strategy'] as const;
 
 export default function Chat() {
   const { user } = useAuth();
@@ -31,7 +31,7 @@ export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (VALID_TABS as readonly string[]).includes(searchParams.get('tab') || '')
     ? (searchParams.get('tab') as string)
-    : 'markets';
+    : 'agent';
   const [workspaceTab, setWorkspaceTab] = useState<string>(initialTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
@@ -136,6 +136,7 @@ export default function Chat() {
 
   // Inject strategy results into chat as assistant message
   const handleStrategyResult = async (markdown: string) => {
+    setMobileWorkspaceOpen(false);
     setMessages((prev: any[]) => [...prev, { role: 'assistant', content: markdown }]);
     let convId = currentConversationId;
     if (!convId) {
@@ -188,11 +189,11 @@ export default function Chat() {
 
       {/* Mobile workspace sheet (opened from bottom nav center button) */}
       <Sheet open={mobileWorkspaceOpen} onOpenChange={setMobileWorkspaceOpen}>
-        <SheetContent side="right" className="w-[95%] sm:w-[480px] p-0 flex flex-col">
-          <SheetHeader className="p-4 border-b border-border/50">
-            <SheetTitle>Agent Workspace</SheetTitle>
+        <SheetContent side="bottom" className="h-[88dvh] sm:h-full sm:max-w-[480px] p-0 flex flex-col rounded-t-2xl lg:hidden">
+          <SheetHeader className="px-4 py-3 border-b border-border/50 text-left">
+            <SheetTitle className="text-base">Agent Workspace</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <AgentWorkspace
               tab={workspaceTab}
               onTabChange={setWorkspaceTab}
@@ -219,13 +220,13 @@ export default function Chat() {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       <AppHeader rightContent={headerRight} />
 
-      <main className="flex-1 flex flex-col pt-12 pb-16 lg:pb-0">
-        <div className="flex-1 flex">
+      <main className="flex-1 min-h-0 flex flex-col pt-12 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <div className="flex-1 min-h-0 flex">
           {/* Left: Conversations */}
-          <div className="hidden lg:block h-[calc(100vh-48px)] sticky top-12">
+          <div className="hidden lg:block h-full">
             <ChatSidebar
               conversations={conversations}
               currentConversationId={currentConversationId}
@@ -238,7 +239,7 @@ export default function Chat() {
           </div>
 
           {/* Center: Chat */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
             {selectedAsset && (
               <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/30 bg-muted/20">
                 <Badge variant="outline" className="gap-1.5 text-xs">
@@ -248,7 +249,7 @@ export default function Chat() {
                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setSelectedAsset(null)}>
                   <X className="w-3 h-3" />
                 </Button>
-                <span className="text-[10px] text-muted-foreground ml-auto">
+                <span className="hidden sm:inline text-[10px] text-muted-foreground ml-auto">
                   Sent with each message to the agent
                 </span>
               </div>
@@ -263,13 +264,14 @@ export default function Chat() {
               hideHeader={false}
               onOpenHistory={() => setMobileHistoryOpen(true)}
               onNewChat={handleNewChat}
+              onOpenWorkspace={() => setMobileWorkspaceOpen(true)}
               className="flex-1 rounded-none border-0"
             />
           </div>
 
           {/* Right: Agent Workspace (desktop) */}
           {workspaceOpen && (
-            <aside className="hidden lg:flex flex-col w-[420px] xl:w-[480px] h-[calc(100vh-48px)] sticky top-12 border-l border-border/50 bg-background">
+            <aside className="hidden lg:flex flex-col w-[420px] xl:w-[480px] h-full border-l border-border/50 bg-background">
               <AgentWorkspace
                 tab={workspaceTab}
                 onTabChange={setWorkspaceTab}
