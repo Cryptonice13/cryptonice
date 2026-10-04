@@ -604,29 +604,36 @@ export default function Community() {
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-           <TabsList className="w-full grid grid-cols-4 mb-4">
-             <TabsTrigger value="markets">Markets</TabsTrigger>
-            <TabsTrigger value="feed">Feed</TabsTrigger>
-            <TabsTrigger value="friends">Friends</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-          </TabsList>
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="markets">Markets</TabsTrigger>
+             <TabsTrigger value="feed">Feed</TabsTrigger>
+             <TabsTrigger value="friends">Friends</TabsTrigger>
+           </TabsList>
 
-           <TabsContent value="markets">
-             <PredictionMarketsTab />
+            <TabsContent value="markets">
+              <PredictionMarketsTab />
+            </TabsContent>
+           <TabsContent value="feed">
+             <FeedTab onOpenProfile={handleOpenProfile} />
            </TabsContent>
-          <TabsContent value="feed">
-            <FeedTab onOpenProfile={handleOpenProfile} />
-          </TabsContent>
-          <TabsContent value="friends">
-            <FriendsTab />
-          </TabsContent>
-          <TabsContent value="messages">
-            <MessagesTab
-              initialFriend={pendingChatFriend}
-              onConsumeInitial={() => setPendingChatFriend(null)}
-            />
-          </TabsContent>
-        </Tabs>
+           <TabsContent value="friends">
+             <Tabs defaultValue={pendingChatFriend ? 'messages' : 'friends'} className="w-full">
+               <TabsList className="w-full grid grid-cols-2 mb-4 h-9">
+                 <TabsTrigger value="friends" className="text-xs">Friends</TabsTrigger>
+                 <TabsTrigger value="messages" className="text-xs">Messages</TabsTrigger>
+               </TabsList>
+               <TabsContent value="friends">
+                 <FriendsTab />
+               </TabsContent>
+               <TabsContent value="messages">
+                 <MessagesTab
+                   initialFriend={pendingChatFriend}
+                   onConsumeInitial={() => setPendingChatFriend(null)}
+                 />
+               </TabsContent>
+             </Tabs>
+           </TabsContent>
+         </Tabs>
       </main>
       <MobileBottomNav />
 
