@@ -26,9 +26,9 @@ export default function AgentWorkspace({
     <div className="h-full flex flex-col">
       <Tabs value={safeTab} onValueChange={onTabChange} className="flex-1 flex flex-col min-h-0">
         <TabsList className="w-full grid grid-cols-3 h-9 mx-3 mt-3" style={{ width: 'calc(100% - 1.5rem)' }}>
-          <TabsTrigger value="agent" className="text-xs gap-1"><Sparkles className="w-3.5 h-3.5" />Agent</TabsTrigger>
-          <TabsTrigger value="markets" className="text-xs gap-1"><LineChart className="w-3.5 h-3.5" />Markets</TabsTrigger>
-          <TabsTrigger value="strategy" className="text-xs gap-1"><Cpu className="w-3.5 h-3.5" />Strategy</TabsTrigger>
+          <TabsTrigger value="agent" className="text-[11px] sm:text-xs gap-1 px-1 min-w-0"><Sparkles className="w-3.5 h-3.5 flex-shrink-0" /><span className="truncate">Agent</span></TabsTrigger>
+          <TabsTrigger value="markets" className="text-[11px] sm:text-xs gap-1 px-1 min-w-0"><LineChart className="w-3.5 h-3.5 flex-shrink-0" /><span className="truncate">Markets</span></TabsTrigger>
+          <TabsTrigger value="strategy" className="text-[11px] sm:text-xs gap-1 px-1 min-w-0"><Cpu className="w-3.5 h-3.5 flex-shrink-0" /><span className="truncate">Strategy</span></TabsTrigger>
         </TabsList>
         <div className="flex-1 overflow-y-auto p-3">
           <TabsContent value="agent" className="mt-0">

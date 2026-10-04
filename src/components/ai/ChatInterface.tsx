@@ -324,14 +324,14 @@ export function ChatInterface({
                   >
                     <Button
                       variant="outline"
-                      className="w-full text-left h-auto py-2.5 px-3 flex flex-col items-start gap-1 whitespace-normal hover:bg-muted/50 hover:border-primary/30 transition-colors"
+                      className="w-full text-left h-auto py-2.5 px-3 flex flex-col items-start gap-1 whitespace-normal hover:bg-muted/50 hover:border-primary/30 transition-colors overflow-hidden"
                       onClick={() => sendMessage(prompt.label)}
                     >
-                      <div className="flex items-start gap-2">
-                        {prompt.icon}
-                        <span className="text-xs font-semibold leading-snug">{prompt.label}</span>
+                      <div className="flex items-start gap-2 w-full min-w-0">
+                        <span className="flex-shrink-0 mt-0.5">{prompt.icon}</span>
+                        <span className="text-xs font-semibold leading-snug break-words min-w-0 flex-1">{prompt.label}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">{prompt.desc}</span>
+                      <span className="text-[10px] text-muted-foreground break-words w-full min-w-0">{prompt.desc}</span>
                     </Button>
                   </motion.div>
                 ))}
