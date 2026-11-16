@@ -6,8 +6,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod";
-
-const COINGECKO_API = "https://api.coingecko.com/api/v3";
+import { fetchFreshSpotQuote, type FreshSpotQuote } from "./pricing.ts";
 
 const SYMBOL_TO_ID: Record<string, string> = {
   BTC: "bitcoin",
@@ -86,20 +85,6 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-async function fetchSpotPrice(symbol: string): Promise<number | null> {
-  const id = SYMBOL_TO_ID[symbol.toUpperCase()];
-  if (!id) return null;
-  try {
-    const res = await fetch(`${COINGECKO_API}/simple/price?ids=${id}&vs_currencies=usd`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const price = data?.[id]?.usd;
-    return isFiniteNumber(price) && price > 0 ? price : null;
-  } catch {
-    return null;
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -150,40 +135,54 @@ Deno.serve(async (req) => {
 
       const settled: string[] = [];
       const needsReview: string[] = [];
+      const quotePromises = new Map<string, Promise<FreshSpotQuote | null>>();
+      const marketsToSettle = (due ?? []).filter((market) =>
+        market.resolution_source === "coingecko" || market.resolution_source === "coinbase_spot"
+      );
 
-      for (const market of due ?? []) {
-        if (market.resolution_source !== "coingecko") {
-          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
-          needsReview.push(market.id);
-          continue;
+      for (const symbol of new Set(marketsToSettle.map((market) => market.asset_symbol.toUpperCase()))) {
+        quotePromises.set(symbol, fetchFreshSpotQuote(symbol).catch(() => null));
+      }
+
+      const reviewMarket = async (marketId: string) => {
+        await serviceClient.from("prediction_markets")
+          .update({ status: "review" })
+          .eq("id", marketId)
+          .in("status", ["open", "closed"]);
+        needsReview.push(marketId);
+      };
+
+      await Promise.all((due ?? []).map(async (market) => {
+        const source = market.resolution_source;
+        if (source !== "coingecko" && source !== "coinbase_spot") {
+          await reviewMarket(market.id);
+          return;
         }
 
-        const price = await fetchSpotPrice(market.asset_symbol);
-        if (price === null) {
-          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
-          needsReview.push(market.id);
-          continue;
+        const quote = await quotePromises.get(market.asset_symbol.toUpperCase());
+        if (!quote) {
+          await reviewMarket(market.id);
+          return;
         }
 
         const target = Number(market.target_price);
         const outcome = market.direction === "above"
-          ? (price > target ? "yes" : "no")
-          : (price < target ? "yes" : "no");
+          ? (quote.price > target ? "yes" : "no")
+          : (quote.price < target ? "yes" : "no");
 
         const { error: settleError } = await serviceClient.rpc("settle_prediction_market", {
           _market_id: market.id,
           _outcome: outcome,
-          _observed_price: price,
-          _note: `Settled from CoinGecko spot price for ${market.asset_symbol}.`,
+          _observed_price: quote.price,
+          _note: `Settled from Coinbase spot trade ${quote.pair} at ${quote.quoteAt} UTC (retrieved ${quote.fetchedAt} UTC).`,
         });
 
         if (settleError) {
-          await serviceClient.from("prediction_markets").update({ status: "review" }).eq("id", market.id);
-          needsReview.push(market.id);
-          continue;
+          await reviewMarket(market.id);
+          return;
         }
         settled.push(market.id);
-      }
+      }));
 
       await serviceClient
         .from("prediction_markets")
