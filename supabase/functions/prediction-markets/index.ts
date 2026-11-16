@@ -81,10 +81,6 @@ function friendlyError(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
