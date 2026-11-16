@@ -9,7 +9,7 @@ export const COINBASE_PRODUCTS: Record<string, string> = {
   AVAX: "AVAX-USD",
   DOT: "DOT-USD",
   LINK: "LINK-USD",
-  MATIC: "MATIC-USD",
+  MATIC: "POL-USD",
   UNI: "UNI-USD",
   LTC: "LTC-USD",
   ATOM: "ATOM-USD",
@@ -18,6 +18,7 @@ export const COINBASE_PRODUCTS: Record<string, string> = {
 };
 
 export const MAX_TRADE_AGE_MS = 120_000;
+export const MAX_AFTER_RESOLUTION_MS = 30_000;
 const MAX_FUTURE_SKEW_MS = 5_000;
 const REQUEST_TIMEOUT_MS = 8_000;
 
@@ -33,6 +34,7 @@ export function parseFreshSpotQuote(
   symbol: string,
   payload: unknown,
   nowMs = Date.now(),
+  resolutionAtMs = nowMs,
 ): FreshSpotQuote | null {
   const pair = COINBASE_PRODUCTS[symbol.toUpperCase()];
   if (!pair || typeof payload !== "object" || payload === null) return null;
@@ -43,10 +45,12 @@ export function parseFreshSpotQuote(
     : Number.NaN;
   const quoteTimeMs = typeof data.time === "string" ? Date.parse(data.time) : Number.NaN;
   const ageMs = nowMs - quoteTimeMs;
+  const resolutionOffsetMs = quoteTimeMs - resolutionAtMs;
 
   if (
     !Number.isFinite(price) || price <= 0 || !Number.isFinite(quoteTimeMs) ||
-    ageMs > MAX_TRADE_AGE_MS || ageMs < -MAX_FUTURE_SKEW_MS
+    ageMs > MAX_TRADE_AGE_MS || ageMs < -MAX_FUTURE_SKEW_MS ||
+    resolutionOffsetMs < -MAX_TRADE_AGE_MS || resolutionOffsetMs > MAX_AFTER_RESOLUTION_MS
   ) {
     return null;
   }
@@ -60,7 +64,10 @@ export function parseFreshSpotQuote(
   };
 }
 
-export async function fetchFreshSpotQuote(symbol: string): Promise<FreshSpotQuote | null> {
+export async function fetchFreshSpotQuote(
+  symbol: string,
+  resolutionAtMs = Date.now(),
+): Promise<FreshSpotQuote | null> {
   const pair = COINBASE_PRODUCTS[symbol.toUpperCase()];
   if (!pair) return null;
 
@@ -73,7 +80,7 @@ export async function fetchFreshSpotQuote(symbol: string): Promise<FreshSpotQuot
     if (!response.ok) return null;
 
     const payload: unknown = await response.json();
-    return parseFreshSpotQuote(symbol, payload);
+    return parseFreshSpotQuote(symbol, payload, Date.now(), resolutionAtMs);
   } catch {
     return null;
   }

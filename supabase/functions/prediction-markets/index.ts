@@ -81,10 +81,6 @@ function friendlyError(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -140,8 +136,10 @@ Deno.serve(async (req) => {
         market.resolution_source === "coingecko" || market.resolution_source === "coinbase_spot"
       );
 
-      for (const symbol of new Set(marketsToSettle.map((market) => market.asset_symbol.toUpperCase()))) {
-        quotePromises.set(symbol, fetchFreshSpotQuote(symbol).catch(() => null));
+      for (const market of marketsToSettle) {
+        const symbol = market.asset_symbol.toUpperCase();
+        const key = `${symbol}|${market.resolve_at}`;
+        quotePromises.set(key, fetchFreshSpotQuote(symbol, Date.parse(market.resolve_at)).catch(() => null));
       }
 
       const reviewMarket = async (marketId: string) => {
@@ -159,7 +157,7 @@ Deno.serve(async (req) => {
           return;
         }
 
-        const quote = await quotePromises.get(market.asset_symbol.toUpperCase());
+        const quote = await quotePromises.get(`${market.asset_symbol.toUpperCase()}|${market.resolve_at}`);
         if (!quote) {
           await reviewMarket(market.id);
           return;
@@ -212,7 +210,7 @@ Deno.serve(async (req) => {
         _direction: direction,
         _close_at: new Date(closeTime).toISOString(),
         _resolve_at: new Date(resolveTime).toISOString(),
-        _resolution_source: "coingecko",
+        _resolution_source: "coinbase_spot",
       });
 
       if (error) return json({ error: friendlyError(error) }, 400);

@@ -86,10 +86,13 @@ function MarketCard({
         </div>
 
         {market.status === 'resolved' && (
-          <p className="text-xs text-muted-foreground">
-            Result: <span className="font-medium text-foreground">{market.outcome?.toUpperCase()}</span>
-            {market.observed_price != null && ` at $${Number(market.observed_price).toLocaleString()}`}
-          </p>
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <p>
+              Result: <span className="font-medium text-foreground">{market.outcome?.toUpperCase()}</span>
+              {market.observed_price != null && ` at $${Number(market.observed_price).toLocaleString()}`}
+            </p>
+            {market.settlement_note && <p>{market.settlement_note}</p>}
+          </div>
         )}
         {market.status === 'review' && (
           <p className="text-xs text-orange-400">
