@@ -136,8 +136,10 @@ Deno.serve(async (req) => {
         market.resolution_source === "coingecko" || market.resolution_source === "coinbase_spot"
       );
 
-      for (const symbol of new Set(marketsToSettle.map((market) => market.asset_symbol.toUpperCase()))) {
-        quotePromises.set(symbol, fetchFreshSpotQuote(symbol).catch(() => null));
+      for (const market of marketsToSettle) {
+        const symbol = market.asset_symbol.toUpperCase();
+        const key = `${symbol}|${market.resolve_at}`;
+        quotePromises.set(key, fetchFreshSpotQuote(symbol, Date.parse(market.resolve_at)).catch(() => null));
       }
 
       const reviewMarket = async (marketId: string) => {
@@ -155,7 +157,7 @@ Deno.serve(async (req) => {
           return;
         }
 
-        const quote = await quotePromises.get(market.asset_symbol.toUpperCase());
+        const quote = await quotePromises.get(`${market.asset_symbol.toUpperCase()}|${market.resolve_at}`);
         if (!quote) {
           await reviewMarket(market.id);
           return;

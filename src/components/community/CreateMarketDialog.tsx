@@ -194,8 +194,9 @@ export function CreateMarketDialog({ submitting, onCreate }: CreateMarketDialogP
           <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-1">
             <p className="text-xs font-medium">How it settles</p>
             <p className="text-xs text-muted-foreground">
-              At settlement, the latest Coinbase {assetSymbol}-USD spot trade is checked. Quotes older than two minutes
-              go to review instead of settling automatically. Yes wins if the price is {direction} your target. Each winning share pays 100 credits.
+              Settlement uses a live Coinbase {assetSymbol}-USD spot trade timestamped within two minutes before or
+              30 seconds after the deadline; otherwise it goes to review. Yes wins if the price is {direction} your target.
+              Each winning share pays 100 credits.
               You cannot trade in your own market.
             </p>
           </div>
