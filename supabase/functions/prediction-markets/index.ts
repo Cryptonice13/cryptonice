@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
         _direction: direction,
         _close_at: new Date(closeTime).toISOString(),
         _resolve_at: new Date(resolveTime).toISOString(),
-        _resolution_source: "coingecko",
+        _resolution_source: "coinbase_spot",
       });
 
       if (error) return json({ error: friendlyError(error) }, 400);

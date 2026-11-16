@@ -11,7 +11,7 @@ const NOW = Date.parse("2026-11-16T06:00:00.000Z");
 Deno.test("all supported prediction assets map to a USD exchange pair", () => {
   assertEquals(Object.keys(COINBASE_PRODUCTS).length, 16);
   assertEquals(COINBASE_PRODUCTS.BTC, "BTC-USD");
-  assertEquals(COINBASE_PRODUCTS.MATIC, "MATIC-USD");
+  assertEquals(COINBASE_PRODUCTS.MATIC, "POL-USD");
   assertEquals(COINBASE_PRODUCTS.OP, "OP-USD");
 });
 

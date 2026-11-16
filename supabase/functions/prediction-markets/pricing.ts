@@ -9,7 +9,7 @@ export const COINBASE_PRODUCTS: Record<string, string> = {
   AVAX: "AVAX-USD",
   DOT: "DOT-USD",
   LINK: "LINK-USD",
-  MATIC: "MATIC-USD",
+  MATIC: "POL-USD",
   UNI: "UNI-USD",
   LTC: "LTC-USD",
   ATOM: "ATOM-USD",
